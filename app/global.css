@@ -173,3 +173,56 @@ table {
 .content-area {
   padding: 2rem 0;
 }
+
+/* Audio Player Slider Styles */
+.slider {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: #374151;
+  border-radius: 2px;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(to right, #fecb3e, #ffb43f);
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 4px 8px rgba(254, 203, 62, 0.3);
+}
+
+.slider::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: #374151;
+  border-radius: 2px;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(to right, #fecb3e, #ffb43f);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb:hover {
+  box-shadow: 0 4px 8px rgba(254, 203, 62, 0.3);
+}

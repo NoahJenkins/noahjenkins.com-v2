@@ -26,6 +26,7 @@
     "sugar-high": "^0.6.0",
     "tailwind-merge": "^1.14.0",
     "tailwindcss": "4.0.0-alpha.13",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "wavesurfer.js": "^7.0.0"
   }
 }
