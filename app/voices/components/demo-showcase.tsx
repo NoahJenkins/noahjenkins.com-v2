@@ -77,14 +77,6 @@ export function DemoShowcase() {
               >
                 Get a Custom Quote
               </motion.a>
-              <motion.a
-                href="/contact"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 border-2 border-[#fecb3e] text-[#fecb3e] font-semibold rounded-lg hover:bg-[#fecb3e] hover:text-black transition-all duration-300"
-              >
-                View Full Portfolio
-              </motion.a>
             </div>
           </div>
         </ScrollReveal>

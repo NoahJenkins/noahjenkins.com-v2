@@ -31,11 +31,12 @@ export default function VoicesPage() {
   ]
 
   const equipment = [
-    "Rode PodMic Dynamic Microphone",
-    "Focusrite Scarlett Solo Audio Interface", 
-    "Acoustic Treatment & Isolation",
-    "Adobe Audition & Reaper DAW",
-    "Professional Monitoring Setup"
+    "AKG C214 Microphone",
+    "Focusrite 2i2 3rd Gen Interface",
+    "Comprehensive acoustic treatment and isolation",
+    "Logic Pro X & Audacity DAWs",
+    "Source Connect Ready capability",
+    "JS2 XLR Splitter for secure track management"
   ]
 
   return (
@@ -179,12 +180,12 @@ export default function VoicesPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="p-6">
-                <div className="text-3xl font-bold text-[#fecb3e] mb-2">5+</div>
+                <div className="text-3xl font-bold text-[#fecb3e] mb-2">7+</div>
                 <div className="text-gray-300">Years Experience</div>
               </div>
               <div className="p-6">
                 <div className="text-3xl font-bold text-[#fecb3e] mb-2">100+</div>
-                <div className="text-gray-300">Projects Completed</div>
+                <div className="text-gray-300">Hours Behind the Mic</div>
               </div>
               <div className="p-6">
                 <div className="text-3xl font-bold text-[#fecb3e] mb-2">24hr</div>
@@ -192,8 +193,8 @@ export default function VoicesPage() {
               </div>
             </div>
             <p className="text-gray-300 mt-8 max-w-2xl mx-auto leading-relaxed">
-              Professionally trained through Voice Over Academy with ongoing coaching in commercial 
-              technique, character development, and audio production. Specialized in authentic, 
+              Professionally trained with ongoing coaching in commercial
+              technique, character development, and audio production. Specialized in authentic,
               conversational reads that connect with modern audiences.
             </p>
           </div>
