@@ -10,7 +10,6 @@ interface VoiceDemo {
   description: string
   audioUrl: string
   category: string
-  duration: string
 }
 
 const voiceDemos: VoiceDemo[] = [
@@ -19,16 +18,14 @@ const voiceDemos: VoiceDemo[] = [
     title: "Premium Brand Commercial",
     description: "A sophisticated, warm read for a luxury lifestyle brand. This piece demonstrates versatility in tone, moving from intimate and personal to confident and aspirational, perfect for high-end product launches.",
     audioUrl: "/assets/audio/Noah_Jenkins_Commercial.mp3",
-    category: "Commercial",
-    duration: "0:45"
+    category: "Commercial"
   },
   {
     id: "character-1", 
     title: "Character Voice Demo",
     description: "Dynamic character voice work showcasing range and versatility. This demo highlights the ability to create distinct, memorable characters with unique vocal qualities perfect for animation, gaming, and audiobook projects.",
     audioUrl: "/assets/audio/NoahJenkins_CharacterDemo.mp3", 
-    category: "Character",
-    duration: "1:12"
+    category: "Character"
   }
 ]
 
@@ -56,7 +53,6 @@ export function DemoShowcase() {
                 description={demo.description}
                 audioUrl={demo.audioUrl}
                 category={demo.category}
-                duration={demo.duration}
               />
             </ScrollReveal>
           ))}

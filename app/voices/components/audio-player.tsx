@@ -134,8 +134,8 @@ export function AudioPlayer({
             <span className="px-2 py-1 bg-gradient-to-r from-[#fecb3e] to-[#ffb43f] text-black text-xs font-semibold rounded-full">
               {category}
             </span>
-            {duration && (
-              <span className="text-gray-400 text-sm">{duration}</span>
+            {totalDuration > 0 && (
+              <span className="text-gray-400 text-sm">{formatTime(totalDuration)}</span>
             )}
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
