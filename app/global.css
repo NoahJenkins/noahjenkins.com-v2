@@ -29,8 +29,11 @@
   }
 }
 
-html {
+html, body {
   min-width: 360px;
+  background: transparent;
+  margin: 0;
+  padding: 0;
 }
 
 .prose .anchor {
@@ -147,4 +150,26 @@ table {
 
 .title {
   text-wrap: balance;
+}
+.header-bg, .footer-bg {
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.vibrant-bg {
+  background: linear-gradient(to right, #fecb3e, #ffb43f);
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.content-area {
+  padding: 2rem 0;
 }
