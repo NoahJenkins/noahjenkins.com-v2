@@ -1,61 +1,105 @@
-function ArrowIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M2.07102 11.3494L0.963068 10.2415L9.2017 1.98864H2.83807L2.85227 0.454545H11.8438V9.46023H10.2955L10.3097 3.09659L2.07102 11.3494Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
+import { Rss } from "lucide-react"
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear()
+  
   return (
-    <footer className="mb-16">
-      <ul className="font-sm mt-8 flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-300">
-        <li>
-          <a
-            className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
-            rel="noopener noreferrer"
-            target="_blank"
-            href="/rss"
-          >
-            <ArrowIcon />
-            <p className="ml-2 h-7">rss</p>
-          </a>
-        </li>
-        <li>
-          <a
-            className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
-            rel="noopener noreferrer"
-            target="_blank"
-            href="https://github.com/vercel/next.js"
-          >
-            <ArrowIcon />
-            <p className="ml-2 h-7">github</p>
-          </a>
-        </li>
-        <li>
-          <a
-            className="flex items-center transition-all hover:text-neutral-800 dark:hover:text-neutral-100"
-            rel="noopener noreferrer"
-            target="_blank"
-            href="https://vercel.com/templates/next.js/portfolio-starter-kit"
-          >
-            <ArrowIcon />
-            <p className="ml-2 h-7">view source</p>
-          </a>
-        </li>
-      </ul>
-      <p className="mt-8 text-neutral-600 dark:text-neutral-300">
-        © {new Date().getFullYear()} MIT Licensed
-      </p>
+    <footer className="border-t border-gray-800 bg-black text-white">
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {/* Brand Section */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#fecb3e] to-[#ffb43f] flex items-center justify-center">
+                <span className="text-black font-bold text-sm">NJ</span>
+              </div>
+              <span className="text-white font-semibold text-lg">Noah Jenkins</span>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Cloud Engineer, Web Developer, and Voice Actor crafting digital experiences 
+              and bringing stories to life.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className="text-white font-semibold">Quick Links</h3>
+            <div className="space-y-2">
+              <a 
+                href="/about" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                About
+              </a>
+              <a 
+                href="/resume" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Resume
+              </a>
+              <a 
+                href="/voices" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Voice Acting
+              </a>
+              <a 
+                href="/blog" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Blog
+              </a>
+              <a 
+                href="/tools/css-generator" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                CSS Generator
+              </a>
+            </div>
+          </div>
+
+          {/* Connect Section */}
+          <div className="space-y-4">
+            <h3 className="text-white font-semibold">Connect</h3>
+            <div className="space-y-2">
+              <a
+                href="/rss"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                <Rss className="h-4 w-4" />
+                <span>RSS Feed</span>
+              </a>
+              <a
+                href="https://geekyvoices.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                GeekyVoices.com
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Section */}
+        <div className="border-t border-gray-800 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="space-y-1 text-center md:text-left">
+              <p className="text-gray-400 text-sm">© {currentYear} NoahJenkins.com</p>
+              <p className="text-gray-400 text-sm">© {currentYear} GeekyVoices.com</p>
+            </div>
+            
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span>Built with</span>
+              <span className="text-[#fecb3e]">Next.js</span>
+              <span>&</span>
+              <span className="text-[#fecb3e]">Tailwind CSS</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </footer>
   )
 }
