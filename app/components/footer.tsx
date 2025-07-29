@@ -1,4 +1,4 @@
-import { Rss } from "lucide-react"
+import { Rss, Linkedin, Twitter, Mail } from "lucide-react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -67,17 +67,38 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-2 text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+                aria-label="RSS Feed"
               >
                 <Rss className="h-4 w-4" />
                 <span>RSS Feed</span>
               </a>
               <a
-                href="https://geekyvoices.com"
+                href="https://www.linkedin.com/in/noah-jenkins/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+                className="flex items-center space-x-2 text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+                aria-label="LinkedIn (Noah Jenkins)"
               >
-                GeekyVoices.com
+                <Linkedin className="h-4 w-4" />
+                <span>LinkedIn</span>
+              </a>
+              <a
+                href="mailto:noah@noahjenkins.com"
+                className="flex items-center space-x-2 text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+                aria-label="Email Noah Jenkins"
+              >
+                <Mail className="h-4 w-4" />
+                <span>noah@noahjenkins.com</span>
+              </a>
+              <a
+                href="https://x.com/GeekyVoices"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+                aria-label="X (formerly Twitter) GeekyVoices"
+              >
+                <Twitter className="h-4 w-4" />
+                <span>X (Twitter)</span>
               </a>
             </div>
           </div>
