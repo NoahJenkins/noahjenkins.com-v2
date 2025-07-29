@@ -90,7 +90,7 @@ export function Navbar() {
   )
 }
 
-function MobileNav({ navItems, currentPath }: { navItems: any, currentPath: string }) {
+function MobileNav({ navItems, currentPath }: { navItems: Record<string, { name: string }>, currentPath: string }) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (

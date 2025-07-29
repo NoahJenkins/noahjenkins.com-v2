@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { CustomMDX } from 'app/components/mdx'
-import { formatDate, getBlogPosts } from 'app/blog/utils'
+import { getBlogPosts } from 'app/blog/utils'
+import { formatDate } from 'app/blog/format-date'
 import { baseUrl } from 'app/sitemap'
 
 export async function generateStaticParams() {
@@ -58,8 +59,14 @@ export default function Blog({ params }: { params: { slug: string } }) {
     notFound()
   }
 
+  const calculateReadTime = (content: string) => {
+    const wordsPerMinute = 200
+    const words = content.split(/\s+/).length
+    return Math.ceil(words / wordsPerMinute)
+  }
+
   return (
-    <section>
+    <div className="min-h-screen bg-black text-white">
       <script
         type="application/ld+json"
         suppressHydrationWarning
@@ -77,22 +84,80 @@ export default function Blog({ params }: { params: { slug: string } }) {
             url: `${baseUrl}/blog/${post.slug}`,
             author: {
               '@type': 'Person',
-              name: 'My Portfolio',
+              name: 'Noah Jenkins',
             },
           }),
         }}
       />
-      <h1 className="title font-semibold text-2xl tracking-tighter">
-        {post.metadata.title}
-      </h1>
-      <div className="flex justify-between items-center mt-2 mb-8 text-sm">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {formatDate(post.metadata.publishedAt)}
-        </p>
-      </div>
-      <article className="prose">
-        <CustomMDX source={post.content} />
-      </article>
-    </section>
+      
+      {/* Header Section */}
+      <section className="py-16 px-4 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, #fecb3e 1px, transparent 0)`,
+            backgroundSize: '60px 60px'
+          }} />
+        </div>
+        
+        <div className="max-w-4xl mx-auto relative z-10">
+          <div className="mb-6">
+            <div className="flex items-center space-x-4 text-sm text-gray-400 mb-4">
+              <span className="flex items-center space-x-1">
+                <span>📅</span>
+                <span>{formatDate(post.metadata.publishedAt)}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <span>⏱️</span>
+                <span>{calculateReadTime(post.content)} min read</span>
+              </span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">
+              {post.metadata.title}
+            </h1>
+            
+            {post.metadata.summary && (
+              <p className="text-xl text-gray-300 leading-relaxed max-w-3xl">
+                {post.metadata.summary}
+              </p>
+            )}
+          </div>
+
+          {/* Tags */}
+          {post.metadata.tags && (
+            <div className="flex flex-wrap gap-2 mt-6">
+              {post.metadata.tags.map((tag: string) => (
+                <span 
+                  key={tag}
+                  className="px-3 py-1 bg-gradient-to-r from-[#fecb3e]/20 to-[#ffb43f]/20 text-[#fecb3e] text-sm rounded-full border border-[#fecb3e]/30"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Content Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <article className="prose prose-lg prose-invert prose-headings:text-white prose-p:text-gray-300 prose-strong:text-white prose-code:text-[#fecb3e] prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-800 prose-blockquote:border-l-[#fecb3e] prose-blockquote:text-gray-300 prose-a:text-[#fecb3e] prose-a:no-underline hover:prose-a:text-[#ffb43f] max-w-none">
+            <CustomMDX source={post.content} />
+          </article>
+          
+          {/* Back to Blog */}
+          <div className="mt-16 pt-8 border-t border-gray-800">
+            <a 
+              href="/blog" 
+              className="inline-flex items-center space-x-2 text-[#fecb3e] hover:text-[#ffb43f] transition-colors duration-300"
+            >
+              <span>←</span>
+              <span>Back to Blog</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }

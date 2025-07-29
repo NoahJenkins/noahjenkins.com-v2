@@ -7,21 +7,24 @@ import { cn } from "../../lib/utils"
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <motion.div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm backdrop-blur-sm bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300",
-      className
-    )}
-    whileHover={{ 
-      scale: 1.02,
-      boxShadow: "0 10px 40px rgba(254, 203, 62, 0.2)"
-    }}
-    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const MotionDiv = motion.div as any
+  return (
+    <MotionDiv
+      ref={ref}
+      className={cn(
+        "rounded-lg border bg-card text-card-foreground shadow-sm backdrop-blur-sm bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300",
+        className
+      )}
+      whileHover={{ 
+        scale: 1.02,
+        boxShadow: "0 10px 40px rgba(254, 203, 62, 0.2)"
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      {...props}
+    />
+  )
+})
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<
