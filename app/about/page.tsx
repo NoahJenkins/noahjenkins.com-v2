@@ -46,6 +46,16 @@ export default function AboutPage() {
       .replace(/^### (.*$)/gm, '<h3 class="text-lg md:text-xl font-semibold mb-3 text-white mt-6">$1</h3>')
       .replace(/^#### (.*$)/gm, '<h4 class="text-base md:text-lg font-semibold mb-3 text-white mt-4">$1</h4>')
       
+      // Convert HTML p align="left" blocks with multiple badges to flex containers
+      .replace(/<p align="left">([\s\S]*?)<\/p>/g, (match, content) => {
+        // Check if this p block contains multiple image links (badges)
+        const imageCount = (content.match(/<img/g) || []).length
+        if (imageCount >= 2) {
+          return `<div class="flex flex-wrap gap-2 mb-4">${content}</div>`
+        }
+        return match // Keep original if not a badge group
+      })
+      
       // Images (badges, icons, etc.) - make them inline
       .replace(/!\[(.*?)\]\((.*?)\)/g, '<img alt="$1" src="$2" class="inline h-5 mr-1 mb-1" />')
       
@@ -68,9 +78,27 @@ export default function AboutPage() {
     let inList = false
     let listItems: string[] = []
     let badgeGroup: string[] = []
+    let inFlexContainer = false
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
+      
+      // Check if we're entering or leaving a flex container
+      if (line.includes('<div class="flex flex-wrap gap-2 mb-4">')) {
+        inFlexContainer = true
+        processedLines.push(line)
+        continue
+      } else if (line.includes('</div>') && inFlexContainer) {
+        inFlexContainer = false
+        processedLines.push(line)
+        continue
+      }
+      
+      // If we're in a flex container, just pass through the content
+      if (inFlexContainer) {
+        processedLines.push(line)
+        continue
+      }
       
       // Check if this line contains only badges/images (GitHub README pattern)
       const isBadgeLine = line.includes('<img') && !line.includes('<h') && 
@@ -82,7 +110,7 @@ export default function AboutPage() {
         continue
       } else if (badgeGroup.length > 0) {
         // Close badge group and render horizontally
-        processedLines.push(`<div class="flex flex-wrap gap-1 mb-4">${badgeGroup.join(' ')}</div>`)
+        processedLines.push(`<div class="flex flex-wrap gap-2 mb-4">${badgeGroup.join(' ')}</div>`)
         badgeGroup = []
       }
       
@@ -114,7 +142,7 @@ export default function AboutPage() {
     
     // Don't forget to close any remaining groups
     if (badgeGroup.length > 0) {
-      processedLines.push(`<div class="flex flex-wrap gap-1 mb-4">${badgeGroup.join(' ')}</div>`)
+      processedLines.push(`<div class="flex flex-wrap gap-2 mb-4">${badgeGroup.join(' ')}</div>`)
     }
     if (inList) {
       processedLines.push(`<ul class="flex flex-wrap gap-2 mb-4 list-none">${listItems.join('')}</ul>`)
