@@ -18,6 +18,9 @@ const navItems = {
   '/voices': {
     name: 'Voices',
   },
+  '/tools/css-generator': {
+    name: 'CSS Generator',
+  },
   '/blog': {
     name: 'Blog',
   },
