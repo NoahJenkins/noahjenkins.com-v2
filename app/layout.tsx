@@ -11,7 +11,7 @@ import { baseUrl } from './sitemap'
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Next.js Portfolio Starter',
+    default: 'Noah Jenkins',
     template: '%s | Next.js Portfolio Starter',
   },
   description: 'This is my portfolio.',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'My Portfolio',
     description: 'This is my portfolio.',
     url: baseUrl,
-    siteName: 'My Portfolio',
+    siteName: 'Noah Jenkins',
     locale: 'en_US',
     type: 'website',
   },
@@ -57,26 +57,16 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
-      <body
-        className={
-          isHome
-            ? 'antialiased min-h-screen w-full m-0 p-0'
-            : 'antialiased max-w-xl mx-4 mt-8 lg:mx-auto'
-        }
-      >
-        <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0 vibrant-bg">
-          <div className="header-bg">
-            <Navbar />
-          </div>
-          <div className="content-area">
+      <body className="antialiased min-h-screen w-full m-0 p-0 bg-black">
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1">
             {children}
-          </div>
-          <div className="footer-bg">
-            <Footer />
-          </div>
+          </main>
+          <Footer />
           <Analytics />
           <SpeedInsights />
-        </main>
+        </div>
       </body>
     </html>
   )
