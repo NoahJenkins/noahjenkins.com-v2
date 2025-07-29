@@ -68,15 +68,11 @@ export default function RootLayout({
           <div className="header-bg">
             <Navbar />
           </div>
-          {/* DEBUG: Main content area */}
-          <div className="content-area" style={{ border: '2px dashed green', padding: '2px' }}>
+          <div className="content-area">
             {children}
           </div>
           <div className="footer-bg">
-            {/* DEBUG: Footer section */}
-            <div style={{ border: '2px dashed blue', padding: '2px' }}>
-              <Footer />
-            </div>
+            <Footer />
           </div>
           <Analytics />
           <SpeedInsights />

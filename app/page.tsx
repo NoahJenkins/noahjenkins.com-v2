@@ -4,7 +4,7 @@ export default function Page() {
   return (
     <main
       className="min-h-screen flex flex-col items-center justify-center px-4 py-8 transition-colors duration-700"
-      style={{ fontFamily: 'Geist, Inter, sans-serif', background: 'linear-gradient(to right, #fecb3e, #ffb43f)' }}
+      style={{ fontFamily: 'Geist, Inter, sans-serif', background: '#000' }}
     >
       <section className="w-full max-w-2xl text-center animate-fade-in">
         <h1 className="mb-8 text-4xl md:text-5xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-[#47a3f3] via-[#7f5af0] to-[#16161a] dark:from-[#7f5af0] dark:via-[#47a3f3] dark:to-[#16161a]">
