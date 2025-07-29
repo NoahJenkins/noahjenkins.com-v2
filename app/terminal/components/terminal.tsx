@@ -11,8 +11,11 @@ export function Terminal() {
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [isTyping, setIsTyping] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [size, setSize] = useState({ width: 800, height: 400 })
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [resizeOffset, setResizeOffset] = useState({ x: 0, y: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
   const processor = useRef(new CommandProcessor())
@@ -54,14 +57,22 @@ export function Terminal() {
           x: e.clientX - dragOffset.x,
           y: e.clientY - dragOffset.y
         })
+      } else if (isResizing) {
+        const newWidth = Math.max(300, e.clientX - position.x - resizeOffset.x)
+        const newHeight = Math.max(200, e.clientY - position.y - resizeOffset.y)
+        setSize({
+          width: newWidth,
+          height: newHeight
+        })
       }
     }
 
     const handleMouseUp = () => {
       setIsDragging(false)
+      setIsResizing(false)
     }
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     }
@@ -70,7 +81,7 @@ export function Terminal() {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, dragOffset])
+  }, [isDragging, isResizing, dragOffset, resizeOffset, position])
 
   const handleCommand = (input: string) => {
     if (input.trim() === "") return
@@ -134,12 +145,23 @@ export function Terminal() {
     setIsDragging(true)
   }
 
+  const handleResizeMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    setResizeOffset({
+      x: e.clientX - position.x - size.width,
+      y: e.clientY - position.y - size.height
+    })
+    setIsResizing(true)
+  }
+
   return (
     <div 
       className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden"
       style={{
         position: 'relative',
         transform: `translate(${position.x}px, ${position.y}px)`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         cursor: isDragging ? 'grabbing' : 'default'
       }}
     >
@@ -159,7 +181,8 @@ export function Terminal() {
       {/* Terminal Content */}
       <div 
         ref={terminalRef}
-        className="bg-black text-[#00ff00] p-4 font-mono text-sm h-96 overflow-y-auto scrollbar-thin scrollbar-track-black scrollbar-thumb-[#00ff00]"
+        className="bg-black text-[#00ff00] p-4 font-mono text-sm overflow-y-auto scrollbar-thin scrollbar-track-black scrollbar-thumb-[#00ff00]"
+        style={{ height: `${size.height - 50}px` }}
       >
         {/* Command History */}
         {history.map((entry, index) => (
@@ -195,6 +218,15 @@ export function Terminal() {
           </div>
         )}
       </div>
+
+      {/* Resize Handle */}
+      <div
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-[#00ff00] opacity-50 hover:opacity-100 transition-opacity"
+        onMouseDown={handleResizeMouseDown}
+        style={{
+          clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)'
+        }}
+      />
     </div>
   )
 }
