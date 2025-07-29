@@ -12,8 +12,8 @@ const navItems = {
   '/about': {
     name: 'About',
   },
-  '/resume': {
-    name: 'Resume',
+  '/terminal': {
+    name: 'Terminal',
   },
   '/voices': {
     name: 'Voices',

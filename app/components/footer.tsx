@@ -32,7 +32,7 @@ export default function Footer() {
                 About
               </a>
               <a 
-                href="/resume" 
+                href="/terminal"
                 className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
               >
                 Resume

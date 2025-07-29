@@ -59,7 +59,7 @@ export default function HomePage() {
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
             <Button variant="secondary" size="lg">
-              <Link href="/resume" className="flex items-center">
+              <Link href="/terminal" className="flex items-center">
                 <FileText className="mr-2 h-4 w-4" />
                 Resume
               </Link>
