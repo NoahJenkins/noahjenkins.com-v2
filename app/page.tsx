@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowRight, Github, Linkedin, Mail, Code, Mic, FileText } from "lucide-react"
+import { ArrowRight, Github, Linkedin, Mail, Twitter, Code, Mic, FileText } from "lucide-react"
 import Link from "next/link"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -58,11 +58,16 @@ export default function HomePage() {
               View My Work
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
-            <Button variant="secondary" size="lg">
-              <Link href="/terminal" className="flex items-center">
+            <Button variant="secondary" size="lg" asChild>
+              <a
+                href="https://1drv.ms/w/c/a2b0a06449186268/EWhiGElkoLAggKJbKQMAAAABLokJe7naLe1OEKYi-Xd88g?e=awvhSH"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center"
+              >
                 <FileText className="mr-2 h-4 w-4" />
                 Resume
-              </Link>
+              </a>
             </Button>
           </motion.div>
 
@@ -74,16 +79,36 @@ export default function HomePage() {
             className="flex justify-center space-x-6"
           >
             {[
-              { icon: Github, href: "#", label: "GitHub" },
-              { icon: Linkedin, href: "#", label: "LinkedIn" },
-              { icon: Mail, href: "mailto:noah@example.com", label: "Email" }
+              {
+                icon: Github,
+                href: "https://github.com/noahjenkins",
+                label: "GitHub",
+              },
+              {
+                icon: Linkedin,
+                href: "https://www.linkedin.com/in/noah-jenkins/",
+                label: "LinkedIn",
+              },
+              {
+                icon: Twitter,
+                href: "https://x.com/GeekyVoices",
+                label: "Twitter",
+              },
+              {
+                icon: Mail,
+                href: "mailto:noah@noahjenkins.com",
+                label: "Email",
+              },
             ].map(({ icon: Icon, href, label }) => (
               <motion.a
                 key={label}
                 href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-3 rounded-full bg-white/10 hover:bg-gradient-to-r hover:from-[#fecb3e] hover:to-[#ffb43f] transition-all duration-300 group"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
+                aria-label={label}
               >
                 <Icon className="h-6 w-6 group-hover:text-black transition-colors" />
                 <span className="sr-only">{label}</span>
