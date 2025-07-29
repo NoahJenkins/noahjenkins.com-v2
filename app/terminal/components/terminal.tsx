@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, KeyboardEvent } from "react"
+import { useState, useEffect, useRef, KeyboardEvent, MouseEvent } from "react"
 import { CommandProcessor, CommandOutput } from "./command-processor"
 import { TerminalOutput } from "./terminal-output"
 
@@ -10,6 +10,9 @@ export function Terminal() {
   const [commandHistory, setCommandHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [isTyping, setIsTyping] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
   const processor = useRef(new CommandProcessor())
@@ -43,6 +46,31 @@ export function Terminal() {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight
     }
   }, [history, isTyping])
+
+  useEffect(() => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      if (isDragging) {
+        setPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        })
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
 
   const handleCommand = (input: string) => {
     if (input.trim() === "") return
@@ -98,10 +126,28 @@ export function Terminal() {
     setIsTyping(false)
   }
 
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    })
+    setIsDragging(true)
+  }
+
   return (
-    <div className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden">
+    <div 
+      className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden"
+      style={{
+        position: 'relative',
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        cursor: isDragging ? 'grabbing' : 'default'
+      }}
+    >
       {/* Terminal Header */}
-      <div className="bg-[#00ff00] text-black px-4 py-2 font-mono text-sm font-bold flex items-center justify-between">
+      <div 
+        className="bg-[#00ff00] text-black px-4 py-2 font-mono text-sm font-bold flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+        onMouseDown={handleMouseDown}
+      >
         <span>noah@jenkins-terminal:~</span>
         <div className="flex space-x-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
