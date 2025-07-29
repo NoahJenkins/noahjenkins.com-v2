@@ -195,10 +195,17 @@ export default function AboutPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="group">
-                <Github className="mr-2 h-4 w-4" />
-                View on GitHub
-              </Button>
+              <a
+                href="https://github.com/NoahJenkins"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+              >
+                <Button>
+                  <Github className="mr-2 h-4 w-4" />
+                  View on GitHub
+                </Button>
+              </a>
               <Button variant="secondary">
                 <Download className="mr-2 h-4 w-4" />
                 Download Resume
