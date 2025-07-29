@@ -294,9 +294,14 @@ export default function AboutPage() {
               Let's build something amazing together!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg">
-                Get In Touch
-              </Button>
+              <a
+                href="mailto:noah@noahjenkins.com"
+                className="inline-block"
+              >
+                <Button size="lg">
+                  Get In Touch
+                </Button>
+              </a>
               <Button variant="secondary" size="lg">
                 View My Work
               </Button>
