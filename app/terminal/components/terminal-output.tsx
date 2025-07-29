@@ -7,7 +7,10 @@ interface TerminalOutputProps {
   onComplete?: () => void
 }
 
+import { useRef } from "react"
+
 export function TerminalOutput({ lines, onComplete }: TerminalOutputProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const [displayedLines, setDisplayedLines] = useState<string[]>([])
   const [currentLineIndex, setCurrentLineIndex] = useState(0)
   const [currentCharIndex, setCurrentCharIndex] = useState(0)
@@ -28,7 +31,7 @@ export function TerminalOutput({ lines, onComplete }: TerminalOutputProps) {
           return newLines
         })
         setCurrentCharIndex(prev => prev + 1)
-      }, 20) // Fast typing speed
+      }, 5) // Even faster typing speed
 
       return () => clearTimeout(timeout)
     } else {
@@ -37,9 +40,18 @@ export function TerminalOutput({ lines, onComplete }: TerminalOutputProps) {
         setCurrentLineIndex(prev => prev + 1)
         setCurrentCharIndex(0)
         setDisplayedLines(prev => [...prev, ""])
-      }, 50)
+      }, 20)
 
       return () => clearTimeout(timeout)
+    }
+    // Auto-scroll to bottom as text renders
+    if (containerRef.current) {
+      // TypeScript fix: check for null before assignment
+      const el = containerRef.current
+      if (el) {
+        // @ts-expect-error: TypeScript null check is handled above
+        el.scrollTop = el.scrollHeight
+      }
     }
   }, [currentLineIndex, currentCharIndex, lines, onComplete])
 
@@ -51,7 +63,7 @@ export function TerminalOutput({ lines, onComplete }: TerminalOutputProps) {
   }, [lines])
 
   return (
-    <div className="font-mono text-sm">
+    <div ref={containerRef} className="font-mono text-sm">
       {displayedLines.map((line, index) => (
         <div key={index} className="min-h-[1.2em]">
           {line}
