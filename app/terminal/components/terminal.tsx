@@ -92,6 +92,7 @@ export function Terminal() {
     // Handle clear command
     if (output.output.includes("CLEAR_TERMINAL")) {
       setHistory([])
+      setIsTyping(false)
       return
     }
 
