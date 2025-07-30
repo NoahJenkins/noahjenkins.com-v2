@@ -179,7 +179,7 @@ test.describe('Terminal Interface', () => {
     // Wait for terminal to be fully loaded
     await page.waitForSelector('input[type="text"]');
     
-    // Click close button (red circle) - this should work without force on properly designed UI
+    // Click close button (red circle)
     await page.locator('main .w-3.h-3.rounded-full.bg-red-500').click();
     
     // Terminal should be hidden - wait a moment for animation

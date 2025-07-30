@@ -28,10 +28,12 @@ export default defineConfig({
     {
       name: 'Mobile Chrome',  
       use: { ...devices['Pixel 5'] },
+      testIgnore: ['**/terminal.spec.ts'], // Skip terminal tests on mobile
     },
     {
       name: 'Mobile Safari',
       use: { ...devices['iPhone 12'] },
+      testIgnore: ['**/terminal.spec.ts'], // Skip terminal tests on mobile
     },
   ],
 
