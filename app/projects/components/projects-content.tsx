@@ -33,7 +33,7 @@ const projects: Project[] = [
     title: "Noah Jenkins Portfolio v2",
     description: "Current portfolio website built with Next.js 13+ featuring dynamic GitHub integration, interactive terminal, voice demos, and a modern responsive design.",
     category: "Web/Mobile Development",
-    technologies: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion", "Vercel"],
+    technologies: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion", "Vercel", "Jest", "Playwright"],
     liveUrl: "https://noahjenkins-com.vercel.app",
     githubUrl: "https://github.com/NoahJenkins/noahjenkins.com",
     featured: true,
