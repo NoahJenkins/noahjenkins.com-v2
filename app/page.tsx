@@ -55,7 +55,7 @@ export default function HomePage() {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
           >
             <Button size="lg" className="group" asChild>
-              <a href="/projects">
+              <a href="/projects" className="flex items-center">
                 View My Work
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </a>
