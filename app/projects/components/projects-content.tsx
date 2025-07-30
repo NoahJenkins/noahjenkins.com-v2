@@ -87,7 +87,7 @@ const projects: Project[] = [
     title: "Homelab Infrastructure",
     description: "Complete homelab setup with containerized services, monitoring, backup solutions, and infrastructure as code using modern DevOps practices.",
     category: "Cloud/Infrastructure",
-    technologies: ["Docker", "Kubernetes", "Terraform", "Ansible", "Prometheus", "Grafana"],
+    technologies: ["Docker", "Terraform", "Proxmox", "AWS", "Linux"],
     githubUrl: "https://github.com/NoahJenkins/Home-Lab-Projects",
     featured: true,
     status: "Active"
