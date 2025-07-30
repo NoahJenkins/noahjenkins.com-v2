@@ -54,9 +54,11 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
           >
-            <Button size="lg" className="group">
-              View My Work
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <Button size="lg" className="group" asChild>
+              <a href="/projects">
+                View My Work
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </a>
             </Button>
             <Button variant="secondary" size="lg" asChild>
               <a
