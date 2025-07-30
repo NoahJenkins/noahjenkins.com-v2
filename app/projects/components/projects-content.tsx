@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Code, Server, ExternalLink, Github, Globe, Smartphone, Cloud } from "lucide-react"
+import { Code, Server, ExternalLink, Github, Globe, Smartphone, Cloud, Mic } from "lucide-react"
 import { ScrollReveal } from "../../../components/animations/scroll-reveal"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
@@ -10,12 +10,21 @@ interface Project {
   id: string
   title: string
   description: string
-  category: "Web/Mobile Development" | "Cloud/Infrastructure"
+  category: "Web/Mobile Development" | "Cloud/Infrastructure" | "Acting/Voice Work"
   technologies: string[]
   liveUrl?: string
   githubUrl?: string
   featured: boolean
   status: "Active" | "In Development" | "Completed"
+}
+
+interface ActingCredit {
+  id: string
+  roles: string[]
+  project: string
+  studio: string
+  type: "Podcast" | "Film/TV" | "Commercial" | "Animation" | "Trailer" | "Video Game"
+  url?: string
 }
 
 const projects: Project[] = [
@@ -93,6 +102,134 @@ const projects: Project[] = [
     status: "Active"
   }
 ]
+
+const actingCredits: ActingCredit[] = [
+  {
+    id: "cross-cutting-concerns",
+    roles: ["Narrator"],
+    project: "Podcast 122 - Everybody's Free to Write Unit Tests",
+    studio: "Cross Cutting Concerns",
+    type: "Podcast",
+    url: "https://open.spotify.com/episode/13E7xbTnoXgWpKtZtXdNso?si=mc8S2QSDRfOS3dmOc4rVoA"
+  },
+  {
+    id: "hot-hot-hot-trailer",
+    roles: ["Narrator"],
+    project: "Hot Hot Hot (Trailer)",
+    studio: "Space Indie Studios",
+    type: "Trailer",
+    url: "https://youtu.be/dU_6qfiDft4?t=1076"
+  },
+  {
+    id: "the-chosen",
+    roles: ["Roman Soldier", "Roman Citizen", "Jewish Citizen"],
+    project: "The Chosen",
+    studio: "Angel Studios",
+    type: "Film/TV"
+  },
+  {
+    id: "ballot-box",
+    roles: ["Burger Spokesman"],
+    project: "The Ballot Box",
+    studio: "Exploration Films",
+    type: "Film/TV",
+    url: "https://www.youtube.com/watch?v=X81YvsItrgY"
+  },
+  {
+    id: "panda-dynasty",
+    roles: ["Adventurer", "The Pilot"],
+    project: "Panda Dynasty",
+    studio: "Space Indie Studios",
+    type: "Video Game"
+  },
+  {
+    id: "sol705",
+    roles: ["Gabriel"],
+    project: "SOL705",
+    studio: "Space Indie Studios",
+    type: "Video Game",
+    url: "https://store.steampowered.com/app/1316770/Sol_705/"
+  }
+]
+
+const ActingCreditCard = ({ credit, index }: { credit: ActingCredit; index: number }) => {
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "Podcast":
+        return "text-purple-400"
+      case "Film/TV":
+        return "text-red-400"
+      case "Commercial":
+        return "text-green-400"
+      case "Animation":
+        return "text-blue-400"
+      case "Trailer":
+        return "text-yellow-400"
+      case "Video Game":
+        return "text-cyan-400"
+      default:
+        return "text-gray-400"
+    }
+  }
+
+  return (
+    <ScrollReveal delay={index * 0.1}>
+      <Card className="h-full">
+        <CardHeader>
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-[#fecb3e] to-[#ffb43f] flex items-center justify-center">
+              <Mic className="h-6 w-6 text-black" />
+            </div>
+            <div className="flex items-center space-x-1">
+              <div className={`text-xs font-medium ${getTypeColor(credit.type)}`}>
+                {credit.type}
+              </div>
+            </div>
+          </div>
+          <CardTitle className="text-lg">{credit.project}</CardTitle>
+          <CardDescription className="text-sm text-gray-400">
+            {credit.studio}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div>
+              <h4 className="text-sm font-semibold text-white mb-2">Role{credit.roles.length > 1 ? 's' : ''}</h4>
+              <div className="flex flex-wrap gap-2">
+                {credit.roles.map((role) => (
+                  <span
+                    key={role}
+                    className="px-2 py-1 bg-gray-800 text-xs text-gray-300 rounded-md"
+                  >
+                    {role}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Link if available */}
+            {credit.url && (
+              <div className="pt-2">
+                <Button size="sm" asChild>
+                  <a
+                    href={credit.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                  >
+                    <ExternalLink className="mr-2 h-3 w-3" />
+                    {credit.type === "Podcast" ? "Listen" : 
+                     credit.type === "Video Game" ? "Play" : "Watch"}
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </ScrollReveal>
+  )
+}
 
 const ProjectCard = ({ project, index }: { project: Project; index: number }) => {
   const getCategoryIcon = (category: string) => {
@@ -232,6 +369,10 @@ export function ProjectsContent() {
                 <Server className="h-5 w-5 text-[#fecb3e]" />
                 <span>Cloud & Infrastructure</span>
               </div>
+              <div className="flex items-center space-x-2 text-gray-400">
+                <Mic className="h-5 w-5 text-[#fecb3e]" />
+                <span>Acting & Voice Work</span>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -282,6 +423,31 @@ export function ProjectsContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cloudInfraProjects.map((project, index) => (
               <ProjectCard key={project.id} project={project} index={index} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Acting/Voice Work Section */}
+      <section id="acting" className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <ScrollReveal>
+            <div className="flex items-center mb-12">
+              <Mic className="h-8 w-8 text-[#fecb3e] mr-4" />
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white">
+                  Acting & Voice Work
+                </h2>
+                <p className="text-gray-400 mt-2">
+                  Professional acting and voice-over credits across film, television, animation, and digital media
+                </p>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {actingCredits.map((credit, index) => (
+              <ActingCreditCard key={credit.id} credit={credit} index={index} />
             ))}
           </div>
         </div>

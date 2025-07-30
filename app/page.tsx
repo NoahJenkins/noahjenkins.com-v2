@@ -170,7 +170,7 @@ export default function HomePage() {
                 icon: Mic,
                 title: "Voice Acting",
                 description: "Professional voice-over work for commercials, audiobooks, and more.",
-                href: "/voices"
+                href: "/projects#acting"
               }
             ].map((item, index) => (
               <ScrollReveal key={item.title} delay={index * 0.2}>
