@@ -16,6 +16,7 @@ export function Terminal() {
   const [size, setSize] = useState({ width: 800, height: 400 })
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [resizeOffset, setResizeOffset] = useState({ x: 0, y: 0 })
+  const [isVisible, setIsVisible] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
   const processor = useRef(new CommandProcessor())
@@ -154,6 +155,15 @@ export function Terminal() {
     setIsResizing(true)
   }
 
+  const handleClose = (e: MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    setIsVisible(false)
+  }
+
+  if (!isVisible) {
+    return null
+  }
+
   return (
     <div 
       className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden"
@@ -172,7 +182,11 @@ export function Terminal() {
       >
         <span>noah@jenkins-terminal:~</span>
         <div className="flex space-x-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <div 
+            className="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600 transition-colors" 
+            onClick={handleClose}
+            title="Close terminal"
+          ></div>
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
         </div>
