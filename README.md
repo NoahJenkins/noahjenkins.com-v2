@@ -274,3 +274,12 @@ This project uses [GitHub Actions](https://github.com/features/actions) to autom
   - Runs all Jest tests
 
 You can view the workflow file for details or customize it as needed.
+
+## Automatic Deployment
+
+This project is automatically deployed to [Vercel](https://vercel.com/) on every commit pushed to the `main` branch. Vercel integration ensures that the latest changes are live without manual intervention.
+
+- Each push to `main` triggers a new deployment.
+- No secrets or credentials are stored in the repository; Vercel manages environment variables securely.
+
+Refer to your Vercel dashboard for deployment status and configuration.
