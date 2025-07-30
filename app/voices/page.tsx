@@ -184,7 +184,7 @@ export default function VoicesPage() {
                 <div className="text-gray-300">Years Experience</div>
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold text-[#fecb3e] mb-2">100+</div>
+                <div className="text-3xl font-bold text-[#fecb3e] mb-2">1000+</div>
                 <div className="text-gray-300">Hours Behind the Mic</div>
               </div>
               <div className="p-6">
