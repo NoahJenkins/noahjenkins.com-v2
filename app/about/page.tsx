@@ -309,8 +309,10 @@ export default function AboutPage() {
                   Get In Touch
                 </Button>
               </a>
-              <Button variant="secondary" size="lg">
-                View My Work
+              <Button variant="secondary" size="lg" asChild>
+                <a href="/projects">
+                  View My Work
+                </a>
               </Button>
             </div>
           </div>
