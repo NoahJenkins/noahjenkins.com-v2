@@ -65,7 +65,7 @@ export function TerminalOutput({ lines, onComplete }: TerminalOutputProps) {
   return (
     <div ref={containerRef} className="font-mono text-sm">
       {displayedLines.map((line, index) => (
-        <div key={index} className="min-h-[1.2em]">
+        <div key={index} className="min-h-[1.2em] whitespace-pre">
           {line}
         </div>
       ))}
