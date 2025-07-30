@@ -27,9 +27,13 @@ export async function GET() {
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
   <rss version="2.0">
     <channel>
-        <title>My Portfolio</title>
+        <title>Noah Jenkins Blog</title>
         <link>${baseUrl}</link>
-        <description>This is my portfolio RSS feed</description>
+        <description>Thoughts on technology, development, and life from Noah Jenkins - Cloud Engineer, Web Developer, and Voice Actor</description>
+        <language>en-us</language>
+        <managingEditor>noah@noahjenkins.com (Noah Jenkins)</managingEditor>
+        <webMaster>noah@noahjenkins.com (Noah Jenkins)</webMaster>
+        <copyright>Copyright ${new Date().getFullYear()} Noah Jenkins</copyright>
         ${itemsXml}
     </channel>
   </rss>`
