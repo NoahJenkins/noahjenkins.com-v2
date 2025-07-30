@@ -6,6 +6,7 @@ import { Navbar } from './components/nav'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import Footer from './components/footer'
+import { GlobalTerminal } from '../components/global-terminal'
 import { baseUrl } from './sitemap'
 
 export const metadata: Metadata = {
@@ -89,6 +90,7 @@ export default function RootLayout({
           <Footer />
           <Analytics />
           <SpeedInsights />
+          <GlobalTerminal />
         </div>
       </body>
     </html>
