@@ -8,11 +8,11 @@ import { useState } from 'react'
 const navItems = {
   '/': { name: 'Home' },
   '/about': { name: 'About' },
-  '/projects': { name: 'Projects' },
   '/blog': { name: 'Blog' },
-  '/voices': { name: 'Voices' },
+  '/projects': { name: 'Projects' },
   '/terminal': { name: 'Terminal' },
   '/tools/css-generator': { name: 'CSS Generator' },
+  '/voices': { name: 'Voices' },
 }
 
 export function Navbar() {

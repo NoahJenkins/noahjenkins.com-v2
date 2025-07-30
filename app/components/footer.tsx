@@ -26,22 +26,16 @@ export default function Footer() {
             <h3 className="text-white font-semibold">Quick Links</h3>
             <div className="space-y-2">
               <a 
+                href="/" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Home
+              </a>
+              <a 
                 href="/about" 
                 className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
               >
                 About
-              </a>
-              <a 
-                href="/terminal"
-                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
-              >
-                Resume
-              </a>
-              <a 
-                href="/voices" 
-                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
-              >
-                Voice Acting
               </a>
               <a 
                 href="/blog" 
@@ -50,10 +44,28 @@ export default function Footer() {
                 Blog
               </a>
               <a 
+                href="/projects" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Projects
+              </a>
+              <a 
+                href="/terminal"
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Terminal
+              </a>
+              <a 
                 href="/tools/css-generator" 
                 className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
               >
                 CSS Generator
+              </a>
+              <a 
+                href="/voices" 
+                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
+              >
+                Voices
               </a>
             </div>
           </div>
