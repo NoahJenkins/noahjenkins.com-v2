@@ -21,6 +21,7 @@
 .vscode
 .roomodes
 .claude
+.mcp.json
 
 # debug
 npm-debug.log*
