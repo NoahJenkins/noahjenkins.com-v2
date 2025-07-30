@@ -262,3 +262,15 @@ pnpm test:all:clean
 ## License
 
 MIT
+
+## Continuous Integration
+
+This project uses [GitHub Actions](https://github.com/features/actions) to automatically run Jest tests on every commit pushed to the `main` branch. The workflow is defined in [.github/workflows/jest.yml](.github/workflows/jest.yml:1).
+
+- On each push to `main`, the workflow:
+  - Checks out the code
+  - Sets up Node.js and pnpm
+  - Installs dependencies
+  - Runs all Jest tests
+
+You can view the workflow file for details or customize it as needed.
