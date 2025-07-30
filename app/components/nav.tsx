@@ -6,24 +6,12 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 const navItems = {
-  '/': {
-    name: 'Home',
-  },
-  '/about': {
-    name: 'About',
-  },
-  '/terminal': {
-    name: 'Terminal',
-  },
-  '/voices': {
-    name: 'Voices',
-  },
-  '/tools/css-generator': {
-    name: 'CSS Generator',
-  },
-  '/blog': {
-    name: 'Blog',
-  },
+  '/': { name: 'Home' },
+  '/about': { name: 'About' },
+  '/blog': { name: 'Blog' },
+  '/voices': { name: 'Voices' },
+  '/terminal': { name: 'Terminal' },
+  '/tools/css-generator': { name: 'CSS Generator' },
 }
 
 export function Navbar() {
