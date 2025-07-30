@@ -50,13 +50,12 @@ export function Navbar() {
                   </span>
                   {isActive && (
                     <motion.div
-                      layoutId="activeTab"
                       className="absolute inset-0 bg-gradient-to-r from-[#fecb3e] to-[#ffb43f] rounded-lg"
-                      initial={false}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={{
-                        type: "spring",
-                        stiffness: 500,
-                        damping: 30
+                        duration: 0.2,
+                        ease: "easeOut"
                       }}
                     />
                   )}
