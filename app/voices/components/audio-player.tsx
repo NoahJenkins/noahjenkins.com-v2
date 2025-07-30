@@ -204,7 +204,7 @@ export function AudioPlayer({
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-end md:items-center space-y-2 md:space-y-0 md:space-x-4">
           {/* Speed Control */}
           <div className="flex items-center space-x-2">
             <span className="text-xs text-gray-400">Speed:</span>
