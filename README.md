@@ -143,6 +143,122 @@ Deploy easily to [Vercel](https://vercel.com/) or any platform supporting Next.j
 
 ---
 
+## Testing
+
+This project includes comprehensive test coverage using both Jest and Playwright to ensure code quality and UI functionality.
+
+### Jest Tests (Unit & Integration)
+
+**What they test:**
+- Utility functions (date formatting, blog utilities)
+- GitHub API integration
+- Command processor logic
+- CSS generation utilities
+
+**Location:** [`test/`](test/) directory with structure mirroring [`app/`](app/)
+
+**Run Jest tests:**
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+```
+
+**Example test files:**
+- [`test/app/blog/format-date.test.ts`](test/app/blog/format-date.test.ts) - Date formatting functions
+- [`test/app/terminal/command-processor.test.ts`](test/app/terminal/command-processor.test.ts) - Terminal command logic
+- [`test/lib/github-api.test.ts`](test/lib/github-api.test.ts) - GitHub API integration
+
+### Playwright Tests (UI/E2E)
+
+**What they test:**
+- **Terminal Interface** (Desktop only): Complete interactive terminal functionality including command execution, keyboard navigation, drag/drop, close button, command history
+- **Navigation**: Cross-page navigation, responsive design, footer links
+- **Cross-browser compatibility**: Chrome, Firefox, Safari (desktop + mobile)
+
+**Location:** [`test/ui/`](test/ui/) directory
+
+**Run Playwright tests:**
+```bash
+# Run all UI tests across all browsers
+pnpm test:ui
+
+# Run tests with browser visible (helpful for debugging)
+pnpm test:ui:headed
+
+# Debug mode with step-through
+pnpm test:ui:debug
+
+# Run tests for specific browser
+pnpm test:ui --project=chromium
+pnpm test:ui --project="Mobile Chrome"
+```
+
+**Test Coverage:**
+- **Desktop Browsers** (Chrome, Firefox, Safari): 19 tests each
+  - 16 Terminal Interface tests
+  - 3 Navigation tests
+- **Mobile Browsers** (Mobile Chrome, Mobile Safari): 3 tests each
+  - 3 Navigation tests only (Terminal is desktop-only)
+
+**Key Test Files:**
+- [`test/ui/terminal.spec.ts`](test/ui/terminal.spec.ts) - Comprehensive terminal functionality testing
+- [`test/ui/navigation.spec.ts`](test/ui/navigation.spec.ts) - Cross-page navigation and responsive design
+
+**Browser Configuration:**
+Terminal tests are automatically excluded from mobile browsers since the terminal interface is designed for desktop use only.
+
+### Test Commands Summary
+
+All custom test commands are defined in [`package.json`](package.json:3-15). Configuration files: [`jest.config.js`](jest.config.js:1), [`playwright.config.ts`](playwright.config.ts:1).
+
+```bash
+# Run all tests (Jest then Playwright)
+pnpm test:all
+
+# Run all tests in CI (allows empty test suites)
+pnpm test:all:ci
+
+# Run all tests after stopping any running dev server
+pnpm test:all:clean
+
+# Run Jest unit/integration tests
+pnpm test
+
+# Run Jest tests in watch mode
+pnpm test:watch
+
+# Run Playwright UI/E2E tests
+pnpm test:ui
+
+# Run Playwright tests with browser visible
+pnpm test:ui:headed
+
+# Run Playwright tests in debug mode
+pnpm test:ui:debug
+```
+
+**Configuration notes:**
+- Jest configuration: [`jest.config.js`](jest.config.js:1)
+- Playwright configuration: [`playwright.config.ts`](playwright.config.ts:1)
+- Test files are located in [`test/`](test/) and mirror the app structure.
+
+**Example usage:**
+```bash
+# Run all tests (recommended for local development)
+pnpm test:all
+
+# Run all tests in CI/CD pipeline
+pnpm test:all:ci
+
+# Clean up and run all tests (useful if dev server is running)
+pnpm test:all:clean
+```
+
+---
+
 ## License
 
 MIT

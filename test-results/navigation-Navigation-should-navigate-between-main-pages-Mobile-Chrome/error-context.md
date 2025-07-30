@@ -1,0 +1,233 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - link "NJ Noah Jenkins":
+    - /url: /
+  - button "Toggle menu":
+    - img
+- main:
+  - img
+  - heading "About Me" [level=1]
+  - paragraph: Dynamically rendered from my GitHub profile • Always up-to-date
+  - link "View on GitHub":
+    - /url: https://github.com/NoahJenkins
+    - button "View on GitHub":
+      - img
+      - text: View on GitHub
+  - button "Download Resume":
+    - link "Download Resume":
+      - /url: https://1drv.ms/w/c/a2b0a06449186268/EWhiGElkoLAggKJbKQMAAAABLokJe7naLe1OEKYi-Xd88g?e=awvhSH
+      - img
+      - text: Download Resume
+  - heading "GitHub Activity" [level=2]
+  - img
+  - heading "19" [level=3]
+  - paragraph: Repositories
+  - img
+  - heading "3" [level=3]
+  - paragraph: Total Stars
+  - img
+  - heading "0" [level=3]
+  - paragraph: Total Forks
+  - img
+  - heading "4" [level=3]
+  - paragraph: Followers
+  - heading "Top Languages" [level=3]:
+    - img
+    - text: Top Languages
+  - text: TypeScript (5) JavaScript (3) HCL (3) C# (2) CSS (2)
+  - heading "Profile README" [level=2]
+  - img
+  - text: Auto-updated
+  - img
+  - text: GitHub
+  - list:
+    - listitem: 🔭 I’m currently working as a Cloud Engineer specializing in Azure at Middleby.
+  - list:
+    - listitem: 🌱 I’m also diving deeper into the react ecosystem; Focusing on NextJS and React Native, with the plan to launch a new project later this year!
+  - list:
+    - listitem: 💬 I love to talk about building awesome software and businesses, especially automating anything and everything!
+  - list:
+    - listitem:
+      - text: 📫 Feel free to reach out to me on
+      - link "LinkedIn":
+        - /url: https://www.linkedin.com/in/noah-jenkins/
+      - text: ", or send me an email at"
+      - link "noah@noahjenkins.com":
+        - /url: mailto:noah@noahjenkins.com
+      - text: .
+  - heading "Tools and Tech" [level=2]
+  - heading "My Current Professional Tech Stack" [level=3]
+  - img "Azure"
+  - img "React"
+  - img "TypeScript"
+  - img "Node.js"
+  - img "SQLite"
+  - heading "Languages and Tools I Have Used" [level=3]
+  - img "HTML5"
+  - img "CSS3"
+  - img "JavaScript"
+  - img "TypeScript"
+  - img "React"
+  - img "Expo"
+  - img "Next.js"
+  - img "Node.js"
+  - img "Python"
+  - img "PowerShell"
+  - img "PostgreSQL"
+  - img "SQLite"
+  - img "Azure"
+  - img "AWS"
+  - img "Vercel"
+  - img "Terraform"
+  - img "Bicep"
+  - heading "My Most Used Languages" [level=3]
+  - link "Top Langs":
+    - /url: https://github.com/anuraghazra/github-readme-stats
+    - img "Top Langs"
+  - heading "Certifications" [level=2]
+  - 'link "AZ-104: Microsoft Azure Administrator"':
+    - /url: https://www.credly.com/badges/63316b60-f62d-4c1b-8d7c-7c8bfa41a1ba/public_url
+    - 'img "AZ-104: Microsoft Azure Administrator"'
+  - 'link "SC-300: Microsoft Identity and Access Administrator"':
+    - /url: https://www.credly.com/badges/2e2d5b6c-7c1e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "SC-300: Microsoft Identity and Access Administrator"'
+  - 'link "AZ-900: Microsoft Azure Fundamentals"':
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "AZ-900: Microsoft Azure Fundamentals"'
+  - 'link "SC-900: Microsoft Security, Compliance, and Identity Fundamentals"':
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "SC-900: Microsoft Security, Compliance, and Identity Fundamentals"'
+  - 'link "DP-900: Microsoft Azure Data Fundamentals"':
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "DP-900: Microsoft Azure Data Fundamentals"'
+  - 'link "MS-900: Microsoft 365 Fundamentals"':
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "MS-900: Microsoft 365 Fundamentals"'
+  - 'link "PL-900: Microsoft Power Platform Fundamentals"':
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - 'img "PL-900: Microsoft Power Platform Fundamentals"'
+  - link "CompTIA Security+":
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - img "CompTIA Security+"
+  - link "ISC2 Certified in Cybersecurity (CC)":
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - img "ISC2 Certified in Cybersecurity (CC)"
+  - link "AWS Certified Cloud Practitioner (New Badge)":
+    - /url: https://www.credly.com/badges/f883de57-e9a0-4e16-83bc-255bdd58005d/public_url
+    - img "AWS Certified Cloud Practitioner (New Badge)"
+  - link "Terraform Associate":
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - img "Terraform Associate"
+  - link "GitHub Foundations":
+    - /url: https://www.credly.com/badges/70c5b6c7-8b4e-4e5c-9c7e-7b4e6c1b7b7e/public_url
+    - img "GitHub Foundations"
+  - heading "Featured Projects" [level=2]
+  - paragraph: A showcase of my most popular and interesting repositories
+  - heading "learning-payload" [level=3]
+  - paragraph: repo I am using to build a payload project.
+  - link:
+    - /url: https://github.com/NoahJenkins/learning-payload
+    - img
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jul 24, 2025
+  - heading "coffee-expo-app" [level=3]
+  - paragraph: This is a project I built to help me learn about building with the react native framework and expo tool.
+  - link:
+    - /url: https://github.com/NoahJenkins/coffee-expo-app
+    - img
+  - text: TypeScript
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jul 23, 2025
+  - heading "MCP-Servers" [level=3]
+  - paragraph: these are the MCP Servers I am personally using in my projects.
+  - link:
+    - /url: https://github.com/NoahJenkins/MCP-Servers
+    - img
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jul 23, 2025
+  - heading "Coffee-Shop-Next-JS-Site" [level=3]
+  - paragraph: this is a demo site for a coffee shop built in next JS
+  - link:
+    - /url: https://github.com/NoahJenkins/Coffee-Shop-Next-JS-Site
+    - img
+  - text: TypeScript
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jul 16, 2025
+  - heading "Learning-Jest-Framework" [level=3]
+  - paragraph: No description available
+  - link:
+    - /url: https://github.com/NoahJenkins/Learning-Jest-Framework
+    - img
+  - text: TypeScript
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jul 6, 2025
+  - heading "FakeAuth" [level=3]
+  - paragraph: a .NET Core library to make developing offline for OAuth and OIDC much easier.
+  - link:
+    - /url: https://github.com/NoahJenkins/FakeAuth
+    - img
+  - text: C#
+  - img
+  - text: "0"
+  - img
+  - text: 0 Updated Jun 26, 2025
+  - heading "Want to Collaborate?" [level=2]
+  - paragraph: I'm always open to interesting projects and opportunities. Let's build something amazing together!
+  - link "Get In Touch":
+    - /url: mailto:noah@noahjenkins.com
+    - button "Get In Touch"
+  - button "View My Work":
+    - link "View My Work":
+      - /url: /projects
+- contentinfo:
+  - text: NJ Noah Jenkins
+  - paragraph: Cloud Engineer, Web Developer, and Voice Actor crafting digital experiences and bringing stories to life.
+  - heading "Quick Links" [level=3]
+  - link "Home":
+    - /url: /
+  - link "About":
+    - /url: /about
+  - link "Blog":
+    - /url: /blog
+  - link "Projects":
+    - /url: /projects
+  - link "Terminal":
+    - /url: /terminal
+  - link "CSS Generator":
+    - /url: /tools/css-generator
+  - link "Voices":
+    - /url: /voices
+  - heading "Connect" [level=3]
+  - link "RSS Feed":
+    - /url: /rss
+    - img
+    - text: RSS Feed
+  - link "LinkedIn (Noah Jenkins)":
+    - /url: https://www.linkedin.com/in/noah-jenkins/
+    - img
+    - text: LinkedIn
+  - link "Email Noah Jenkins":
+    - /url: mailto:noah@noahjenkins.com
+    - img
+    - text: noah@noahjenkins.com
+  - link "X (formerly Twitter) GeekyVoices":
+    - /url: https://x.com/GeekyVoices
+    - img
+    - text: X (Twitter)
+  - paragraph: © 2025 NoahJenkins.com
+  - paragraph: © 2025 GeekyVoices.com
+  - text: Built with Next.js & Tailwind CSS
+- alert
+```

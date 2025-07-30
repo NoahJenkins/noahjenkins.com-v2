@@ -8,7 +8,10 @@
     "test:watch": "jest --watch",
     "test:ui": "playwright test",
     "test:ui:headed": "playwright test --headed",
-    "test:ui:debug": "playwright test --debug"
+    "test:ui:debug": "playwright test --debug",
+    "test:all": "npm run test && npm run test:ui",
+    "test:all:ci": "npm run test -- --passWithNoTests && npm run test:ui",
+    "test:all:clean": "pkill -f 'next dev' || true && npm run test && npm run test:ui"
   },
   "dependencies": {
     "@tailwindcss/postcss": "4.0.0-alpha.13",
