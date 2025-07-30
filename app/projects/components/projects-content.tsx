@@ -66,7 +66,7 @@ const projects: Project[] = [
     title: "Noah Jenkins Portfolio v1",
     description: "First version of my personal portfolio website showcasing early web development skills and design approach.",
     category: "Web/Mobile Development",
-    technologies: ["HTML", "CSS", "JavaScript", "Bootstrap"],
+    technologies: ["HTML", "CSS", "JavaScript", "Bootstrap", "GitHub Actions", "Jest"],
     liveUrl: "https://noahjenkins.com",
     githubUrl: "https://github.com/NoahJenkins/About-Me-Site",
     featured: false,
@@ -238,7 +238,7 @@ export function ProjectsContent() {
       </section>
 
       {/* Web/Mobile Development Section */}
-      <section className="py-16 px-4">
+      <section id="web-mobile" className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <ScrollReveal>
             <div className="flex items-center mb-12">
@@ -263,7 +263,7 @@ export function ProjectsContent() {
       </section>
 
       {/* Cloud/Infrastructure Section */}
-      <section className="py-16 px-4 bg-gradient-to-r from-[#fecb3e]/5 to-[#ffb43f]/5">
+      <section id="cloud-infrastructure" className="py-16 px-4 bg-gradient-to-r from-[#fecb3e]/5 to-[#ffb43f]/5">
         <div className="max-w-6xl mx-auto">
           <ScrollReveal>
             <div className="flex items-center mb-12">

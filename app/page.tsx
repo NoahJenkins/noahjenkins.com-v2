@@ -158,13 +158,13 @@ export default function HomePage() {
                 icon: Code,
                 title: "Cloud Solutions",
                 description: "Scalable infrastructure and DevOps automation for modern applications.",
-                href: "/blog"
+                href: "/projects#cloud-infrastructure"
               },
               {
                 icon: FileText,
                 title: "Web Development",
                 description: "Full-stack applications with modern frameworks and best practices.",
-                href: "/tools/css-generator"
+                href: "/projects#web-mobile"
               },
               {
                 icon: Mic,
