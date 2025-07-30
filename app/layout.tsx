@@ -41,6 +41,11 @@ export const metadata: Metadata = {
     creator: '@GeekyVoices',
     images: ['/og-image.jpg'],
   },
+  icons: {
+    icon: '/assets/images/Icon.jpeg',
+    shortcut: '/assets/images/Icon.jpeg',
+    apple: '/assets/images/Icon.jpeg',
+  },
   robots: {
     index: true,
     follow: true,
