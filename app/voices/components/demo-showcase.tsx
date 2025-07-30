@@ -15,8 +15,8 @@ interface VoiceDemo {
 const voiceDemos: VoiceDemo[] = [
   {
     id: "commercial-1",
-    title: "Premium Brand Commercial",
-    description: "A sophisticated, warm read for a luxury lifestyle brand. This piece demonstrates versatility in tone, moving from intimate and personal to confident and aspirational, perfect for high-end product launches.",
+    title: "Commercial Voice Demo",
+    description: "This demo showcases voice work for all types of commercials. From conversational reads to authoritative announcements, demonstrating the range and versatility needed for various commercial applications.",
     audioUrl: "/assets/audio/Noah_Jenkins_Commercial.mp3",
     category: "Commercial"
   },

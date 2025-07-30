@@ -206,9 +206,16 @@ export default function AboutPage() {
                   View on GitHub
                 </Button>
               </a>
-              <Button variant="secondary">
-                <Download className="mr-2 h-4 w-4" />
-                Download Resume
+              <Button variant="secondary" asChild>
+                <a
+                  href="https://1drv.ms/w/c/a2b0a06449186268/EWhiGElkoLAggKJbKQMAAAABLokJe7naLe1OEKYi-Xd88g?e=awvhSH"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Resume
+                </a>
               </Button>
             </div>
           </motion.div>
