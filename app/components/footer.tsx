@@ -50,12 +50,6 @@ export default function Footer() {
                 Projects
               </a>
               <a 
-                href="/terminal"
-                className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
-              >
-                Terminal
-              </a>
-              <a 
                 href="/tools/css-generator" 
                 className="block text-gray-400 hover:text-[#fecb3e] transition-colors duration-300 text-sm"
               >

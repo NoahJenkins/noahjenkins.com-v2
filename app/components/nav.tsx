@@ -10,7 +10,6 @@ const navItems = {
   '/about': { name: 'About' },
   '/blog': { name: 'Blog' },
   '/projects': { name: 'Projects' },
-  '/terminal': { name: 'Terminal' },
   '/tools/css-generator': { name: 'CSS Generator' },
   '/voices': { name: 'Voices' },
 }
