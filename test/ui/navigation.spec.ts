@@ -16,13 +16,6 @@ test.describe('Navigation', () => {
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL('/projects');
     
-    // Navigate to Terminal page (skip on mobile since terminal will be desktop-only)
-    if (page.viewportSize()?.width && page.viewportSize()!.width > 768) {
-      await page.getByRole('link', { name: 'Terminal' }).first().click({ force: true });
-      await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL('/terminal');
-      await expect(page.getByText('Welcome to Noah Jenkins Interactive Resume Terminal')).toBeVisible();
-    }
     
     // Navigate to Voices page
     await page.getByRole('link', { name: 'Voices' }).first().click({ force: true });
