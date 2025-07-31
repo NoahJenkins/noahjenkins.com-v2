@@ -1,6 +1,6 @@
 # Noah Jenkins Portfolio & Blog
 
-A modern portfolio website and blog built with Next.js, Tailwind CSS, and TypeScript. Features include MDX/Markdown support, SEO optimization, RSS feed, dynamic OG images, syntax highlighting, analytics, and more.
+A modern, full-stack portfolio website and blog built with Next.js 15, Tailwind CSS v4, and TypeScript. Features dynamic GitHub integration, interactive terminal, voice acting showcase, CSS gradient generator, comprehensive testing, and automated CI/CD pipeline.
 
 ---
 
@@ -8,44 +8,103 @@ A modern portfolio website and blog built with Next.js, Tailwind CSS, and TypeSc
 
 ```
 /
-├── app/
-│   ├── layout.tsx                # Global layout, navigation, footer, analytics
-│   ├── global.css                # Global styles (Tailwind v4)
-│   ├── page.tsx                  # Home page
-│   ├── about/                    # About page
-│   │   └── page.tsx
-│   ├── blog/                     # Blog listing and utilities
-│   │   ├── page.tsx
-│   │   ├── utils.ts
-│   │   ├── format-date.ts
+├── app/                          # Next.js 15 App Router pages and layouts
+│   ├── layout.tsx                # Root layout with navigation, footer, analytics
+│   ├── global.css                # Global styles (Tailwind CSS v4)
+│   ├── page.tsx                  # Homepage with hero, featured work, animations
+│   ├── about/                    # Dynamic GitHub-integrated about page
+│   │   └── page.tsx              # GitHub stats, repos, README rendering
+│   ├── blog/                     # MDX-powered blog system
+│   │   ├── page.tsx              # Blog listing page
+│   │   ├── utils.ts              # Blog post parsing utilities
+│   │   ├── format-date.ts        # Date formatting functions
 │   │   ├── [slug]/               # Individual blog post pages
-│   │   │   └── page.tsx
+│   │   │   └── page.tsx          # MDX rendering with syntax highlighting
 │   │   ├── components/
-│   │   │   └── blog-hero.tsx
+│   │   │   └── blog-hero.tsx     # Blog page hero section
 │   │   └── posts/                # MDX blog posts
-│   ├── components/               # Shared UI components (nav, footer, cards, etc.)
-│   ├── voices/                   # Voice acting showcase
-│   │   ├── page.tsx
+│   │       ├── *.mdx             # Blog posts with frontmatter
+│   ├── components/               # Shared app-specific components
+│   │   ├── animations/           # Framer Motion animation components
+│   │   ├── layout/               # Layout-specific components
+│   │   ├── ui/                   # Reusable UI components
+│   │   ├── footer.tsx            # Site footer
+│   │   ├── nav.tsx               # Navigation bar
+│   │   ├── posts.tsx             # Blog post listing component
+│   │   └── mdx.tsx               # MDX rendering components
+│   ├── voices/                   # Voice acting portfolio
+│   │   ├── page.tsx              # Voice acting showcase with audio players
 │   │   └── components/
-│   ├── projects/                 # Projects portfolio
-│   │   ├── page.tsx
+│   │       ├── audio-player.tsx  # Custom audio player component
+│   │       ├── demo-showcase.tsx # Voice demo showcase
+│   │       └── waveform.tsx      # Audio waveform visualization
+│   ├── projects/                 # Portfolio projects showcase
+│   │   ├── page.tsx              # Projects overview page
 │   │   └── components/
+│   │       └── projects-content.tsx # Projects grid and content
 │   ├── terminal/                 # Interactive terminal/resume
-│   │   ├── page.tsx
+│   │   ├── page.tsx              # Terminal page layout
 │   │   └── components/
-│   ├── tools/                    # Utility tools (CSS generator, etc.)
-│   ├── og/                       # Open Graph image route
-│   ├── rss/                      # RSS feed route
-│   ├── sitemap.ts                # Sitemap generator
-│   ├── robots.ts                 # Robots.txt generator
-├── components/                   # Global components (terminal modal, animations, UI)
-├── lib/                          # Utility libraries (GitHub API, helpers)
-├── public/                       # Static assets (images, audio)
-├── package.json                  # Project dependencies and scripts
+│   │       ├── terminal.tsx      # Main terminal component
+│   │       ├── command-processor.tsx # Command processing logic
+│   │       └── terminal-output.tsx   # Terminal output rendering
+│   ├── tools/                    # Developer tools collection
+│   │   └── css-generator/        # CSS gradient generator tool
+│   │       ├── page.tsx          # Gradient generator page
+│   │       └── components/
+│   │           ├── gradient-generator.tsx # Main generator component
+│   │           ├── gradient-preview.tsx   # Live preview panel
+│   │           └── code-output.tsx        # Code export functionality
+│   ├── contexts/                 # React context providers
+│   ├── og/                       # Dynamic Open Graph image generation
+│   │   └── route.tsx             # OG image API route
+│   ├── rss/                      # RSS feed generation
+│   │   └── route.ts              # RSS XML feed endpoint
+│   ├── sitemap.ts                # Dynamic sitemap generation
+│   ├── robots.ts                 # Robots.txt generation
+│   └── not-found.tsx             # Custom 404 page
+├── components/                   # Global reusable components
+│   ├── animations/               # Animation components (scroll reveal, typewriter)
+│   │   ├── gradient-animation.tsx
+│   │   ├── scroll-reveal.tsx
+│   │   └── typewriter.tsx
+│   ├── ui/                       # Core UI component library
+│   │   ├── button.tsx            # Button component with variants
+│   │   ├── card.tsx              # Card component system
+│   │   ├── github-stats.tsx      # GitHub statistics display
+│   │   └── repo-card.tsx         # Repository card component
+│   ├── global-terminal.tsx       # Global terminal modal
+│   └── terminal-modal.tsx        # Terminal modal component
+├── lib/                          # Utility libraries and API clients
+│   ├── github-api.ts             # GitHub API integration with fallbacks
+│   └── utils.ts                  # General utility functions
+├── test/                         # Comprehensive test suite
+│   ├── app/                      # App-specific unit tests
+│   │   ├── blog/                 # Blog functionality tests
+│   │   ├── terminal/             # Terminal command processor tests
+│   │   └── tools/                # Tools functionality tests
+│   ├── lib/                      # Library function tests
+│   ├── ui/                       # Playwright E2E tests
+│   │   ├── navigation.spec.ts    # Cross-page navigation tests
+│   │   └── terminal.spec.ts      # Terminal UI interaction tests
+│   └── README.md                 # Test documentation
+├── public/                       # Static assets
+│   └── assets/
+│       ├── images/               # Images and icons
+│       └── audio/                # Voice acting demo files
+├── .github/                      # GitHub Actions CI/CD
+│   ├── workflows/
+│   │   ├── ci.yml                # Main CI pipeline (Jest + Playwright)
+│   │   └── jest.yml              # Jest-only workflow
+│   └── dependabot.yml            # Automated dependency updates
+├── scripts/                      # Utility scripts
+├── package.json                  # Dependencies and scripts
 ├── tsconfig.json                 # TypeScript configuration
 ├── postcss.config.js             # PostCSS configuration
-├── .gitignore
-├── README.md
+├── jest.config.js                # Jest testing configuration
+├── playwright.config.ts          # Playwright E2E testing configuration
+├── jest.setup.js                 # Jest test setup and mocks
+└── README.md                     # This file
 ```
 
 ---
@@ -89,47 +148,101 @@ Deploy easily to [Vercel](https://vercel.com/) or any platform supporting Next.j
 
 ## Pages & Components Overview
 
-### Home (`/`)
+### Homepage (`/`)
 
 - **File:** [`app/page.tsx`](app/page.tsx:1)
-- **Components:** Hero section, social links, featured work, about preview.
-- **UI:** Uses custom Button, Card, Typewriter, ScrollReveal, GradientAnimation.
+- **Purpose:** Landing page with hero section, social links, featured work preview, and call-to-action
+- **Components:** 
+  - Hero section with animated typewriter effect and gradient background
+  - Social media links (GitHub, LinkedIn, Twitter, Email)
+  - Featured work cards (Cloud Solutions, Web Development, Voice Acting)
+  - Call-to-action section with links to About and Projects
+- **UI Elements:** Button, Card, Typewriter, ScrollReveal, GradientAnimation, Framer Motion animations
+- **Features:** Responsive design, scroll indicators, hover effects, gradient text
 
-### About (`/about`)
+### About Page (`/about`)
 
 - **File:** [`app/about/page.tsx`](app/about/page.tsx:1)
-- **Components:** GitHub stats, featured repositories, profile README (dynamically rendered), call-to-action.
-- **UI:** GitHubStatsComponent, RepoCard, ScrollReveal, Button.
+- **Purpose:** Dynamic GitHub-integrated profile page with live data
+- **Components:**
+  - GitHub statistics dashboard (repos, stars, followers, commits)
+  - Featured repositories with language tags and stats
+  - Dynamic GitHub README rendering with custom markdown parser
+  - Professional links and call-to-action
+- **UI Elements:** GitHubStatsComponent, RepoCard, ScrollReveal, Button, loading spinner
+- **Features:** Live GitHub API integration, markdown-to-HTML conversion, error fallbacks, responsive grid layouts
+- **API Integration:** Real-time data from GitHub API with caching and error handling
 
-### Blog (`/blog`)
+### Blog System (`/blog`)
 
 - **File:** [`app/blog/page.tsx`](app/blog/page.tsx:1)
-- **Components:** BlogHero, BlogPosts (lists MDX posts), utilities for fetching posts.
-- **UI:** BlogHero, BlogPosts, custom cards.
+- **Purpose:** MDX-powered blog with dynamic post listing
+- **Components:**
+  - BlogHero with introductory text
+  - BlogPosts component for listing all posts
+  - Individual post pages with MDX rendering ([slug]/page.tsx)
+- **UI Elements:** BlogHero, BlogPosts, custom post cards, date formatting
+- **Features:** MDX support, frontmatter parsing, syntax highlighting, SEO optimization, RSS feed integration
+- **Content:** Located in `app/blog/posts/` directory as .mdx files
 
-### Voices (`/voices`)
+### Voice Acting Showcase (`/voices`)
 
 - **File:** [`app/voices/page.tsx`](app/voices/page.tsx:1)
-- **Components:** DemoShowcase (audio samples), services cards, studio setup, experience grid.
-- **UI:** Card, ScrollReveal, Headphones, Mic, Play icons.
+- **Purpose:** Professional voice acting portfolio with audio samples
+- **Components:**
+  - DemoShowcase with interactive audio players and waveform visualization
+  - Services grid (Commercial, Audiobook, E-Learning, Corporate)
+  - Professional studio equipment breakdown
+  - Experience statistics and credentials
+- **UI Elements:** AudioPlayer, Waveform, DemoShowcase, Card, ScrollReveal
+- **Features:** Custom audio players, waveform visualization, service descriptions, equipment specs
+- **Audio Files:** Professional voice samples stored in `public/assets/audio/`
 
-### Projects (`/projects`)
+### Projects Portfolio (`/projects`)
 
 - **File:** [`app/projects/page.tsx`](app/projects/page.tsx:1)
-- **Components:** ProjectsContent (showcases portfolio projects).
-- **UI:** Custom cards, grid layout.
+- **Purpose:** Showcase of development projects and technical work
+- **Components:**
+  - ProjectsContent with categorized project sections
+  - Project cards with descriptions, technologies, and links
+  - Filtering by category (Cloud Infrastructure, Web & Mobile, Voice Acting)
+- **UI Elements:** ProjectsContent, custom cards, category filters, responsive grid
+- **Features:** Project categorization, technology tags, external links, responsive design
 
-### Terminal (`/terminal`)
+### Interactive Terminal (`/terminal`)
 
 - **File:** [`app/terminal/page.tsx`](app/terminal/page.tsx:1)
-- **Components:** Terminal (interactive resume/command processor).
-- **UI:** TerminalOutput, CommandProcessor.
+- **Purpose:** Interactive terminal-based resume and command processor
+- **Components:**
+  - Terminal interface with command input and output
+  - CommandProcessor for handling various commands
+  - TerminalOutput for displaying command results
+- **UI Elements:** Terminal, CommandProcessor, TerminalOutput
+- **Features:** Full command processing, command history, file system simulation, Easter eggs
+- **Commands:** help, about, experience, skills, education, contact, projects, ls, cat, clear, r2d2, and more
 
-### Global Layout
+### CSS Gradient Generator (`/tools/css-generator`)
+
+- **File:** [`app/tools/css-generator/page.tsx`](app/tools/css-generator/page.tsx:1)
+- **Purpose:** Interactive tool for creating CSS gradients
+- **Components:**
+  - GradientGenerator with live preview and controls
+  - GradientPreview for real-time visualization
+  - CodeOutput for exporting CSS, SCSS, and Tailwind formats
+- **UI Elements:** Interactive color pickers, gradient controls, code export panels
+- **Features:** Linear/radial/conic gradients, live preview, multiple export formats, save/load functionality
+
+### Global Layout System
 
 - **File:** [`app/layout.tsx`](app/layout.tsx:1)
-- **Components:** Navbar, Footer, GlobalTerminal, Analytics, SpeedInsights.
-- **Purpose:** Provides consistent navigation, theming, and analytics across all pages.
+- **Purpose:** Root layout providing consistent structure across all pages
+- **Components:**
+  - Navbar with responsive navigation and theme toggle
+  - Footer with social links and site information
+  - GlobalTerminal modal accessible from any page
+  - Analytics integration (Vercel Analytics & Speed Insights)
+- **Features:** SEO metadata, responsive navigation, global terminal access, performance monitoring
+- **Styling:** Tailwind CSS v4, Geist font family, dark theme optimized
 
 ---
 
@@ -259,27 +372,130 @@ pnpm test:all:clean
 
 ---
 
+## CI/CD Pipeline
+
+This project implements a comprehensive continuous integration and deployment pipeline using GitHub Actions with multiple workflows for different testing and deployment scenarios.
+
+### GitHub Actions Workflows
+
+#### Main CI Pipeline (`ci.yml`)
+
+**File:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml:1)
+
+**Triggers:** Push and Pull Requests to `main` branch
+
+**Jobs:**
+1. **Jest Tests** (Node.js 18)
+   - Installs dependencies with npm
+   - Runs unit and integration tests
+   - Uploads coverage reports to Codecov
+   - Tests utility functions, API integration, command processor, CSS generation
+
+2. **Playwright Tests** (Node.js 18)  
+   - Installs dependencies and Playwright browsers
+   - Builds Next.js application
+   - Starts production server
+   - Runs E2E tests across Chrome, Firefox, Safari (desktop + mobile)
+   - Uploads test reports and results as artifacts
+   - Tests terminal interface, navigation, responsive design
+
+3. **Lint & Type Check** (Node.js 18)
+   - Runs TypeScript type checking with `tsc --noEmit`
+   - Conditionally runs ESLint if configuration exists
+   - Continues on errors to not block deployment
+
+4. **Build Check** (Node.js 18)
+   - Verifies production build succeeds
+   - Validates `.next` directory creation
+   - Ensures deployment readiness
+
+**Features:**
+- Concurrency control (cancels in-progress workflows on new pushes)
+- Parallel job execution for faster feedback
+- Comprehensive artifact collection
+- Error handling and fallback strategies
+
+#### Jest-Only Workflow (`jest.yml`)
+
+**File:** [`.github/workflows/jest.yml`](.github/workflows/jest.yml:1)
+
+**Triggers:** Push to `main` branch
+
+**Purpose:** Lightweight testing pipeline focusing only on unit tests
+
+**Configuration:**
+- Uses Node.js 20 and pnpm for faster dependency installation
+- Dedicated to running Jest tests quickly
+- Ideal for rapid feedback during development
+
+### Dependency Management
+
+#### Dependabot Configuration
+
+**File:** [`.github/dependabot.yml`](.github/dependabot.yml:1)
+
+**Features:**
+- **Weekly Updates:** Scheduled for Monday 9:00 AM CT
+- **Grouped Updates:** Related packages updated together (React, Next.js, Testing, Tailwind, Types, Vercel)
+- **Smart Ignoring:** Major version updates ignored for stability-critical packages
+- **PR Management:** Max 10 dependency PRs, 5 GitHub Actions PRs
+- **Auto-Assignment:** PRs automatically assigned to @NoahJenkins
+- **Semantic Commits:** Properly prefixed commit messages (`deps:`, `ci:`)
+
+**Package Groups:**
+- React ecosystem (react*, @types/react*)
+- Next.js framework (@next/*, next*)
+- Testing tools (jest*, @testing-library/*, @playwright/*)
+- Tailwind CSS (tailwind*, @tailwindcss/*)
+- TypeScript types (@types/*)
+- Vercel integrations (@vercel/*)
+
+**Stability Controls:**
+- Next.js canary version pinned
+- Tailwind CSS alpha version controlled
+- TypeScript major versions manually reviewed
+
+### Deployment Pipeline
+
+#### Vercel Integration
+
+**Platform:** [Vercel](https://vercel.com/) with automatic deployments
+
+**Deployment Strategy:**
+- **Production Deployments:** Every push to `main` branch
+- **Preview Deployments:** Every pull request
+- **Zero-Config:** No manual setup required
+- **Environment Variables:** Managed securely through Vercel dashboard
+- **Performance Monitoring:** Built-in analytics and speed insights
+
+**Features:**
+- Automatic builds triggered by GitHub webhooks
+- Preview URLs for pull request testing
+- Production optimizations (SSG, ISR, Edge Functions)
+- Global CDN distribution
+- Automatic HTTPS and custom domain support
+
+### Pipeline Benefits
+
+1. **Quality Assurance:** Every change tested across multiple browsers and environments
+2. **Fast Feedback:** Parallel job execution provides quick results
+3. **Comprehensive Coverage:** Unit tests, E2E tests, type checking, and build validation
+4. **Automated Dependencies:** Weekly updates with intelligent grouping and conflict resolution
+5. **Zero-Downtime Deployment:** Seamless production updates with rollback capabilities
+6. **Performance Monitoring:** Built-in analytics and performance tracking
+
+### Monitoring & Alerts
+
+- **Test Results:** Available in GitHub Actions tab with detailed logs
+- **Coverage Reports:** Integrated with Codecov for coverage tracking
+- **Build Status:** Visible in pull requests and commit history
+- **Deployment Status:** Real-time updates in Vercel dashboard
+- **Performance Metrics:** Vercel Analytics for user experience monitoring
+
+This robust CI/CD pipeline ensures code quality, prevents regressions, and maintains a reliable deployment process while minimizing manual intervention.
+
+---
+
 ## License
 
 MIT
-
-## Continuous Integration
-
-This project uses [GitHub Actions](https://github.com/features/actions) to automatically run Jest tests on every commit pushed to the `main` branch. The workflow is defined in [.github/workflows/jest.yml](.github/workflows/jest.yml:1).
-
-- On each push to `main`, the workflow:
-  - Checks out the code
-  - Sets up Node.js and pnpm
-  - Installs dependencies
-  - Runs all Jest tests
-
-You can view the workflow file for details or customize it as needed.
-
-## Automatic Deployment
-
-This project is automatically deployed to [Vercel](https://vercel.com/) on every commit pushed to the `main` branch. Vercel integration ensures that the latest changes are live without manual intervention.
-
-- Each push to `main` triggers a new deployment.
-- No secrets or credentials are stored in the repository; Vercel manages environment variables securely.
-
-Refer to your Vercel dashboard for deployment status and configuration.
