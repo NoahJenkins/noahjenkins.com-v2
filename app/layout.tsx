@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/assets/images/Icon.jpeg',
         width: 1200,
         height: 630,
         alt: 'Noah Jenkins - Cloud Engineer & Web Developer',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     title: 'Noah Jenkins - Cloud Engineer & Web Developer',
     description: 'Cloud Engineer, Web Developer, and Voice Actor passionate about building scalable solutions.',
     creator: '@GeekyVoices',
-    images: ['/og-image.jpg'],
+    images: ['/assets/images/Icon.jpeg'],
   },
   icons: {
     icon: '/assets/images/Icon.jpeg',
