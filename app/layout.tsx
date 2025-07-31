@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     images: ['/assets/images/Icon.jpeg'],
   },
   icons: {
-    icon: '/assets/images/Icon.jpeg',
-    shortcut: '/assets/images/Icon.jpeg',
-    apple: '/assets/images/Icon.jpeg',
+    icon: '/assets/images/Icon.webp',
+    shortcut: '/assets/images/Icon.webp',
+    apple: '/assets/images/Icon.jpeg', // Keep JPEG for Apple (better compatibility)
   },
   robots: {
     index: true,
@@ -81,6 +81,11 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
+      <head>
+        <link rel="preconnect" href="https://api.github.com" />
+        <link rel="preconnect" href="https://vercel.live" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+      </head>
       <body className="antialiased min-h-screen w-full m-0 p-0 bg-black">
         <div className="min-h-screen flex flex-col">
           <Navbar />

@@ -2,6 +2,9 @@ import { BlogHero } from './components/blog-hero'
 import { BlogPosts } from 'app/components/posts'
 import { getBlogPosts } from './utils'
 
+// Revalidate every hour for new blog posts
+export const revalidate = 3600
+
 export const metadata = {
   title: 'Blog',
   description: 'Thoughts on technology, development, and life. Sharing insights from my journey as a cloud engineer, web developer, and voice actor.',

@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* Font display optimization */
+@font-face {
+  font-family: 'Geist Sans';
+  font-display: swap; /* Improve loading performance */
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-display: swap; /* Improve loading performance */
+}
+
 ::selection {
   background-color: #47a3f3;
   color: #fefefe;

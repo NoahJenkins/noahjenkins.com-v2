@@ -1,5 +1,8 @@
 "use client"
 
+// Static generation - this page doesn't change often
+export const dynamic = 'force-static'
+
 import { Terminal } from "./components/terminal"
 
 export default function ResumePage() {
