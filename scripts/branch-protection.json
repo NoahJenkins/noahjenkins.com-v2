@@ -3,7 +3,9 @@
     "strict": true,
     "contexts": [
       "jest-tests",
-      "playwright-tests"
+      "playwright-tests",
+      "lint-and-typecheck",
+      "build-check"
     ]
   },
   "enforce_admins": true,
