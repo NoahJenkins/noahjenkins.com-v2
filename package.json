@@ -4,7 +4,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "jest",
+    "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:ui": "playwright test",
     "test:ui:headed": "playwright test --headed",
