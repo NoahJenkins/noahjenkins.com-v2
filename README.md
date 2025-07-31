@@ -386,7 +386,7 @@ This project implements a comprehensive continuous integration and deployment pi
 
 **Jobs:**
 1. **Jest Tests** (Node.js 18)
-   - Installs dependencies with npm
+   - Installs dependencies with pnpm and proper caching
    - Runs unit and integration tests
    - Uploads coverage reports to Codecov
    - Tests utility functions, API integration, command processor, CSS generation
@@ -415,18 +415,6 @@ This project implements a comprehensive continuous integration and deployment pi
 - Comprehensive artifact collection
 - Error handling and fallback strategies
 
-#### Jest-Only Workflow (`jest.yml`)
-
-**File:** [`.github/workflows/jest.yml`](.github/workflows/jest.yml:1)
-
-**Triggers:** Push to `main` branch
-
-**Purpose:** Lightweight testing pipeline focusing only on unit tests
-
-**Configuration:**
-- Uses Node.js 20 and pnpm for faster dependency installation
-- Dedicated to running Jest tests quickly
-- Ideal for rapid feedback during development
 
 ### Dependency Management
 
