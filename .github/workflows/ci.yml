@@ -104,27 +104,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
         
-      - name: Build Next.js app
-        run: pnpm build
-        
-      - name: Start Next.js app
-        run: pnpm start &
-        
-      - name: Wait for app to be ready
-        run: |
-          echo "Waiting for app to be ready..."
-          for i in {1..30}; do
-            if curl -f http://localhost:3000 >/dev/null 2>&1; then
-              echo "App is ready!"
-              break
-            fi
-            echo "Attempt $i/30: App not ready yet, waiting..."
-            sleep 2
-          done
-        
       - name: Run Playwright tests
         run: pnpm test:ui
-        continue-on-error: true
         
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
