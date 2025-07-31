@@ -10,7 +10,8 @@ import { Button } from "../../../components/ui/button"
 interface AudioPlayerProps {
   title: string
   description: string
-  audioUrl: string
+  audioUrl: string // M4A file for streaming (better performance)
+  downloadUrl?: string // MP3 file for downloads (better compatibility)
   category: string
   duration?: string
 }
@@ -19,6 +20,7 @@ export function AudioPlayer({
   title, 
   description, 
   audioUrl, 
+  downloadUrl,
   category, 
   duration 
 }: AudioPlayerProps) {
@@ -113,8 +115,10 @@ export function AudioPlayer({
 
   const handleDownload = () => {
     const link = document.createElement('a')
-    link.href = audioUrl
-    link.download = `${title.replace(/\\s+/g, '_')}.mp3`
+    // Use downloadUrl (MP3) if provided, fallback to audioUrl
+    link.href = downloadUrl || audioUrl
+    const fileExtension = downloadUrl ? '.mp3' : '.m4a'
+    link.download = `${title.replace(/\s+/g, '_')}${fileExtension}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

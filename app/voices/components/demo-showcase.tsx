@@ -8,7 +8,8 @@ interface VoiceDemo {
   id: string
   title: string
   description: string
-  audioUrl: string
+  audioUrl: string // M4A file for streaming (better performance)
+  downloadUrl?: string // MP3 file for downloads (better compatibility)
   category: string
 }
 
@@ -17,14 +18,16 @@ const voiceDemos: VoiceDemo[] = [
     id: "commercial-1",
     title: "Commercial Voice Demo",
     description: "This demo showcases voice work for all types of commercials. From conversational reads to authoritative announcements, demonstrating the range and versatility needed for various commercial applications.",
-    audioUrl: "/assets/audio/Noah_Jenkins_Commercial.mp3",
+    audioUrl: "/assets/audio/Noah_Jenkins_Commercial_compressed.m4a", // Compressed for streaming
+    downloadUrl: "/assets/audio/Noah_Jenkins_Commercial.mp3", // Original MP3 for downloads
     category: "Commercial"
   },
   {
     id: "character-1", 
     title: "Character Voice Demo",
     description: "Dynamic character voice work showcasing range and versatility. This demo highlights the ability to create distinct, memorable characters with unique vocal qualities perfect for animation, gaming, and audiobook projects.",
-    audioUrl: "/assets/audio/NoahJenkins_CharacterDemo.mp3", 
+    audioUrl: "/assets/audio/NoahJenkins_CharacterDemo_compressed.m4a", // Compressed for streaming
+    downloadUrl: "/assets/audio/NoahJenkins_CharacterDemo.mp3", // Original MP3 for downloads
     category: "Character"
   }
 ]
@@ -52,6 +55,7 @@ export function DemoShowcase() {
                 title={demo.title}
                 description={demo.description}
                 audioUrl={demo.audioUrl}
+                downloadUrl={demo.downloadUrl}
                 category={demo.category}
               />
             </ScrollReveal>
