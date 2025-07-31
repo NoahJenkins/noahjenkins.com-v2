@@ -75,6 +75,8 @@ export class CommandProcessor {
       '  clear       - Clear terminal',
       '',
       'Navigate with UP/DOWN arrow keys for command history.',
+      '',
+      '💡 Hint: Try names and locations from Noah\'s favorite sci-fi and fantasy stories...',
     ]
   }
 
