@@ -24,13 +24,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Run Jest tests
-        run: npm run test
+        run: pnpm test
         
       - name: Upload Jest coverage reports
         uses: codecov/codecov-action@v4
@@ -53,25 +70,51 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: pnpm exec playwright install --with-deps
         
       - name: Build Next.js app
-        run: npm run build
+        run: pnpm build
         
       - name: Start Next.js app
-        run: npm start &
+        run: pnpm start &
         
       - name: Wait for app to be ready
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: |
+          echo "Waiting for app to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 >/dev/null 2>&1; then
+              echo "App is ready!"
+              break
+            fi
+            echo "Attempt $i/30: App not ready yet, waiting..."
+            sleep 2
+          done
         
       - name: Run Playwright tests
-        run: npm run test:ui
+        run: pnpm test:ui
         
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -80,6 +123,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+          if-no-files-found: ignore
           
       - name: Upload Playwright test results
         uses: actions/upload-artifact@v4
@@ -88,6 +132,7 @@ jobs:
           name: playwright-test-results
           path: test-results/
           retention-days: 30
+          if-no-files-found: ignore
 
   # Optional: Lint and type checking
   lint-and-typecheck:
@@ -102,18 +147,35 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Run TypeScript type checking
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
         
       - name: Run ESLint (if configured)
         run: |
           if [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ] || [ -f "eslint.config.js" ]; then
-            npx eslint . --ext .ts,.tsx,.js,.jsx
+            pnpm exec eslint . --ext .ts,.tsx,.js,.jsx
           else
             echo "No ESLint configuration found, skipping..."
           fi
@@ -132,13 +194,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Build application
-        run: npm run build
+        run: pnpm build
         
       - name: Check build output
         run: |
