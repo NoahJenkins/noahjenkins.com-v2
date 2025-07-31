@@ -415,3 +415,23 @@ const commands = {
 ---
 
 This plan provides a comprehensive roadmap for building a professional, modern, and engaging personal website that showcases Noah's diverse skills while maintaining excellent performance and user experience.
+## CI/CD Workflow Plan
+
+### Branching & Automation
+- Feature branches for development
+- Pull Request triggers GitHub Actions
+- Required status checks: Jest + Playwright
+- Merge to main only if all tests pass
+- Vercel deploys from main
+
+### Mermaid Diagram
+```mermaid
+flowchart TD
+    A[Feature Branch] --> B[Pull Request]
+    B --> C{GitHub Actions}
+    C -->|Jest Tests| D[Pass]
+    C -->|Playwright Tests| D
+    D --> E[Merge to Main]
+    E --> F[Vercel Deploy]
+    C -->|Fail| G[Block Merge]
+```
