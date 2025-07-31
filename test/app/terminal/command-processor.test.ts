@@ -55,8 +55,8 @@ describe('CommandProcessor', () => {
       const result = processor.processCommand('help')
       
       expect(result.output).toContain('Available commands:')
-      expect(result.output).toContain('  help        - Show this help message')
-      expect(result.output).toContain('  about       - Personal summary')
+      expect(result.output).toContain('  help           - Show this help message')
+      expect(result.output).toContain('  about          - Personal summary')
       expect(result.output).toContain('  clear       - Clear terminal')
     })
   })
@@ -106,8 +106,18 @@ describe('CommandProcessor', () => {
       const result = processor.processCommand('projects')
       
       expect(result.output).toContain('Notable Projects:')
-      expect(result.output).toContain('🚀 CloudDeploy - Kubernetes Deployment Platform')
-      expect(result.output).toContain('🎵 AudioStream - Real-time Audio Processing')
+      expect(result.output).toContain('🌐 Noah Jenkins Portfolio v2 (Active)')
+      expect(result.output).toContain('☕ Coffee Shop Mobile App (Completed)')
+    })
+  })
+
+  describe('certifications command', () => {
+    it('should return certifications and exams', () => {
+      const result = processor.processCommand('certifications')
+      
+      expect(result.output).toContain('Certifications & Exams:')
+      expect(result.output).toContain('🎓 Professional Certifications:')
+      expect(result.output).toContain('📚 Microsoft Fundamentals:')
     })
   })
 
@@ -144,7 +154,7 @@ describe('CommandProcessor', () => {
       const result = processor.processCommand('ls')
       
       expect(result.output).toContain('Available sections:')
-      expect(result.output).toContain('about.txt      experience.txt    skills.txt')
+      expect(result.output).toContain('about.txt         experience.txt    skills.txt')
       expect(result.output).toContain('Use "cat [filename]" to view contents')
     })
   })
@@ -154,6 +164,13 @@ describe('CommandProcessor', () => {
       const result = processor.processCommand('cat about.txt')
       
       expect(result.output).toContain('Noah Jenkins - Cloud Administrator, Full Stack Developer & Voice Actor')
+    })
+
+    it('should display certifications file contents', () => {
+      const result = processor.processCommand('cat certifications.txt')
+      
+      expect(result.output).toContain('Certifications & Exams:')
+      expect(result.output).toContain('🎓 Professional Certifications:')
     })
 
     it('should handle invalid file names', () => {
