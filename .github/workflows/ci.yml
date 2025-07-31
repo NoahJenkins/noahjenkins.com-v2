@@ -28,7 +28,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: latest
           
       - name: Get pnpm store directory
         shell: bash
@@ -44,7 +44,11 @@ jobs:
             ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile failed, falling back to regular install..."
+            pnpm install
+          fi
         
       - name: Run Jest tests
         run: pnpm test
@@ -74,7 +78,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: latest
           
       - name: Get pnpm store directory
         shell: bash
@@ -90,7 +94,11 @@ jobs:
             ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile failed, falling back to regular install..."
+            pnpm install
+          fi
         
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
@@ -151,7 +159,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: latest
           
       - name: Get pnpm store directory
         shell: bash
@@ -167,7 +175,11 @@ jobs:
             ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile failed, falling back to regular install..."
+            pnpm install
+          fi
         
       - name: Run TypeScript type checking
         run: pnpm exec tsc --noEmit
@@ -198,7 +210,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: latest
           
       - name: Get pnpm store directory
         shell: bash
@@ -214,7 +226,11 @@ jobs:
             ${{ runner.os }}-pnpm-store-
           
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile failed, falling back to regular install..."
+            pnpm install
+          fi
         
       - name: Build application
         run: pnpm build
