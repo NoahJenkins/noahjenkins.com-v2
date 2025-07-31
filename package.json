@@ -23,7 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^10.18.0",
-    "geist": "1.2.2",
+    "geist": "1.4.2",
     "lucide-react": "^0.263.1",
     "next": "canary",
     "next-mdx-remote-client": "^2.1.3",
