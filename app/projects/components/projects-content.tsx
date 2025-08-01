@@ -34,8 +34,8 @@ const projects: Project[] = [
     description: "Current portfolio website built with Next.js 13+ featuring dynamic GitHub integration, interactive terminal, voice demos, and a modern responsive design.",
     category: "Web/Mobile Development",
     technologies: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion", "Vercel", "Jest", "Playwright"],
-    liveUrl: "https://noahjenkins-com.vercel.app",
-    githubUrl: "https://github.com/NoahJenkins/noahjenkins.com",
+    liveUrl: "https://www.noahjenkins.com",
+    githubUrl: "https://github.com/NoahJenkins/noahjenkins.com-v2",
     featured: true,
     status: "Active"
   },
@@ -76,8 +76,8 @@ const projects: Project[] = [
     description: "First version of my personal portfolio website showcasing early web development skills and design approach.",
     category: "Web/Mobile Development",
     technologies: ["HTML", "CSS", "JavaScript", "Bootstrap", "GitHub Actions", "Jest"],
-    liveUrl: "https://noahjenkins.com",
-    githubUrl: "https://github.com/NoahJenkins/About-Me-Site",
+    liveUrl: "https://noahjenkins.github.io/noahjenkins.com-v1/",
+    githubUrl: "https://github.com/NoahJenkins/noahjenkins.com-v1",
     featured: false,
     status: "Completed"
   },
