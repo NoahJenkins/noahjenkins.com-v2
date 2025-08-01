@@ -1,7 +1,14 @@
+"use client"
 import { Rss, Linkedin, Twitter, Mail } from "lucide-react"
+import { useState, useEffect } from "react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const [isMac, setIsMac] = useState(false)
+
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0)
+  }, [])
   
   return (
     <footer className="border-t border-gray-800 bg-black text-white">
@@ -118,11 +125,16 @@ export default function Footer() {
               <p className="text-gray-400 text-sm">© {currentYear} GeekyVoices.com</p>
             </div>
             
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span>Built with</span>
-              <span className="text-[#fecb3e]">Next.js</span>
-              <span>&</span>
-              <span className="text-[#fecb3e]">Tailwind CSS</span>
+            <div className="flex flex-col items-center md:items-end space-y-1">
+              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                <span>Built with</span>
+                <span className="text-[#fecb3e]">Next.js</span>
+                <span>&</span>
+                <span className="text-[#fecb3e]">Tailwind CSS</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                Press <kbd className="px-1 py-0.5 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300">{isMac ? 'Cmd+`' : 'Ctrl+`'}</kbd> to open terminal
+              </div>
             </div>
           </div>
         </div>
