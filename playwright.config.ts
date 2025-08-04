@@ -40,7 +40,7 @@ export default defineConfig({
   webServer: {
     command: process.env.CI ? 'pnpm build && pnpm start' : 'pnpm dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 120 * 1000,
   },
 });
