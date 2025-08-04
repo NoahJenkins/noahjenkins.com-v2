@@ -19,6 +19,7 @@ export function Terminal() {
   const [isVisible, setIsVisible] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const terminalRef = useRef<HTMLDivElement>(null)
+  const terminalContainerRef = useRef<HTMLDivElement>(null)
   const processor = useRef(new CommandProcessor())
 
   useEffect(() => {
@@ -84,6 +85,33 @@ export function Terminal() {
     }
   }, [isDragging, isResizing, dragOffset, resizeOffset, position])
 
+  // Click outside to close functionality
+  useEffect(() => {
+    const handleClickOutside = (e: globalThis.MouseEvent) => {
+      // Don't close if we're dragging or resizing
+      if (isDragging || isResizing) {
+        return
+      }
+
+      // Don't close if the terminal itself was clicked
+      if (terminalContainerRef.current && terminalContainerRef.current.contains(e.target as Node)) {
+        return
+      }
+
+      // Close the terminal if clicked outside
+      setIsVisible(false)
+    }
+
+    // Only add the listener when the terminal is visible
+    if (isVisible) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isVisible, isDragging, isResizing])
+
   const handleCommand = (input: string) => {
     if (input.trim() === "") return
 
@@ -140,6 +168,7 @@ export function Terminal() {
   }
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.preventDefault() // Prevent any default behavior
     setDragOffset({
       x: e.clientX - position.x,
       y: e.clientY - position.y
@@ -149,6 +178,7 @@ export function Terminal() {
 
   const handleResizeMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation()
+    e.preventDefault() // Prevent any default behavior
     setResizeOffset({
       x: e.clientX - position.x - size.width,
       y: e.clientY - position.y - size.height
@@ -167,6 +197,7 @@ export function Terminal() {
 
   return (
     <div 
+      ref={terminalContainerRef}
       className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden"
       style={{
         position: 'relative',
