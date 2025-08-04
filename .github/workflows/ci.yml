@@ -54,7 +54,7 @@ jobs:
         run: pnpm test
         
       - name: Upload Jest coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: always() && hashFiles('coverage/lcov.info') != ''
         with:
           files: ./coverage/lcov.info
