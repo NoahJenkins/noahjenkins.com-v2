@@ -58,6 +58,7 @@ describe('CommandProcessor', () => {
       expect(result.output).toContain('  help           - Show this help message')
       expect(result.output).toContain('  about          - Personal summary')
       expect(result.output).toContain('  clear       - Clear terminal')
+      expect(result.output).toContain('  secrets     - Hmmm, what could this be?')
     })
   })
 
@@ -225,6 +226,16 @@ describe('CommandProcessor', () => {
       expect(result.output).toContain('Art by Anil K. Narayanan')
       expect(result.output).toContain('"My precious... my precious..."')
       expect(result.output).toContain('Gollum! Gollum!')
+    })
+
+    it('should handle secrets command', () => {
+      const result = processor.processCommand('secrets')
+      
+      expect(result.output).toContain('Hidden ASCII Art Commands:')
+      expect(result.output).toContain('  r2d2      - R2-D2 from Star Wars')
+      expect(result.output).toContain('  darth     - Darth Vader from Star Wars')
+      expect(result.output).toContain('  moria     - Gandalf from Lord of the Rings')
+      expect(result.output).toContain('  precious  - Gollum from Lord of the Rings')
     })
   })
 

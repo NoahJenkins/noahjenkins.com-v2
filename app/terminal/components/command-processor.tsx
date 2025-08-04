@@ -21,6 +21,7 @@ export class CommandProcessor {
     darth: this.darth.bind(this),
     moria: this.moria.bind(this),
     precious: this.precious.bind(this),
+    secrets: this.secrets.bind(this),
   }
 
   processCommand(input: string): CommandOutput {
@@ -73,10 +74,9 @@ export class CommandProcessor {
       '  ls          - List available sections',
       '  cat [file]  - Display file contents',
       '  clear       - Clear terminal',
+      '  secrets     - Hmmm, what could this be?',
       '',
       'Navigate with UP/DOWN arrow keys for command history.',
-      '',
-      '💡 Hint: Try names and locations from Noah\'s favorite sci-fi and fantasy stories...',
     ]
   }
 
@@ -441,6 +441,24 @@ export class CommandProcessor {
       'We wants it, we needs it. Must have the precious!',
       'They stole it from us. Sneaky little hobbitses.',
       'Gollum! Gollum!',
+    ]
+  }
+
+  private secrets(): string[] {
+    return [
+      'Hidden ASCII Art Commands:',
+      '',
+      'The following secret commands generate ASCII art from',
+      'Noah\'s favorite sci-fi and fantasy stories:',
+      '',
+      '  r2d2      - R2-D2 from Star Wars',
+      '  darth     - Darth Vader from Star Wars', 
+      '  moria     - Gandalf from Lord of the Rings',
+      '  precious  - Gollum from Lord of the Rings',
+      '',
+      'Try typing any of these commands to see the ASCII art!',
+      '',
+      '💡 These are the "names and locations" hinted at in the help command.',
     ]
   }
 }
