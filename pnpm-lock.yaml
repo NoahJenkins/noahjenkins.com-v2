@@ -12,8 +12,8 @@ importers:
         specifier: 4.0.0-alpha.13
         version: 4.0.0-alpha.13(postcss@8.5.6)
       '@types/node':
-        specifier: 20.11.17
-        version: 20.11.17
+        specifier: 24.2.0
+        version: 24.2.0
       '@types/react':
         specifier: 18.2.55
         version: 18.2.55
@@ -22,10 +22,10 @@ importers:
         version: 18.2.19
       '@vercel/analytics':
         specifier: ^1.5.0
-        version: 1.5.0(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        version: 1.5.0(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@vercel/speed-insights':
         specifier: ^1.2.0
-        version: 1.2.0(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        version: 1.2.0(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -37,13 +37,13 @@ importers:
         version: 10.18.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       geist:
         specifier: 1.2.2
-        version: 1.2.2(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        version: 1.2.2(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       lucide-react:
         specifier: ^0.263.1
         version: 0.263.1(react@18.3.1)
       next:
         specifier: canary
-        version: 15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-mdx-remote-client:
         specifier: ^2.1.3
         version: 2.1.3(@types/react@18.2.55)(acorn@8.15.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(unified@11.0.5)
@@ -89,13 +89,13 @@ importers:
         version: 30.0.0
       jest:
         specifier: ^30.0.5
-        version: 30.0.5(@types/node@20.11.17)
+        version: 30.0.5(@types/node@24.2.0)
       jest-environment-jsdom:
         specifier: ^30.0.5
         version: 30.0.5
       ts-jest:
         specifier: ^29.4.0
-        version: 29.4.0(@babel/core@7.28.0)(@jest/transform@30.0.5)(@jest/types@30.0.5)(babel-jest@30.0.5(@babel/core@7.28.0))(jest-util@30.0.5)(jest@30.0.5(@types/node@20.11.17))(typescript@5.3.3)
+        version: 29.4.0(@babel/core@7.28.0)(@jest/transform@30.0.5)(@jest/types@30.0.5)(babel-jest@30.0.5(@babel/core@7.28.0))(jest-util@30.0.5)(jest@30.0.5(@types/node@24.2.0))(typescript@5.3.3)
 
 packages:
 
@@ -572,53 +572,53 @@ packages:
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
-  '@next/env@15.4.2-canary.24':
-    resolution: {integrity: sha512-IbJuKT+J4YnVu6eJroB/vs4MrLcfDw58UG3t8fDfYLvKbD3xZG6RvCjt4maUKLVdxvgtHRFqmUW3I2uxCoRlrw==}
+  '@next/env@15.4.2-canary.29':
+    resolution: {integrity: sha512-zmkSqVO16lUnanrgywv4SfgiLyMI2V/IxEgRTKcded5Lor0jXC73eqtjTL4vKpFKK771l7M0zILv8Hv5uHsR1A==}
 
-  '@next/swc-darwin-arm64@15.4.2-canary.24':
-    resolution: {integrity: sha512-1x6NCSTkWq/mwJ+9JJYUI6kVwDRHwgbMQnow7xtPtg+jDJyAt+QBviV12cr1FG9Aous4PKmM6qRrjCRfATC5QA==}
+  '@next/swc-darwin-arm64@15.4.2-canary.29':
+    resolution: {integrity: sha512-W0isQe+NuLgGEccJoqfuikN8irbHrq7qHYI+w2hdw0l6CzgvKa4GYEQV4FnblK9epa9rU+SRdTB428vzl5eesQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@next/swc-darwin-x64@15.4.2-canary.24':
-    resolution: {integrity: sha512-Vpkr4TsEHljnZQ0ZXnPAN3E61dl/dNh8QzKwRzIas1ON1GBfaSQuRFwH9I0GMg96XcT80t8QdmqGOqStdZ608w==}
+  '@next/swc-darwin-x64@15.4.2-canary.29':
+    resolution: {integrity: sha512-vPIml27iYFMqRNwYRO82leBuBs0Boach3thGfrUIzbDUambfQmKaylMBaEYkX2s7if+p+FmmCHY0XYrRHQf4yQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-linux-arm64-gnu@15.4.2-canary.24':
-    resolution: {integrity: sha512-nnEhLc+8TuUDywRGnnfQvQaDrS9GsitGpGgwAi1fxu3M9gSEEVWGZECF22OXWNmyzk3ja4Hfy1Ej6R9dWobJQg==}
+  '@next/swc-linux-arm64-gnu@15.4.2-canary.29':
+    resolution: {integrity: sha512-OfjJBsSqHCNzcyMkMD2zoMOe6/l1EIWkuWYGPmffImSvPelXwY42FL42VHvYvnX6cq8xeOOEj6WIj03mPiErIA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-musl@15.4.2-canary.24':
-    resolution: {integrity: sha512-Nh85m3gIXkaeUrpXdNa3qKIpomL5ZVUML7/Mb7uObKjng9OD83XME2WQ5nEvc11vRbdGxeHOW7qqJ8hRCwVFeA==}
+  '@next/swc-linux-arm64-musl@15.4.2-canary.29':
+    resolution: {integrity: sha512-U2Rp+q3Fs/1P6/UPEIhSJ4zOuEUnq1SSLjsLdra1ZJNrt/bOiulB8EtCaGzNCP+Fc/C3x0o7HswUL1PTGPCaqA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-x64-gnu@15.4.2-canary.24':
-    resolution: {integrity: sha512-WfsR/MqdOlDGDnH172p7u1HCyY7JB17FcuLne/p6jn4N90bgdMJaZdye2BEeZVZ4XtDLb9Qbh+C7oSYNgKgnFg==}
+  '@next/swc-linux-x64-gnu@15.4.2-canary.29':
+    resolution: {integrity: sha512-naAxNmS9fB4ayezHHWnoM2nHyxHge1V8rJnJ5sGFQDexsZI0B5u4ghvVrPvX+z7u3vyOhJrWQuXiAXHcbBP2xg==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-linux-x64-musl@15.4.2-canary.24':
-    resolution: {integrity: sha512-I9BJ8c3ZYyEL/OJxTkmeLl23yujiWnhTTJWnFsVWgJfaIPa9OAabArWIZy18JUGNPTxrTdwK4eqzYZbnyEzrbg==}
+  '@next/swc-linux-x64-musl@15.4.2-canary.29':
+    resolution: {integrity: sha512-4Id31wM5uep5jqwyvFlfzduPaXa6sbLdgQk+wWVMsSC9FqiIkevIB541OP/MnsoiQ6djTmd1NiRxeC0ffR7Llw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-win32-arm64-msvc@15.4.2-canary.24':
-    resolution: {integrity: sha512-Rl2G2y2btvNoy3Ddp6aGxe8ZuVCXOzpPcv2wSI41y1ueMiFempeGA1LilG2jWpnLQaGpqrxpwjfWJzg0FXjSuA==}
+  '@next/swc-win32-arm64-msvc@15.4.2-canary.29':
+    resolution: {integrity: sha512-6x5I4/MskJ9rXC8Co+U9sAXUqGfz+pzikNE5Bt6atwILP39GNLV1RxkcZUHx1/qK/Z5+NFsUmPNfjlH6auph+g==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-x64-msvc@15.4.2-canary.24':
-    resolution: {integrity: sha512-Rpme8SW1G4M9kJqV30TuoOLyXgz4cpFrRLTRlVMGtMKsUjnVL1u0bdGz1tA7JvcbaJplUtJ3fR2kpRhpSrxQxg==}
+  '@next/swc-win32-x64-msvc@15.4.2-canary.29':
+    resolution: {integrity: sha512-yKyOuM2HH1Ryvd80q+5wYZrMIcn8+4sEJo5++Ywf0CFEnkSZdj6gl5BX2qU4OdryiR2E/29PFwv7qEYTFUaXiQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -792,8 +792,8 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
-  '@types/node@20.11.17':
-    resolution: {integrity: sha512-QmgQZGWu1Yw9TDyAP9ZzpFJKynYNeOvwMJmaxABfieQoVoiVOS6MN1WSpqpRcbeA5+RW82kraAVxCCJg+780Qw==}
+  '@types/node@24.2.0':
+    resolution: {integrity: sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw==}
 
   '@types/prop-types@15.7.15':
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
@@ -2000,8 +2000,8 @@ packages:
       react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
       react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
-  next@15.4.2-canary.24:
-    resolution: {integrity: sha512-3TEENQ7wOWu/cqxB9ZDntAHvXNWUFcV1TZ1ob0PvQCdN1asobI/uu9fBJib1SNeBhg3nINQTJ5kk5Rx8WOymhQ==}
+  next@15.4.2-canary.29:
+    resolution: {integrity: sha512-jRBUNrhf69oYsxbo2sFRB9W5ZI8Wav5CEMKyRG+DQwZhRyEQ2+kpS0+j/bfBjs11CBk3fhGMoQti2/EoRlWInQ==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
     peerDependencies:
@@ -2473,8 +2473,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@5.26.5:
-    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+  undici-types@7.10.0:
+    resolution: {integrity: sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag==}
 
   unified@11.0.5:
     resolution: {integrity: sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==}
@@ -2974,7 +2974,7 @@ snapshots:
   '@jest/console@30.0.5':
     dependencies:
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       jest-message-util: 30.0.5
       jest-util: 30.0.5
@@ -2988,14 +2988,14 @@ snapshots:
       '@jest/test-result': 30.0.5
       '@jest/transform': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       ci-info: 4.3.0
       exit-x: 0.2.2
       graceful-fs: 4.2.11
       jest-changed-files: 30.0.5
-      jest-config: 30.0.5(@types/node@20.11.17)
+      jest-config: 30.0.5(@types/node@24.2.0)
       jest-haste-map: 30.0.5
       jest-message-util: 30.0.5
       jest-regex-util: 30.0.1
@@ -3024,7 +3024,7 @@ snapshots:
       '@jest/fake-timers': 30.0.5
       '@jest/types': 30.0.5
       '@types/jsdom': 21.1.7
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-mock: 30.0.5
       jest-util: 30.0.5
       jsdom: 26.1.0
@@ -3033,7 +3033,7 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-mock: 30.0.5
 
   '@jest/expect-utils@30.0.5':
@@ -3051,7 +3051,7 @@ snapshots:
     dependencies:
       '@jest/types': 30.0.5
       '@sinonjs/fake-timers': 13.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-message-util: 30.0.5
       jest-mock: 30.0.5
       jest-util: 30.0.5
@@ -3069,7 +3069,7 @@ snapshots:
 
   '@jest/pattern@30.0.1':
     dependencies:
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-regex-util: 30.0.1
 
   '@jest/reporters@30.0.5':
@@ -3080,7 +3080,7 @@ snapshots:
       '@jest/transform': 30.0.5
       '@jest/types': 30.0.5
       '@jridgewell/trace-mapping': 0.3.29
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       collect-v8-coverage: 1.0.2
       exit-x: 0.2.2
@@ -3157,7 +3157,7 @@ snapshots:
       '@jest/schemas': 30.0.5
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       '@types/yargs': 17.0.33
       chalk: 4.1.2
 
@@ -3218,30 +3218,30 @@ snapshots:
       '@tybys/wasm-util': 0.10.0
     optional: true
 
-  '@next/env@15.4.2-canary.24': {}
+  '@next/env@15.4.2-canary.29': {}
 
-  '@next/swc-darwin-arm64@15.4.2-canary.24':
+  '@next/swc-darwin-arm64@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-darwin-x64@15.4.2-canary.24':
+  '@next/swc-darwin-x64@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@15.4.2-canary.24':
+  '@next/swc-linux-arm64-gnu@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-linux-arm64-musl@15.4.2-canary.24':
+  '@next/swc-linux-arm64-musl@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-linux-x64-gnu@15.4.2-canary.24':
+  '@next/swc-linux-x64-gnu@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-linux-x64-musl@15.4.2-canary.24':
+  '@next/swc-linux-x64-musl@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@15.4.2-canary.24':
+  '@next/swc-win32-arm64-msvc@15.4.2-canary.29':
     optional: true
 
-  '@next/swc-win32-x64-msvc@15.4.2-canary.24':
+  '@next/swc-win32-x64-msvc@15.4.2-canary.29':
     optional: true
 
   '@pkgjs/parseargs@0.11.0':
@@ -3409,7 +3409,7 @@ snapshots:
 
   '@types/jsdom@21.1.7':
     dependencies:
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       '@types/tough-cookie': 4.0.5
       parse5: 7.3.0
 
@@ -3421,9 +3421,9 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
-  '@types/node@20.11.17':
+  '@types/node@24.2.0':
     dependencies:
-      undici-types: 5.26.5
+      undici-types: 7.10.0
 
   '@types/prop-types@15.7.15': {}
 
@@ -3514,14 +3514,14 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
 
-  '@vercel/analytics@1.5.0(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+  '@vercel/analytics@1.5.0(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     optionalDependencies:
-      next: 15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
 
-  '@vercel/speed-insights@1.2.0(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+  '@vercel/speed-insights@1.2.0(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     optionalDependencies:
-      next: 15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
 
   acorn-jsx@5.3.2(acorn@8.15.0):
@@ -3916,9 +3916,9 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  geist@1.2.2(next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
+  geist@1.2.2(next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
     dependencies:
-      next: 15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   gensync@1.0.0-beta.2: {}
 
@@ -4133,7 +4133,7 @@ snapshots:
       '@jest/expect': 30.0.5
       '@jest/test-result': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       co: 4.6.0
       dedent: 1.6.0
@@ -4153,7 +4153,7 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@30.0.5(@types/node@20.11.17):
+  jest-cli@30.0.5(@types/node@24.2.0):
     dependencies:
       '@jest/core': 30.0.5
       '@jest/test-result': 30.0.5
@@ -4161,7 +4161,7 @@ snapshots:
       chalk: 4.1.2
       exit-x: 0.2.2
       import-local: 3.2.0
-      jest-config: 30.0.5(@types/node@20.11.17)
+      jest-config: 30.0.5(@types/node@24.2.0)
       jest-util: 30.0.5
       jest-validate: 30.0.5
       yargs: 17.7.2
@@ -4172,7 +4172,7 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@30.0.5(@types/node@20.11.17):
+  jest-config@30.0.5(@types/node@24.2.0):
     dependencies:
       '@babel/core': 7.28.0
       '@jest/get-type': 30.0.1
@@ -4199,7 +4199,7 @@ snapshots:
       slash: 3.0.0
       strip-json-comments: 3.1.1
     optionalDependencies:
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -4228,7 +4228,7 @@ snapshots:
       '@jest/environment': 30.0.5
       '@jest/environment-jsdom-abstract': 30.0.5(jsdom@26.1.0)
       '@types/jsdom': 21.1.7
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jsdom: 26.1.0
     transitivePeerDependencies:
       - bufferutil
@@ -4240,7 +4240,7 @@ snapshots:
       '@jest/environment': 30.0.5
       '@jest/fake-timers': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-mock: 30.0.5
       jest-util: 30.0.5
       jest-validate: 30.0.5
@@ -4248,7 +4248,7 @@ snapshots:
   jest-haste-map@30.0.5:
     dependencies:
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       graceful-fs: 4.2.11
@@ -4287,7 +4287,7 @@ snapshots:
   jest-mock@30.0.5:
     dependencies:
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       jest-util: 30.0.5
 
   jest-pnp-resolver@1.2.3(jest-resolve@30.0.5):
@@ -4321,7 +4321,7 @@ snapshots:
       '@jest/test-result': 30.0.5
       '@jest/transform': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       emittery: 0.13.1
       exit-x: 0.2.2
@@ -4350,7 +4350,7 @@ snapshots:
       '@jest/test-result': 30.0.5
       '@jest/transform': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       cjs-module-lexer: 2.1.0
       collect-v8-coverage: 1.0.2
@@ -4397,7 +4397,7 @@ snapshots:
   jest-util@30.0.5:
     dependencies:
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       chalk: 4.1.2
       ci-info: 4.3.0
       graceful-fs: 4.2.11
@@ -4416,7 +4416,7 @@ snapshots:
     dependencies:
       '@jest/test-result': 30.0.5
       '@jest/types': 30.0.5
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       emittery: 0.13.1
@@ -4425,18 +4425,18 @@ snapshots:
 
   jest-worker@30.0.5:
     dependencies:
-      '@types/node': 20.11.17
+      '@types/node': 24.2.0
       '@ungap/structured-clone': 1.3.0
       jest-util: 30.0.5
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
-  jest@30.0.5(@types/node@20.11.17):
+  jest@30.0.5(@types/node@24.2.0):
     dependencies:
       '@jest/core': 30.0.5
       '@jest/types': 30.0.5
       import-local: 3.2.0
-      jest-cli: 30.0.5(@types/node@20.11.17)
+      jest-cli: 30.0.5(@types/node@24.2.0)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -4931,9 +4931,9 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  next@15.4.2-canary.24(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next@15.4.2-canary.29(@babel/core@7.28.0)(@playwright/test@1.54.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@next/env': 15.4.2-canary.24
+      '@next/env': 15.4.2-canary.29
       '@swc/helpers': 0.5.15
       caniuse-lite: 1.0.30001731
       postcss: 8.4.31
@@ -4941,14 +4941,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       styled-jsx: 5.1.6(@babel/core@7.28.0)(react@18.3.1)
     optionalDependencies:
-      '@next/swc-darwin-arm64': 15.4.2-canary.24
-      '@next/swc-darwin-x64': 15.4.2-canary.24
-      '@next/swc-linux-arm64-gnu': 15.4.2-canary.24
-      '@next/swc-linux-arm64-musl': 15.4.2-canary.24
-      '@next/swc-linux-x64-gnu': 15.4.2-canary.24
-      '@next/swc-linux-x64-musl': 15.4.2-canary.24
-      '@next/swc-win32-arm64-msvc': 15.4.2-canary.24
-      '@next/swc-win32-x64-msvc': 15.4.2-canary.24
+      '@next/swc-darwin-arm64': 15.4.2-canary.29
+      '@next/swc-darwin-x64': 15.4.2-canary.29
+      '@next/swc-linux-arm64-gnu': 15.4.2-canary.29
+      '@next/swc-linux-arm64-musl': 15.4.2-canary.29
+      '@next/swc-linux-x64-gnu': 15.4.2-canary.29
+      '@next/swc-linux-x64-musl': 15.4.2-canary.29
+      '@next/swc-win32-arm64-msvc': 15.4.2-canary.29
+      '@next/swc-win32-x64-msvc': 15.4.2-canary.29
       '@playwright/test': 1.54.1
       sharp: 0.34.3
     transitivePeerDependencies:
@@ -5386,12 +5386,12 @@ snapshots:
 
   trough@2.2.0: {}
 
-  ts-jest@29.4.0(@babel/core@7.28.0)(@jest/transform@30.0.5)(@jest/types@30.0.5)(babel-jest@30.0.5(@babel/core@7.28.0))(jest-util@30.0.5)(jest@30.0.5(@types/node@20.11.17))(typescript@5.3.3):
+  ts-jest@29.4.0(@babel/core@7.28.0)(@jest/transform@30.0.5)(@jest/types@30.0.5)(babel-jest@30.0.5(@babel/core@7.28.0))(jest-util@30.0.5)(jest@30.0.5(@types/node@24.2.0))(typescript@5.3.3):
     dependencies:
       bs-logger: 0.2.6
       ejs: 3.1.10
       fast-json-stable-stringify: 2.1.0
-      jest: 30.0.5(@types/node@20.11.17)
+      jest: 30.0.5(@types/node@24.2.0)
       json5: 2.2.3
       lodash.memoize: 4.1.2
       make-error: 1.3.6
@@ -5416,7 +5416,7 @@ snapshots:
 
   typescript@5.3.3: {}
 
-  undici-types@5.26.5: {}
+  undici-types@7.10.0: {}
 
   unified@11.0.5:
     dependencies:
