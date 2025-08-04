@@ -6,9 +6,11 @@ import { TerminalOutput } from "../app/terminal/components/terminal-output"
 
 interface TerminalModalProps {
   onClose?: () => void
+  onInteractionStart?: () => void
+  onInteractionEnd?: () => void
 }
 
-export function TerminalModal({ onClose }: TerminalModalProps) {
+export function TerminalModal({ onClose, onInteractionStart, onInteractionEnd }: TerminalModalProps) {
   const [history, setHistory] = useState<CommandOutput[]>([])
   const [currentInput, setCurrentInput] = useState("")
   const [commandHistory, setCommandHistory] = useState<string[]>([])
@@ -72,6 +74,7 @@ export function TerminalModal({ onClose }: TerminalModalProps) {
     const handleMouseUp = () => {
       setIsDragging(false)
       setIsResizing(false)
+      onInteractionEnd?.()
     }
 
     if (isDragging || isResizing) {
@@ -139,6 +142,7 @@ export function TerminalModal({ onClose }: TerminalModalProps) {
   }
 
   const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    onInteractionStart?.()
     setDragOffset({
       x: e.clientX - position.x,
       y: e.clientY - position.y
@@ -148,6 +152,7 @@ export function TerminalModal({ onClose }: TerminalModalProps) {
 
   const handleResizeMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation()
+    onInteractionStart?.()
     setResizeOffset({
       x: e.clientX - position.x - size.width,
       y: e.clientY - position.y - size.height
@@ -160,6 +165,16 @@ export function TerminalModal({ onClose }: TerminalModalProps) {
     onClose?.()
   }
 
+  const handleTerminalMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    // Only handle if clicking directly on the main container, not children
+    if (e.target === e.currentTarget) {
+      onInteractionStart?.()
+      setTimeout(() => {
+        onInteractionEnd?.()
+      }, 100)
+    }
+  }
+
   return (
     <div 
       className="bg-black border-2 border-[#00ff00] rounded-lg shadow-2xl shadow-[#00ff00]/20 overflow-hidden"
@@ -170,6 +185,7 @@ export function TerminalModal({ onClose }: TerminalModalProps) {
         height: `${size.height}px`,
         cursor: isDragging ? 'grabbing' : 'default'
       }}
+      onMouseDown={handleTerminalMouseDown}
     >
       <div 
         className="bg-[#00ff00] text-black px-4 py-2 font-mono text-sm font-bold flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
