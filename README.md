@@ -24,6 +24,8 @@ A modern, full-stack portfolio website and blog built with Next.js 15, Tailwind 
 │   │   │   └── blog-hero.tsx     # Blog page hero section
 │   │   └── posts/                # MDX blog posts
 │   │       ├── *.mdx             # Blog posts with frontmatter
+│   ├── connections/              # Social media landing page (for presentations)
+│   │   └── page.tsx              # QR code-friendly social links showcase
 │   ├── components/               # Shared app-specific components
 │   │   ├── animations/           # Framer Motion animation components
 │   │   ├── layout/               # Layout-specific components
@@ -231,6 +233,18 @@ Deploy easily to [Vercel](https://vercel.com/) or any platform supporting Next.j
   - CodeOutput for exporting CSS, SCSS, and Tailwind formats
 - **UI Elements:** Interactive color pickers, gradient controls, code export panels
 - **Features:** Linear/radial/conic gradients, live preview, multiple export formats, save/load functionality
+
+### Connections Landing Page (`/connections`)
+
+- **File:** [`app/connections/page.tsx`](app/connections/page.tsx:1)
+- **Purpose:** Social media showcase page designed for QR code access during presentations and talks
+- **Components:**
+  - Social links grid with LinkedIn, X (Twitter), GitHub, and Website
+  - Custom X icon component (official Twitter/X logo)
+  - Animated cards with hover effects and external link buttons
+- **UI Elements:** Card grid, custom XIcon, motion animations, gradient styling
+- **Features:** QR code-friendly design, large touch targets, presentation-optimized layout
+- **Note:** This page is not included in regular navigation - specifically designed as a landing zone for talks and presentations to showcase social media presence
 
 ### Global Layout System
 
