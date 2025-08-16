@@ -93,8 +93,8 @@ export default function ConnectionsPage() {
                   <CardContent className="text-center">
                     <Button 
                       asChild 
-                      variant="outline" 
-                      className="w-full border-white/20 hover:border-[#fecb3e] hover:bg-gradient-to-r hover:from-[#fecb3e] hover:to-[#ffb43f] hover:text-black transition-all duration-300"
+                      variant="secondary" 
+                      className="w-full"
                     >
                       <a
                         href={connection.href}
