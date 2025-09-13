@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -74,7 +74,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -125,9 +125,9 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-  # Optional: Lint and type checking
-  lint-and-typecheck:
-    name: Lint & Type Check
+  # Type checking (quick validation)
+  typecheck:
+    name: TypeScript Check
     runs-on: ubuntu-latest
     
     steps:
@@ -137,7 +137,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -166,18 +166,9 @@ jobs:
         
       - name: Run TypeScript type checking
         run: pnpm exec tsc --noEmit
-        
-      - name: Run ESLint (if configured)
-        run: |
-          if [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ] || [ -f "eslint.config.js" ]; then
-            pnpm exec eslint . --ext .ts,.tsx,.js,.jsx
-          else
-            echo "No ESLint configuration found, skipping..."
-          fi
-        continue-on-error: true
 
-  # Deployment check (runs but doesn't block)
-  build-check:
+  # Build verification
+  build:
     name: Build Check
     runs-on: ubuntu-latest
     
@@ -188,7 +179,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
