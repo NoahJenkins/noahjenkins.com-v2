@@ -46,8 +46,8 @@ jobs:
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to regular install..."
-            pnpm install
+            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
+            pnpm install --no-frozen-lockfile
           fi
         
       - name: Run Jest tests
@@ -97,8 +97,8 @@ jobs:
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to regular install..."
-            pnpm install
+            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
+            pnpm install --no-frozen-lockfile
           fi
         
       - name: Install Playwright browsers
@@ -160,8 +160,8 @@ jobs:
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to regular install..."
-            pnpm install
+            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
+            pnpm install --no-frozen-lockfile
           fi
         
       - name: Run TypeScript type checking
@@ -202,8 +202,8 @@ jobs:
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to regular install..."
-            pnpm install
+            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
+            pnpm install --no-frozen-lockfile
           fi
         
       - name: Build application
