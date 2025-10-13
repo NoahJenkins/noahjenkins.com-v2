@@ -63,8 +63,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1
       sugar-high:
-        specifier: ^0.6.1
-        version: 0.6.1
+        specifier: ^0.9.4
+        version: 0.9.4
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -2194,8 +2194,8 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  sugar-high@0.6.1:
-    resolution: {integrity: sha512-kg1qMW7WwJcueXIlHkChL/p2EWY3gf8rQmP6n5nUq2TWVqatqDTMLvViS9WgAjgyTKH5/3/b8sRwWPOOAo1zMA==}
+  sugar-high@0.9.4:
+    resolution: {integrity: sha512-KzDgMqYZ3zxo2F+AdhAQ1vjyZj3FHe4TwiQCJisD1d4GlzBS/Z/pfUT1S7wCJdq71zjOt9TAfX6HnYqcI4YJrQ==}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -4931,7 +4931,7 @@ snapshots:
     optionalDependencies:
       '@babel/core': 7.28.4
 
-  sugar-high@0.6.1: {}
+  sugar-high@0.9.4: {}
 
   supports-color@7.2.0:
     dependencies:
