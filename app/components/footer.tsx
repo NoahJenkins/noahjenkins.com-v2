@@ -1,6 +1,7 @@
 "use client"
 import { Rss, Linkedin, Twitter, Mail } from "lucide-react"
 import { useState, useEffect } from "react"
+import Script from "next/script"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -139,6 +140,14 @@ export default function Footer() {
           </div>
         </div>
       </div>
+      <Script
+        id="metricool-tracker"
+        src="https://tracker.metricool.com/resources/be.js"
+        onLoad={() => {
+          // @ts-ignore
+          beTracker.t({ hash: "4a08abc20a32716c21f3d50190045039" })
+        }}
+      />
     </footer>
   )
 }
