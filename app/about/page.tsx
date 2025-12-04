@@ -8,7 +8,7 @@ import { GitHubStatsComponent } from "../../components/ui/github-stats"
 import { RepoCard } from "../../components/ui/repo-card"
 import { ScrollReveal } from "../../components/animations/scroll-reveal"
 import { Button } from "../../components/ui/button"
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtml from 'sanitize-html'
 
 export default function AboutPage() {
   const [readme, setReadme] = useState<string>("")
@@ -264,9 +264,13 @@ export default function AboutPage() {
               <div 
                 className="prose prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ 
-                  __html: DOMPurify.sanitize(formatMarkdown(readme), {
-                    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'a', 'img', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'br'],
-                    ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'target', 'rel', 'style']
+                  __html: sanitizeHtml(formatMarkdown(readme), {
+                    allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'a', 'img', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'br'],
+                    allowedAttributes: {
+                      '*': ['class', 'style'],
+                      'a': ['href', 'target', 'rel'],
+                      'img': ['src', 'alt']
+                    }
                   })
                 }}
               />
