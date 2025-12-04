@@ -1,5 +1,6 @@
 import { baseUrl } from 'app/sitemap'
 import { getBlogPosts } from 'app/blog/utils'
+import escape from 'escape-html'
 
 export async function GET() {
   let allBlogs = await getBlogPosts()
@@ -14,9 +15,9 @@ export async function GET() {
     .map(
       (post) =>
         `<item>
-          <title>${post.metadata.title}</title>
-          <link>${baseUrl}/blog/${post.slug}</link>
-          <description>${post.metadata.summary || ''}</description>
+          <title>${escape(post.metadata.title)}</title>
+          <link>${baseUrl}/blog/${escape(post.slug)}</link>
+          <description>${escape(post.metadata.summary || '')}</description>
           <pubDate>${new Date(
             post.metadata.publishedAt
           ).toUTCString()}</pubDate>
