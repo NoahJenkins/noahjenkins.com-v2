@@ -8,6 +8,7 @@ import { GitHubStatsComponent } from "../../components/ui/github-stats"
 import { RepoCard } from "../../components/ui/repo-card"
 import { ScrollReveal } from "../../components/animations/scroll-reveal"
 import { Button } from "../../components/ui/button"
+import DOMPurify from 'isomorphic-dompurify'
 
 export default function AboutPage() {
   const [readme, setReadme] = useState<string>("")
@@ -262,7 +263,12 @@ export default function AboutPage() {
             <div className="bg-black/50 rounded-lg p-8 border border-gray-800 backdrop-blur-sm">
               <div 
                 className="prose prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: formatMarkdown(readme) }}
+                dangerouslySetInnerHTML={{ 
+                  __html: DOMPurify.sanitize(formatMarkdown(readme), {
+                    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'a', 'img', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'br'],
+                    ALLOWED_ATTR: ['class', 'href', 'src', 'alt', 'target', 'rel', 'style']
+                  })
+                }}
               />
             </div>
           </ScrollReveal>

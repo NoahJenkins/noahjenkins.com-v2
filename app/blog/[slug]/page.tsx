@@ -67,6 +67,15 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
     return Math.ceil(words / wordsPerMinute)
   }
 
+  // Sanitize text for JSON-LD to prevent any potential XSS via script injection
+  const sanitizeForJsonLd = (text: string): string => {
+    if (!text) return ''
+    return text
+      .replace(/</g, '\\u003c')
+      .replace(/>/g, '\\u003e')
+      .replace(/&/g, '\\u0026')
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       <script
@@ -76,10 +85,10 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: post.metadata.title,
+            headline: sanitizeForJsonLd(post.metadata.title),
             datePublished: post.metadata.publishedAt,
             dateModified: post.metadata.publishedAt,
-            description: post.metadata.summary,
+            description: sanitizeForJsonLd(post.metadata.summary),
             image: post.metadata.image
               ? `${baseUrl}${post.metadata.image}`
               : `/og?title=${encodeURIComponent(post.metadata.title)}`,

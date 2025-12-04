@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { highlight } from 'sugar-high'
 import React from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 
 function Table({ data }: { data: { headers: string[], rows: string[][] } }) {
   let headers = data.headers.map((header, index) => (
@@ -72,9 +73,14 @@ function RoundedImage(props: any) {
 
 function Code({ children, ...props }: any) {
   let codeHTML = highlight(children)
+  // Sanitize to prevent XSS from any malicious content in code blocks
+  let sanitizedHTML = DOMPurify.sanitize(codeHTML, {
+    ALLOWED_TAGS: ['span'],
+    ALLOWED_ATTR: ['class', 'style']
+  })
   return (
     <code 
-      dangerouslySetInnerHTML={{ __html: codeHTML }} 
+      dangerouslySetInnerHTML={{ __html: sanitizedHTML }} 
       className="bg-gray-900 text-[#fecb3e] px-1 py-0.5 rounded text-sm border border-gray-800"
       {...props} 
     />

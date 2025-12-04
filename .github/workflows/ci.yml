@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# Restrict permissions to minimum required for security
+permissions:
+  contents: read
+  actions: read
+
 # Cancel in-progress workflows on new push
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
