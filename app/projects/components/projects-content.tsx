@@ -84,7 +84,7 @@ const projects: Project[] = [
   {
     id: "mutts-n-such",
     title: "Mutts N Such",
-    description: "My first professional website for a local pet business, built using Wix platform with custom CSS styling. Features service showcases, contact information, and business branding.",
+    description: "My first professional website for a local animal rescue, built using Wix platform with custom CSS styling. Features service showcases, contact information, and business branding.",
     category: "Web/Mobile Development",
     technologies: ["Wix", "Custom CSS", "Web Design"],
     liveUrl: "https://www.muttsnsuch.com",
@@ -131,7 +131,7 @@ const actingCredits: ActingCredit[] = [
     id: "ballot-box",
     roles: ["Burger Spokesman"],
     project: "The Ballot Box",
-    studio: "Exploration Films",
+    studio: "Tubi",
     type: "Film/TV",
     url: "https://www.youtube.com/watch?v=X81YvsItrgY"
   },
