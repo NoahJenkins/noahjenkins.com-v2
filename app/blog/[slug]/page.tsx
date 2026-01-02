@@ -76,6 +76,14 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
       .replace(/&/g, '\\u0026')
   }
 
+  const headerStyle = post.metadata.image
+    ? {
+        backgroundImage: `url(${post.metadata.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : undefined
+
   return (
     <div className="min-h-screen bg-black text-white">
       <script
@@ -102,8 +110,13 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
       />
       
       {/* Header Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
+      <section
+        style={headerStyle}
+        className="py-16 px-4 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden"
+      >
+        {/* Dark overlay to improve text contrast over hero image */}
+        <div className="absolute inset-0 bg-black/60" aria-hidden />
+        <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
             backgroundImage: `radial-gradient(circle at 2px 2px, #fecb3e 1px, transparent 0)`,
             backgroundSize: '60px 60px'
