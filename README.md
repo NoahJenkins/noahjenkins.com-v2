@@ -270,6 +270,19 @@ Deploy easily to [Vercel](https://vercel.com/) or any platform supporting Next.j
 
 ---
 
+## Custom Agents
+
+This repository includes several Custom Agents for GitHub Copilot (stored under `.github/agents/`) to help with development, testing, accessibility, SEO, and CI workflows. The following agents are installed:
+
+- `.github/agents/expert-nextjs-developer.agent.md` — Next.js 16 / App Router expert.
+- `.github/agents/expert-react-frontend-engineer.agent.md` — React 19.2 frontend expert.
+- `.github/agents/playwright-tester.agent.md` — Playwright test generation & debugging mode.
+- `.github/agents/accessibility.agent.md` — Web accessibility (WCAG) specialist.
+- `.github/agents/search-ai-optimization-expert.agent.md` — SEO / AEO / GEO optimization expert.
+- `.github/agents/github-actions-expert.agent.md` — GitHub Actions security and CI/CD expert.
+
+To use these agents in VS Code: open the Chat pane, choose "Install agent from file", and pick one of the files in `.github/agents/`. They can assist with code suggestions, PR guidance, test generation, accessibility reviews, SEO improvements, and workflow hardening.
+
 ## Testing
 
 This project includes comprehensive test coverage using both Jest and Playwright to ensure code quality and UI functionality.
