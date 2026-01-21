@@ -269,7 +269,32 @@ export default function AboutPage() {
                     allowedAttributes: {
                       '*': ['class', 'style'],
                       'a': ['href', 'target', 'rel'],
-                      'img': ['src', 'alt']
+                      'img': ['src', 'alt', 'width', 'height']
+                    },
+                    transformTags: {
+                      'img': (tagName, attribs) => {
+                        const newAttribs = { ...attribs };
+                        let style = newAttribs.style || '';
+                        
+                        // Map height attribute to inline style to override global CSS
+                        if (newAttribs.height && !style.includes('height:')) {
+                          const h = newAttribs.height.replace('px', ''); // benign strip if exists
+                          style += `; height: ${h}px`;
+                          // If height is set but width is missing, force auto width to maintain aspect ratio
+                          if (!newAttribs.width && !style.includes('width:')) {
+                            style += '; width: auto';
+                          }
+                        }
+                        
+                        // Map width attribute to inline style
+                        if (newAttribs.width && !style.includes('width:')) {
+                            const w = newAttribs.width.replace('px', '');
+                            style += `; width: ${w}px`;
+                        }
+
+                        newAttribs.style = style.replace(/^; /, '').trim();
+                        return { tagName: 'img', attribs: newAttribs };
+                      }
                     }
                   })
                 }}
