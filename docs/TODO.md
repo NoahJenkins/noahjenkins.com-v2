@@ -22,10 +22,10 @@ Last Updated: 2026-02-21
 - [x] Enforce pnpm-only package manager usage in repository scripts/config
 
 ## Blocked
-- [ ] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
+- [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
 
 ## Follow-ups
-- [ ] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
+- [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
 - [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
 
 ## Definition of Done

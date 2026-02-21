@@ -62,16 +62,11 @@ export const metadata: Metadata = {
 
 const cx = (...classes: (string | undefined | null)[]) => classes.filter(Boolean).join(' ');
 
-import { usePathname } from 'next/navigation'
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const pathname = typeof window === 'undefined' ? '' : window.location.pathname
-  // For SSR, fallback to '' (will be ignored for hydration)
-  const isHome = pathname === '/' || typeof window === 'undefined'
   return (
     <html
       lang="en"

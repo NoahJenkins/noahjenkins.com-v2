@@ -7,7 +7,7 @@ This repository uses a single GitHub Actions workflow (`.github/workflows/ci.yml
   - `push` to `main`
   - `pull_request` targeting `main`
 - **Execution model**
-  - Four independent jobs run on `ubuntu-latest`: `jest-tests`, `playwright-tests`, `typecheck`, `build`
+  - Five independent jobs run on `ubuntu-latest`: `security-audit`, `jest-tests`, `playwright-tests`, `typecheck`, `build`
   - Workflow-level concurrency cancels in-progress runs for the same ref:
     - `group: ${{ github.workflow }}-${{ github.ref }}`
     - `cancel-in-progress: true`
@@ -51,6 +51,18 @@ Steps:
    - retention: 30 days
 
 ### 2) Quality/Security Stage
+
+#### Job: `security-audit` (Security Audit)
+Purpose: fail CI when high/critical dependency vulnerabilities are present.
+
+Steps:
+1. Checkout
+2. Setup Node.js 20
+3. Setup pnpm
+4. Set `STORE_PATH`
+5. Setup pnpm cache
+6. Install dependencies (frozen-lockfile with fallback)
+7. Run audit gate: `pnpm audit --audit-level=high`
 
 #### Job: `typecheck` (TypeScript Check)
 Purpose: static type validation.
@@ -144,4 +156,4 @@ Deployments, if any, are handled outside this workflow.
   - environment protection rules
   - scoped secrets
   - branch/tag deployment strategy
-- Consider adding dedicated security scanning jobs (e.g., dependency audit/SAST) if security coverage should extend beyond current baseline controls.
+- Consider extending security coverage beyond dependency audit with dedicated SAST/secret scanning jobs.

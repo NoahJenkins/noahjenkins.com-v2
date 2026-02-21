@@ -6,6 +6,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-02-21 Security Baseline](./2026-02-21-security-baseline.md)
 - [2026-02-21 Onboarding Report](./2026-02-21-onboarding-report.md)
 - [2026-02-21 PNPM-only Enforcement and Security Remediation](./2026-02-21-pnpm-only-enforcement-security-remediation.md)
+- [2026-02-21 Layout Build Fix and CI Audit Gate](./2026-02-21-layout-build-fix-and-ci-audit-gate.md)
 
 ## Linked ADRs
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
