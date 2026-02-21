@@ -3,9 +3,8 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_config_user_agent||'')){console.error('This repository uses pnpm only. Run: pnpm install');process.exit(1)}\"",
-    "predev": "pkill -f 'next dev' || true && rm -f .next/dev/lock",
-    "dev": "next dev",
-    "dev:clean": "pnpm run predev && pnpm dev",
+    "dev": "next dev --webpack",
+    "dev:clean": "pkill -f 'next dev' || true && rm -f .next/dev/lock && pnpm dev",
     "build": "next build",
     "start": "next start",
     "test": "jest --coverage",

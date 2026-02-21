@@ -1,8 +1,8 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    root: __dirname,
-  },
+  outputFileTracingRoot: path.join(__dirname),
 
   // Performance optimizations
   experimental: {

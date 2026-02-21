@@ -21,7 +21,8 @@ Last Updated: 2026-02-21
 - [x] Address critical/high findings
 - [x] Enforce pnpm-only package manager usage in repository scripts/config
 - [x] Resolve local dev startup lock conflict and Turbopack root warning
-- [x] Add automated dev startup cleanup for `pnpm dev` and `pnpm run dev`
+- [x] Add manual `dev:clean` script for safe lock/process cleanup before dev startup
+- [x] Switch local dev script to Webpack mode for stability under VS Code
 
 ## Blocked
 - [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
@@ -29,6 +30,7 @@ Last Updated: 2026-02-21
 ## Follow-ups
 - [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
 - [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
+- [ ] # TODO: Monitor VS Code memory behavior with `pnpm run dev` (webpack mode) across longer sessions
 
 ## Definition of Done
 - [x] Acceptance criteria are met

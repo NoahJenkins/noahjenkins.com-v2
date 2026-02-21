@@ -9,6 +9,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-02-21 Layout Build Fix and CI Audit Gate](./2026-02-21-layout-build-fix-and-ci-audit-gate.md)
 - [2026-02-21 Dev Lock Conflict and Turbopack Root Fix](./2026-02-21-dev-lock-and-turbopack-root-fix.md)
 - [2026-02-21 Predev Cleanup Automation](./2026-02-21-predev-cleanup-automation.md)
+- [2026-02-21 Dev Memory Stability Mitigation (Webpack Mode)](./2026-02-21-dev-memory-stability-webpack-mode.md)
 
 ## Linked ADRs
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
