@@ -32,8 +32,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: latest
 
       - name: Get pnpm store directory
         shell: bash
@@ -73,14 +71,12 @@ jobs:
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: latest
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -88,14 +84,14 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-          
+
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
             echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
             pnpm install --no-frozen-lockfile
           fi
-        
+
       - name: Run Jest tests
         run: pnpm test
         
@@ -124,14 +120,12 @@ jobs:
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: latest
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -139,14 +133,14 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-          
+
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
             echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
             pnpm install --no-frozen-lockfile
           fi
-        
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
         
@@ -187,14 +181,12 @@ jobs:
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: latest
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -202,14 +194,14 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-          
+
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
             echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
             pnpm install --no-frozen-lockfile
           fi
-        
+
       - name: Run TypeScript type checking
         run: pnpm exec tsc --noEmit
 
@@ -229,14 +221,12 @@ jobs:
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: latest
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-          
+
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
@@ -244,14 +234,14 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-          
+
       - name: Install dependencies
         run: |
           if ! pnpm install --frozen-lockfile; then
             echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
             pnpm install --no-frozen-lockfile
           fi
-        
+
       - name: Build application
         run: pnpm build
         
