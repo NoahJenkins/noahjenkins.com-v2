@@ -1,0 +1,44 @@
+---
+title: "Building my Agentic Coding workflow"
+publishedAt: 2026-02-21
+summary: "How I built a multi-agent coding setup using GitHub Copilot, custom instructions, shared docs, and a sync-agents skill to keep every AI tool on the same page."
+tags: personal, career, tech, ai
+---
+
+I am still learning so much about using coding agents in my coding workflow, and it's constantly changing! Over the past year, I went from using GitHub Copilot -> Claude Code -> Roo Code -> Kilo Code -> to now a combination of tools. Currently my daily driver and primary agent is GitHub Copilot, with Claude Code and Gemini (via AntiGravity) as my secondary solutions (I also have started using OpenAI's new Codex agent, and have been very impressed).
+
+I ended up back in GitHub Copilot for the following:
+
+- I use it in both my professional and personal dev projects, and I believe in learning the tools you use well.
+- It gives me almost immediate access to the latest frontier models (GPT, Claude, Gemini, Grok, etc), which can be expanded using OpenRouter & Ollama.
+- Copilot's integration with GitHub AND the VS Code ecosystem is second to none. The ability to create background agents locally or in the cloud, assign them tasks in issues or PRs, and the ability to just think of an idea while in GitHub and assign an agent to build it minimizes friction and helps you get from idea -> prototype incredibly fast.
+
+Anyway, that's how I ended up back with Copilot. My biggest frustration though was whenever I would pay for Claude Pro or Gemini Pro and want to leverage their coding agents, but that would mean creating a new GEMINI.md or CLAUDE.md file, so I just ignored them (big mistake)!
+
+Over the last few weeks I have been dedicating time to learning more about agentic coding, and realized how much value these interactions provide! You can direct agents to use specific tools, patterns, or check for specific issues in code every time you call it (without needing to include it in the prompt). In testing though, I found that building custom instructions tailored to the project you are working in offers more value than a single generic one you use on every project. While I love the `/init` command Copilot offers to help solve this, I wanted more control.
+
+**Quick note for those newer to Copilot:** custom instructions tell your agent how to behave, agents are specialized personas you invoke for specific tasks, and skills are reusable prompts that trigger repeatable workflows — think of them as macros for your AI. With that context, the rest of this will make a lot more sense!
+
+This desire for control is where the `onboard-copilot` prompt came from. This prompt directs Copilot to build a tailored `copilot-instructions.md` file for your repo and bakes in orchestration so your main coding agent can delegate to sub-agents to complete their specific tasks.
+
+It also installs 4 core agents out of the box, plus optional specialist agents based on your detected stack — so if you're building a frontend-heavy app, for example, it will pull in a frontend-specialist agent automatically. Pretty handy.
+
+## The /docs directory
+
+My favorite feature though is the use of the `/docs` directory. The prompt directs the agent to create this directory with dedicated folders for:
+
+- **ARCHITECTURE** — high-level system design and component documentation
+- **ADR** — Architecture Decision Records that capture significant architectural choices, the options considered, the decision made, and its consequences
+- **CONTEXT** — exploratory research, planning notes, and working documentation from your sessions
+
+It also creates a TODO file to keep track of project action items, and an index file that points agents to where to go. The core instructions direct the agent to automatically update and reference these files, so it always has a living memory of the work done on this project.
+
+## The sync-agents skill
+
+Beyond instructions, you can use custom agents to specialize in specific roles/tasks, and use skills to direct agents to perform repeatable tasks with far more consistency than giving generic directions.
+
+That's when it hit me — if I could build a skill to handle repeatable tasks, I could also solve my multi-agent configuration headache. That's where the `sync-agents` skill came from. This skill scans your repo for the 12 most popular coding agent solutions (examples include Claude Code, Gemini CLI, Codex, OpenCode, Kilo Code, and more), then mirrors the Copilot (`.github`) configuration into these agent config files so that they use the same instructions! It will also create the skills and agent files IF those agents support them (for example, Claude Code will use the agent and skill artifacts, but Gemini CLI currently does not, though both will use the same instruction format).
+
+My favorite part of the `sync-agents` skill though is the shared use of the `/docs` directory. Because they all use the same instructions, this means they will also reference and update the `/docs` folder regardless of which agent I am using! This makes shared context on designs much easier as I switch between agents.
+
+With all that said, this is the way I am currently using coding agents, but who knows — it could change tomorrow. If there is one thing that is clear about AI in our industry right now, it's moving fast, always changing, and I'm excited to see what tomorrow brings! If you want to try it yourself, the repo is linked below — contributions and feedback are very welcome!
