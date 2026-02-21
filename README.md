@@ -303,6 +303,7 @@ Production build: `pnpm build`
 - [Architecture Decision Records](./docs/adr/)
 - [Planning & Research Notes](./docs/context/)
 - [Project Task Tracker](./docs/TODO.md)
+- [Agent Skills Reference](./docs/README.skills.md)
 
 ## Contributing
 
@@ -340,6 +341,21 @@ This repository includes several Custom Agents for GitHub Copilot (stored under 
 - `.github/agents/github-actions-expert.agent.md` — GitHub Actions security and CI/CD expert.
 
 To use these agents in VS Code: open the Chat pane, choose "Install agent from file", and pick one of the files in `.github/agents/`. They can assist with code suggestions, PR guidance, test generation, accessibility reviews, SEO improvements, and workflow hardening.
+
+## Custom Skills
+
+This repository includes agent skills (stored under `.github/skills/`) that give Copilot coding agents specialized, reusable capabilities. See [`docs/README.skills.md`](docs/README.skills.md) for the full skill reference.
+
+| Skill | Description |
+| ----- | ----------- |
+| `sync-agents` | Mirror Copilot instructions, agents, and skills into other AI coding agent configs detected in this repo. |
+| `format-blog-post` | Paste raw blog post text → receive a correctly structured `.mdx` file written to `app/blog/posts/`, ready to commit and publish. |
+
+**Example invocation:**
+
+```
+Use the format-blog-post skill. Here is my blog post: [paste text]
+```
 
 ## Testing
 
