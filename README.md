@@ -260,6 +260,64 @@ Deploy easily to [Vercel](https://vercel.com/) or any platform supporting Next.j
 
 ---
 
+## Project Description
+
+This repository powers Noah Jenkins' personal site and blog: a Next.js App Router application that combines portfolio content, MDX blog publishing, interactive tools, voice demos, and automated testing/CI.
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- pnpm
+
+### Installation
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. `.env.example` is not present in this repository because no tracked `.env` file was detected during onboarding
+4. Configure environment variables if your local setup requires them
+
+### Running Locally
+Development server: `pnpm dev`
+
+Application runs at: `http://localhost:3000`
+
+### Testing
+Run tests: `pnpm test`
+
+Run UI tests: `pnpm test:ui`
+
+Run all test suites: `pnpm test:all`
+
+### Building
+Production build: `pnpm build`
+
+## Configuration
+
+- No committed `.env.example` exists because this repository currently has no `.env` file in source control.
+- CI and local workflows rely on standard runtime variables such as `CI`.
+- External integrations: GitHub API usage in `lib/github-api.ts`, Vercel Analytics / Speed Insights in app layout.
+
+## Documentation
+
+- [Architecture Documentation](./docs/architecture/)
+- [Architecture Decision Records](./docs/adr/)
+- [Planning & Research Notes](./docs/context/)
+- [Project Task Tracker](./docs/TODO.md)
+
+## Contributing
+
+- Use pull request template: `/.github/PULL_REQUEST_TEMPLATE.md`
+- Use issue templates in `/.github/ISSUE_TEMPLATE/`
+- Keep tests green (`pnpm test`, `pnpm test:ui` when relevant) before opening PRs
+
+## License
+
+No license file is currently detected in this repository.
+
+`# TODO:` Add a LICENSE file and update this section when a project license is selected.
+
+---
+
 ## Additional Features
 
 - **MDX/Markdown Blog Posts:** Add new posts in [`app/blog/posts/`](app/blog/posts/) using `.mdx` format.

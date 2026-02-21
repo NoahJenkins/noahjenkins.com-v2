@@ -1,50 +1,59 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Added by OnboardCopilot: Node.js / Next.js
+node_modules/
+.npm/
+dist/
+build/
+.next/
+out/
+.swc/
+.pnp
 .pnp.js
+.vercel
 
-# testing
-/coverage
+# Added by OnboardCopilot: Testing artifacts
+coverage/
+playwright-report/
+test-results/
 test/tsconfig.json
 
-# playwright
-/playwright-report/
-/test-results/
-
-# next.js
-/.next/
-/out/
-/.swc/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-.vscode
-.roomodes
-.claude
-.roo/mcp.json
-.mcp.json
-
-# debug
+# Added by OnboardCopilot: Logs
+*.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# Added by OnboardCopilot: IDE / editor files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Added by OnboardCopilot: Environment and secrets
 .env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets.yml
 
-# vercel
-.vercel
+# Added by OnboardCopilot: OS files
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# typescript
+# Added by OnboardCopilot: TypeScript
 *.tsbuildinfo
 next-env.d.ts
 
-
+# Existing project-specific entries
+.roomodes
+.claude
+.roo/mcp.json
+.mcp.json
 mcp.json
