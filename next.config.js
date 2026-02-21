@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
+
   // Performance optimizations
   experimental: {
     // Remove optimizeCss as it requires 'critters' dependency
