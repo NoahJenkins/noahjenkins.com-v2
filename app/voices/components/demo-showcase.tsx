@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ScrollReveal } from "../../../components/animations/scroll-reveal"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
 import { AudioPlayer } from "./audio-player"
 
 interface VoiceDemo {

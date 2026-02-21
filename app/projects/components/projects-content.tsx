@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion"
 import { Code, Server, ExternalLink, Github, Globe, Smartphone, Cloud, Mic } from "lucide-react"
-import { ScrollReveal } from "../../../components/animations/scroll-reveal"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
-import { Button } from "../../../components/ui/button"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 interface Project {
   id: string

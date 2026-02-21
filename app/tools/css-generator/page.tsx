@@ -5,7 +5,7 @@ export const dynamic = 'force-static'
 
 import { motion } from "framer-motion"
 import { Palette, Code, Download, Wand2 } from "lucide-react"
-import { ScrollReveal } from "../../../components/animations/scroll-reveal"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
 import { GradientGenerator } from "./components/gradient-generator"
 
 export default function CSSGeneratorPage() {

@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Play, Pause, SkipBack, SkipForward, Volume2, Download } from "lucide-react"
 import WaveSurfer from "wavesurfer.js"
 import { Waveform } from "./waveform"
-import { Button } from "../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 
 interface AudioPlayerProps {
   title: string

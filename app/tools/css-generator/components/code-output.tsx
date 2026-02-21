@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Copy, Check, Download } from "lucide-react"
-import { Button } from "../../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 
 interface CodeOutputProps {
   gradient: string

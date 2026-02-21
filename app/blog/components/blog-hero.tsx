@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { BookOpen, Calendar } from "lucide-react"
-import { ScrollReveal } from "../../../components/animations/scroll-reveal"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
 
 export function BlogHero() {
   return (

@@ -5,9 +5,9 @@ export const dynamic = 'force-static'
 
 import { motion } from "framer-motion"
 import { Mic, Headphones, Radio, BookOpen, Play } from "lucide-react"
-import { ScrollReveal } from "../../components/animations/scroll-reveal"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
 import { DemoShowcase } from "./components/demo-showcase"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function VoicesPage() {
   const services = [

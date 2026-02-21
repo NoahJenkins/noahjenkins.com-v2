@@ -1,5 +1,5 @@
 import { BlogHero } from './components/blog-hero'
-import { BlogPosts } from 'app/components/posts'
+import { BlogPosts } from '@/components/posts'
 import { getBlogPosts } from './utils'
 
 // Revalidate every hour for new blog posts

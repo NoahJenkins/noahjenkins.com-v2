@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Plus, Minus, Copy, Download, RotateCcw, Palette } from "lucide-react"
-import { Button } from "../../../../components/ui/button"
+import { Button } from "@/components/ui/button"
 import { GradientPreview } from "./gradient-preview"
 import { CodeOutput } from "./code-output"
 

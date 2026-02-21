@@ -3,11 +3,11 @@
 import { motion } from "framer-motion"
 import { ArrowRight, Github, Linkedin, Mail, Twitter, Code, Mic, FileText } from "lucide-react"
 import Link from "next/link"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Typewriter } from "../components/animations/typewriter"
-import { ScrollReveal } from "../components/animations/scroll-reveal"
-import { GradientAnimation } from "../components/animations/gradient-animation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Typewriter } from "@/components/animations/typewriter"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
+import { GradientAnimation } from "@/components/animations/gradient-animation"
 
 export default function HomePage() {
   return (

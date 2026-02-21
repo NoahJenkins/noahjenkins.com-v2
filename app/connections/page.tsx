@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion"
 import { Github, Linkedin, Home, ExternalLink } from "lucide-react"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Custom X (Twitter) Icon Component
 const XIcon = ({ className }: { className?: string }) => (

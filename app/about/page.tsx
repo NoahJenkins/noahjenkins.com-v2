@@ -4,10 +4,10 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Github, Download, Calendar, MapPin } from "lucide-react"
 import { getGitHubReadme, getGitHubStats, getFeaturedRepos, GitHubStats, GitHubRepo } from "../../lib/github-api"
-import { GitHubStatsComponent } from "../../components/ui/github-stats"
-import { RepoCard } from "../../components/ui/repo-card"
-import { ScrollReveal } from "../../components/animations/scroll-reveal"
-import { Button } from "../../components/ui/button"
+import { GitHubStatsComponent } from "@/components/ui/github-stats"
+import { RepoCard } from "@/components/ui/repo-card"
+import { ScrollReveal } from "@/components/animations/scroll-reveal"
+import { Button } from "@/components/ui/button"
 import sanitizeHtml from 'sanitize-html'
 
 export default function AboutPage() {
