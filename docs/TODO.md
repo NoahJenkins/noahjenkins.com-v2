@@ -18,14 +18,15 @@ Last Updated: 2026-02-21
 ## Security & Quality
 - [x] Run dependency/security audit
 - [x] Review secret handling and `.gitignore` coverage
-- [ ] Address critical/high findings
+- [x] Address critical/high findings
+- [x] Enforce pnpm-only package manager usage in repository scripts/config
 
 ## Blocked
-- [ ] Patch transitive `minimatch` vulnerability path (blocked on upstream dependency resolution strategy in Jest chain)
+- [ ] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
 
 ## Follow-ups
-- [ ] # TODO: Patch transitive `minimatch` high vulnerability path (Jest dependency chain)
-- [ ] # TODO: Decide whether CI should fail on high-severity audit findings
+- [ ] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
+- [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
 
 ## Definition of Done
 - [x] Acceptance criteria are met

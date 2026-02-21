@@ -1,6 +1,8 @@
 {
   "private": true,
+  "packageManager": "pnpm@10.17.1",
   "scripts": {
+    "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_config_user_agent||'')){console.error('This repository uses pnpm only. Run: pnpm install');process.exit(1)}\"",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -9,9 +11,9 @@
     "test:ui": "playwright test",
     "test:ui:headed": "playwright test --headed",
     "test:ui:debug": "playwright test --debug",
-    "test:all": "npm run test && npm run test:ui",
-    "test:all:ci": "npm run test -- --passWithNoTests && npm run test:ui",
-    "test:all:clean": "pkill -f 'next dev' || true && npm run test && npm run test:ui"
+    "test:all": "pnpm test && pnpm test:ui",
+    "test:all:ci": "pnpm test -- --passWithNoTests && pnpm test:ui",
+    "test:all:clean": "pkill -f 'next dev' || true && pnpm test && pnpm test:ui"
   },
   "dependencies": {
     "@tailwindcss/postcss": "4.2.0",
@@ -48,5 +50,10 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "ts-jest": "^29.4.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch": ">=10.2.1"
+    }
   }
 }

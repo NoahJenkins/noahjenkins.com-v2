@@ -116,7 +116,7 @@ A modern, full-stack portfolio website and blog built with Next.js 15, Tailwind 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+ recommended)
-- [pnpm](https://pnpm.io/) (recommended package manager)
+- [pnpm](https://pnpm.io/) (required package manager)
 
 ### Installation
 
