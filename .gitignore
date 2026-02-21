@@ -57,3 +57,11 @@ next-env.d.ts
 .roo/mcp.json
 .mcp.json
 mcp.json
+
+#Non Copilot Coding Agents
+GEMINI.md
+AGENTS.md
+CLAUDE.md
+/.gemini
+/.agents
+/.claude

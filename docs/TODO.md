@@ -14,6 +14,7 @@ Last Updated: 2026-02-21
 - [x] Add/update architecture documentation
 - [x] Add context/research notes and update `docs/context/index.md`
 - [x] Record new architectural decisions as ADRs
+ - [x] Sync GitHub Copilot instructions, agents, and skills to detected agent targets (CLAUDE)
 
 ## Security & Quality
 - [x] Run dependency/security audit
