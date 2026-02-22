@@ -13,6 +13,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-02-21 Dev Memory Stability Mitigation (Webpack Mode)](./2026-02-21-dev-memory-stability-webpack-mode.md)
 - [2026-02-21 Sync: Copilot agent sync to Claude](./2026-02-21-sync-agents.md)
 - [2026-02-21 Component Consolidation](./2026-02-21-component-consolidation.md)
+- [2026-02-21 Blog Chronological Organization](./2026-02-21-blog-chronological-organization.md)
 
 ## Linked ADRs
 

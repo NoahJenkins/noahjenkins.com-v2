@@ -1,6 +1,6 @@
 ---
 name: format-blog-post
-description: 'Take raw pasted blog post text and format it as a correctly structured MDX file, then write it to app/blog/posts/ in this repository so it is published on the next push.'
+description: "Take raw pasted blog post text and format it as a correctly structured MDX file, then write it to app/blog/posts/ in this repository so it is published on the next push."
 ---
 
 # Format Blog Post
@@ -15,28 +15,29 @@ Posts live in `app/blog/posts/` as `.mdx` files.
 
 **Required frontmatter fields:**
 
-| Field         | Type   | Notes                                                      |
-| ------------- | ------ | ---------------------------------------------------------- |
+| Field         | Type   | Notes                                                       |
+| ------------- | ------ | ----------------------------------------------------------- |
 | `title`       | string | Double-quoted. Preserve the author's original title casing. |
 | `publishedAt` | string | `YYYY-MM-DD` format. Default to today's date if not stated. |
 
 **Optional frontmatter fields:**
 
-| Field     | Type             | Notes                                                       |
-| --------- | ---------------- | ----------------------------------------------------------- |
-| `summary` | string           | Single-sentence description. Derive from the post if absent. |
-| `image`   | string           | Absolute path under `/assets/images/`. Omit if not provided. |
-| `tags`    | string (inline)  | Comma-separated values on a single line, e.g. `personal, career`. Omit if no tags can be reasonably inferred. |
+| Field     | Type            | Notes                                                                                                         |
+| --------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `summary` | string          | Single-sentence description. Derive from the post if absent.                                                  |
+| `image`   | string          | Absolute path under `/assets/images/`. Omit if not provided.                                                  |
+| `tags`    | string (inline) | Comma-separated values on a single line, e.g. `personal, career`. Omit if no tags can be reasonably inferred. |
 
 **File naming (slug) rules:**
 
+- **CRITICAL**: Prepend the `publishedAt` date to the filename explicitly: `YYYY-MM-DD-slug`. This ensures posts are organized chronologically in the file system.
 - Derive the slug from the post title.
 - Lowercase, words separated by hyphens.
 - Remove punctuation (colons, apostrophes, commas, quotes).
 - Limit to 60 characters.
 - Examples:
-  - "2025 Year in Review: Mountains and Valleys" → `2025-year-in-review-mountains-and-valleys`
-  - "Mid-Year Learning Update 2025" → `mid-year-update-2025`
+  - "2025 Year in Review: Mountains and Valleys" (Published: 2025-12-31) → `2025-12-31-2025-year-in-review-mountains-and-valleys`
+  - "Mid-Year Learning Update 2025" (Published: 2025-06-01) → `2025-06-01-mid-year-update-2025`
 
 **Markdown/MDX body conventions observed in existing posts:**
 

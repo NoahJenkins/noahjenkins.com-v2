@@ -29,6 +29,10 @@ Last Updated: 2026-02-21
 - [x] Add manual `dev:clean` script for safe lock/process cleanup before dev startup
 - [x] Switch local dev script to Webpack mode for stability under VS Code
 
+## Content Management
+
+- [x] Organize blog posts chronologically (newest first) and update `format-blog-post` skill for date-prefix naming convention
+
 ## Blocked
 
 - [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
