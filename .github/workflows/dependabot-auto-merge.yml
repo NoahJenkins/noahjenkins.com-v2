@@ -1,0 +1,142 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependabot-auto-merge:
+    name: Auto-approve and enable auto-merge
+    runs-on: ubuntu-latest
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.draft == false
+
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate allowed ecosystem and semver range
+        id: eligibility
+        env:
+          PACKAGE_ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          set -euo pipefail
+
+          is_supported_ecosystem=false
+          if [[ "$PACKAGE_ECOSYSTEM" == "npm" || "$PACKAGE_ECOSYSTEM" == "github-actions" || "$PACKAGE_ECOSYSTEM" == "github_actions" ]]; then
+            is_supported_ecosystem=true
+          fi
+
+          is_supported_update=false
+          if [[ "$UPDATE_TYPE" == "version-update:semver-patch" || "$UPDATE_TYPE" == "version-update:semver-minor" ]]; then
+            is_supported_update=true
+          fi
+
+          if [[ "$is_supported_ecosystem" == "true" && "$is_supported_update" == "true" ]]; then
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "eligible=false" >> "$GITHUB_OUTPUT"
+          echo "Skipping: ecosystem=$PACKAGE_ECOSYSTEM update_type=$UPDATE_TYPE"
+
+      - name: Validate changed files scope
+        id: filescope
+        if: steps.eligibility.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t changed_files < <(gh api \
+            "repos/$REPO/pulls/$PR_NUMBER/files" \
+            --paginate \
+            --jq '.[].filename')
+
+          if [[ ${#changed_files[@]} -eq 0 ]]; then
+            echo "No changed files found, refusing to auto-merge."
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for file in "${changed_files[@]}"; do
+            if [[ "$file" == "package.json" || "$file" == "pnpm-lock.yaml" || "$file" =~ ^\.github/workflows/.+\.ya?ml$ ]]; then
+              continue
+            fi
+
+            echo "Unsupported changed file for auto-merge: $file"
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          done
+
+          echo "safe=true" >> "$GITHUB_OUTPUT"
+
+      - name: Auto-approve Dependabot PR
+        if: steps.eligibility.outputs.eligible == 'true' && steps.filescope.outputs.safe == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pull_number = context.payload.pull_request.number
+
+            try {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number,
+                event: 'APPROVE',
+                body: 'Auto-approved for Dependabot patch/minor update after policy checks.'
+              })
+            } catch (error) {
+              if (error.status === 422) {
+                core.info('Approval already exists for this actor; continuing.')
+              } else {
+                throw error
+              }
+            }
+
+      - name: Enable auto-merge
+        if: steps.eligibility.outputs.eligible == 'true' && steps.filescope.outputs.safe == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pullRequestId = context.payload.pull_request.node_id
+
+            try {
+              await github.graphql(
+                `mutation($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId,
+                    mergeMethod: SQUASH
+                  }) {
+                    pullRequest {
+                      number
+                      autoMergeRequest {
+                        enabledAt
+                      }
+                    }
+                  }
+                }`,
+                { pullRequestId }
+              )
+            } catch (error) {
+              core.warning(`Unable to enable auto-merge: ${error.message}`)
+            }

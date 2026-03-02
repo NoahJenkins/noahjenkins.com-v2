@@ -1,6 +1,6 @@
 # Project Task Tracker
 
-Last Updated: 2026-02-21
+Last Updated: 2026-03-02
 
 > Living document for major project tasks. Update status continuously during planning and implementation.
 
@@ -28,6 +28,8 @@ Last Updated: 2026-02-21
 - [x] Resolve local dev startup lock conflict and Turbopack root warning
 - [x] Add manual `dev:clean` script for safe lock/process cleanup before dev startup
 - [x] Switch local dev script to Webpack mode for stability under VS Code
+- [x] Add Dependabot auto-merge automation for eligible patch/minor updates
+- [x] Align branch protection required status-check contexts to current CI job names
 
 ## Content Management
 
@@ -40,6 +42,7 @@ Last Updated: 2026-02-21
 ## Follow-ups
 
 - [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
+- [ ] # TODO: Re-review Dependabot auto-merge policy scope quarterly (ecosystems, semver scope, allowed file paths)
 - [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
 - [ ] # TODO: Monitor VS Code memory behavior with `pnpm run dev` (webpack mode) across longer sessions
 

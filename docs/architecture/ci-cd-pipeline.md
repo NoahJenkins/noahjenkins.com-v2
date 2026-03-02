@@ -100,6 +100,26 @@ Steps:
 There is **no deploy job** in the current workflow.  
 The pipeline is currently CI-only (validation), not CD deployment.
 
+### 5) Dependabot Auto-Merge Flow
+
+This repository includes a dedicated workflow (`.github/workflows/dependabot-auto-merge.yml`) named **Dependabot Auto-Merge**.
+
+- **Trigger**
+  - `pull_request_target` on `opened`, `reopened`, `synchronize`, `ready_for_review`
+- **Gate conditions**
+  - PR author and actor must both be `dependabot[bot]`
+  - Base branch must be `main`
+  - PR must not be draft
+- **Policy checks**
+  - Ecosystem limited to `npm` and `github-actions`
+  - Update type limited to `semver-patch` and `semver-minor`
+  - Changed files limited to `package.json`, `pnpm-lock.yaml`, and workflow YAML files under `.github/workflows/`
+- **Actions**
+  - Auto-approve PR when policy checks pass
+  - Enable GitHub auto-merge (squash)
+
+Branch protection remains authoritative: merge completes only after required checks pass (`Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, `Build Check`) and review requirements are satisfied.
+
 ## Deployment Environments
 No GitHub Actions deployment environments are defined in `.github/workflows/ci.yml` (e.g., no `environment:` blocks such as staging/production).  
 Deployments, if any, are handled outside this workflow.

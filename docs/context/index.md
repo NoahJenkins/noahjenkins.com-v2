@@ -15,7 +15,12 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-02-21 Component Consolidation](./2026-02-21-component-consolidation.md)
 - [2026-02-21 Blog Chronological Organization](./2026-02-21-blog-chronological-organization.md)
 
+## 2026-03
+
+- [2026-03-02 Dependabot Auto-Merge Automation](./2026-03-02-dependabot-auto-merge-automation.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
 - [ADR 0002: Consolidate UI Components](../adr/0002-consolidate-ui-components.md)
+- [ADR 0003: Dependabot Auto-Merge Policy](../adr/0003-dependabot-auto-merge-policy.md)
