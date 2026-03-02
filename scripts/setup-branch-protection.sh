@@ -25,4 +25,4 @@ echo "- Require status checks: Security Audit, Jest Tests, Playwright Tests, Typ
 echo "- Require branches to be up to date before merging"
 echo "- Dismiss stale reviews when new commits are pushed"
 echo "- Prevent force pushes and branch deletion"
-echo "- Apply rules to administrators"
+echo "- Do not enforce rules for administrators (admin bypass enabled)"

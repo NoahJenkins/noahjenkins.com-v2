@@ -120,6 +120,8 @@ This repository includes a dedicated workflow (`.github/workflows/dependabot-aut
 
 Branch protection remains authoritative: merge completes only after required checks pass (`Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, `Build Check`) and review requirements are satisfied.
 
+Current branch protection configuration does not enforce these rules for administrators (`enforce_admins: false`), allowing admin direct pushes to `main` when needed.
+
 ## Deployment Environments
 No GitHub Actions deployment environments are defined in `.github/workflows/ci.yml` (e.g., no `environment:` blocks such as staging/production).  
 Deployments, if any, are handled outside this workflow.

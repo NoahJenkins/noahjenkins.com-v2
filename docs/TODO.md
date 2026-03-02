@@ -30,6 +30,7 @@ Last Updated: 2026-03-02
 - [x] Switch local dev script to Webpack mode for stability under VS Code
 - [x] Add Dependabot auto-merge automation for eligible patch/minor updates
 - [x] Align branch protection required status-check contexts to current CI job names
+- [x] Enable administrator bypass on `main` branch protection to preserve VS Code direct push workflow
 
 ## Content Management
 
@@ -43,6 +44,7 @@ Last Updated: 2026-03-02
 
 - [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
 - [ ] # TODO: Re-review Dependabot auto-merge policy scope quarterly (ecosystems, semver scope, allowed file paths)
+- [ ] # TODO: Revisit administrator bypass decision if team size or branch safety requirements increase
 - [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
 - [ ] # TODO: Monitor VS Code memory behavior with `pnpm run dev` (webpack mode) across longer sessions
 
