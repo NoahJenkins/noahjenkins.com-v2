@@ -3,6 +3,7 @@ import { CustomMDX } from '@/components/mdx'
 import { getBlogPosts } from 'app/blog/utils'
 import { formatDate } from 'app/blog/format-date'
 import { baseUrl } from 'app/sitemap'
+import { encodePathSegment, toSafeJsonLd } from '@/lib/security'
 
 export async function generateStaticParams() {
   let posts = getBlogPosts()
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description,
       type: 'article',
       publishedTime,
-      url: `${baseUrl}/blog/${post.slug}`,
+      url: `${baseUrl}/blog/${encodePathSegment(post.slug)}`,
       images: [
         {
           url: ogImage,
@@ -67,15 +68,6 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
     return Math.ceil(words / wordsPerMinute)
   }
 
-  // Sanitize text for JSON-LD to prevent any potential XSS via script injection
-  const sanitizeForJsonLd = (text: string): string => {
-    if (!text) return ''
-    return text
-      .replace(/</g, '\\u003c')
-      .replace(/>/g, '\\u003e')
-      .replace(/&/g, '\\u0026')
-  }
-
   const headerStyle = post.metadata.image
     ? {
         backgroundImage: `url(${post.metadata.image})`,
@@ -90,17 +82,17 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
         type="application/ld+json"
         suppressHydrationWarning
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: toSafeJsonLd({
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: sanitizeForJsonLd(post.metadata.title),
+            headline: post.metadata.title,
             datePublished: post.metadata.publishedAt,
             dateModified: post.metadata.publishedAt,
-            description: sanitizeForJsonLd(post.metadata.summary),
+            description: post.metadata.summary,
             image: post.metadata.image
               ? `${baseUrl}${post.metadata.image}`
               : `/og?title=${encodeURIComponent(post.metadata.title)}`,
-            url: `${baseUrl}/blog/${post.slug}`,
+            url: `${baseUrl}/blog/${encodePathSegment(post.slug)}`,
             author: {
               '@type': 'Person',
               name: 'Noah Jenkins',

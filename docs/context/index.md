@@ -19,6 +19,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 - [2026-03-02 Dependabot Auto-Merge Automation](./2026-03-02-dependabot-auto-merge-automation.md)
 - [2026-03-02 Main Branch Admin Bypass Adjustment](./2026-03-02-main-branch-admin-bypass-adjustment.md)
+- [2026-03-02 Stored XSS Alert Remediation](./2026-03-02-stored-xss-alert-remediation.md)
 
 ## Linked ADRs
 
@@ -26,3 +27,4 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [ADR 0002: Consolidate UI Components](../adr/0002-consolidate-ui-components.md)
 - [ADR 0003: Dependabot Auto-Merge Policy](../adr/0003-dependabot-auto-merge-policy.md)
 - [ADR 0004: Allow Administrator Bypass on Main](../adr/0004-allow-administrator-bypass-on-main.md)
+- [ADR 0005: Standardize Output Encoding for User-Controlled Content](../adr/0005-standardize-output-encoding-for-user-controlled-content.md)
