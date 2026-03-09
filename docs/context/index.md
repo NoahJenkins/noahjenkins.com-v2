@@ -21,6 +21,8 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-03-02 Main Branch Admin Bypass Adjustment](./2026-03-02-main-branch-admin-bypass-adjustment.md)
 - [2026-03-02 Stored XSS Alert Remediation](./2026-03-02-stored-xss-alert-remediation.md)
 
+- [2026-03-09 Dependabot Auto-Merge Bug Investigation](./2026-03-09-dependabot-auto-merge-bug-investigation.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)

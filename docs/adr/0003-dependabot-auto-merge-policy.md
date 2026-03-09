@@ -28,7 +28,7 @@ Adopt **Option 3**.
 Implement a dedicated workflow that auto-approves and enables auto-merge only when all of the following are true:
 - PR is authored by `dependabot[bot]` and targets `main`
 - PR is not draft
-- ecosystem is `npm` or `github-actions`
+- ecosystem is `npm`, `npm_and_yarn`, or `github-actions`
 - update type is `semver-patch` or `semver-minor`
 - changed files are restricted to `package.json`, `pnpm-lock.yaml`, or workflow YAML files
 
@@ -40,3 +40,13 @@ Keep branch protection enabled with required checks and required approvals so me
 - Preserved protection posture by requiring existing CI checks and branch rules.
 - Introduced policy maintenance responsibility (ecosystem/update/file-scope lists and status-check names must stay current).
 - Major updates and non-conforming changes remain manual by design.
+
+## Amendment — 2026-03-09: Bug fixes to initial implementation
+
+Three bugs were discovered and fixed after the workflow's first real-world use against Dependabot PRs:
+
+1. **Ecosystem name mismatch** — `dependabot/fetch-metadata` outputs `npm_and_yarn`, not `npm`. The eligibility check was updated to include `npm_and_yarn`.
+2. **Insufficient permissions** — `enablePullRequestAutoMerge` GraphQL mutation requires `contents: write`. The workflow only had `contents: read`, causing silent failure. Updated to `contents: write`.
+3. **Repository auto-merge disabled** — GitHub's auto-merge feature was not enabled on the repository. Enabled via API (`allow_auto_merge: true`).
+
+Additionally, `dismiss_stale_reviews: true` in branch protection means approvals added by the workflow are discarded whenever Dependabot rebases. This is expected behavior; future rebases on already-approved PRs may require a re-approval trigger.
