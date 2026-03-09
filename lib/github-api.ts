@@ -17,19 +17,35 @@ export interface GitHubStats {
   languages: { [key: string]: number }
 }
 
+function resolveReadmeImageUrls(content: string, username: string, branch: string = 'main'): string {
+  const rawBase = `https://raw.githubusercontent.com/${username}/${username}/${branch}/`
+
+  // Replace relative src="" in HTML img tags (e.g. src="assets/icons/azure.svg")
+  content = content.replace(/src="(?!https?:\/\/)(?!\/\/)(.*?)"/g, (match, path) => {
+    return `src="${rawBase}${path}"`
+  })
+
+  // Replace relative markdown image paths: ![alt](relative/path)
+  content = content.replace(/!\[([^\]]*)\]\((?!https?:\/\/)(?!\/\/)(.*?)\)/g, (match, alt, path) => {
+    return `![${alt}](${rawBase}${path})`
+  })
+
+  return content
+}
+
 export async function getGitHubReadme(username: string = 'noahjenkins') {
   try {
     const response = await fetch(
       `https://api.github.com/repos/${username}/${username}/readme`,
-      { 
-        headers: { 
+      {
+        headers: {
           'Accept': 'application/vnd.github.v3.raw',
           'User-Agent': 'NextJS-App'
         },
         next: { revalidate: 3600 } // Cache for 1 hour
       }
     );
-    
+
     if (!response.ok) {
       // Fallback content if README doesn't exist
       return `# Hi there! 👋
@@ -59,7 +75,8 @@ I love building scalable cloud solutions, crafting elegant web experiences, and 
 Always excited to collaborate on innovative projects. Feel free to reach out!`
     }
     
-    return response.text()
+    const text = await response.text()
+    return resolveReadmeImageUrls(text, username)
   } catch (error) {
     console.error('Failed to fetch GitHub README:', error)
     return `# About Noah Jenkins
