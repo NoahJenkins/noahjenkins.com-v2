@@ -506,6 +506,37 @@ Create or update `AGENTS.md` at the repo root (universal source of truth for AI 
 
 > **Greenfield mode**: Populate the custom instructions with the user's intended tech stack. Fill in language, framework, and architecture fields based on their answers rather than leaving them blank. Add recommended patterns and conventions for the chosen stack.
 
+### Root `AGENTS.md` size and scope policy (mandatory)
+
+Keep root `AGENTS.md` **under 100 lines**.
+
+Root is for universal, always-on guidance only:
+- Project overview (language/framework/architecture, short form)
+- Core coding standards summary
+- Command shortlist (build/test/dev/start)
+- Critical security guardrails
+- Short docs-update rule
+- Delegation index (names only; no long matrices)
+
+Do **not** put long checklists, large tables, ADR templates, detailed doc structure prose, or extended examples in root `AGENTS.md`.
+
+### Nested `AGENTS.md` decomposition (mandatory when content is too long)
+
+When content would exceed 100 lines, split into nested files and reference them from root.
+
+Preferred nested targets (create only when relevant to detected stack):
+- `app/AGENTS.md` — route/framework-specific implementation rules
+- `components/AGENTS.md` — UI/component conventions and accessibility rules
+- `lib/AGENTS.md` — shared utility, security sink, and integration guidance
+- `docs/AGENTS.md` — ADR/context/architecture documentation process details
+- `.github/AGENTS.md` — CI/workflow/release/review automation conventions
+
+Rules:
+1. Root keeps global constraints and short pointers to nested files.
+2. Nested files hold verbose/scoped guidance only; avoid repeating root content.
+3. If a section applies to one directory, move it out of root.
+4. Keep each nested file focused on one concern.
+
 ```markdown
 # Project-Specific Guidelines for GitHub Copilot
 
@@ -534,30 +565,9 @@ Create or update `AGENTS.md` at the repo root (universal source of truth for AI 
 - Coverage expectations: 
 - Mocking approach: 
 
-## Documentation Structure
-
-This repository follows a structured documentation approach:
-
-### docs/architecture/
-High-level architecture overviews, system diagrams, and data flow documentation. Update when overall system design changes significantly.
-
-### docs/adr/ (Architecture Decision Records)
-Architecture Decision Records documenting significant architectural choices. Files are named `NNNN-short-title.md` (e.g., `0001-use-postgresql.md`). ADRs are immutable and append-only.
-
-**Each ADR must include:**
-- Status (proposed, accepted, deprecated, superseded)
-- Context (problem, constraints, requirements)
-- Options considered (alternatives with pros/cons)
-- Decision (what was chosen and why)
-- Consequences (trade-offs, implications)
-
-Write an ADR when decisions affect structure, dependencies, non-functional requirements, interfaces, or construction techniques.
-
-### docs/context/
-Exploratory research, planning session notes, and working documentation. Files named `YYYY-MM-DD-topic-name.md` with Summary, Options/Findings, and Open Questions sections. Maintain an `index.md` linking related notes to resulting ADRs.
-
-### docs/TODO.md
-Living project task tracker. Add major tasks as they arise, keep checkbox status current (`- [ ]` / `- [x]`), and mark completed tasks immediately as work finishes.
+## Documentation
+- For detailed docs process rules, see `docs/AGENTS.md` when present.
+- Keep root-level policy short; put ADR/context templates in nested guidance.
 
 ## Information Sources Priority
 
@@ -609,76 +619,44 @@ Use first-party official documentation sources (especially if documentation tool
 - Development server: 
 - Production build: 
 
-## Documentation Update Policy (Automatic, No Prompt)
-
-For any non-trivial code change, update documentation in the same turn without asking for confirmation.
-
-### Required behavior
-- Perform a docs impact check after every code edit.
-- If impacted, automatically update relevant files under `docs/`, including:
-  - `docs/TODO.md`
-  - `docs/context/index.md`
-  - A new dated context note in `docs/context/`
-  - A new ADR in `docs/adr/` when architecture/behavior/dependency/runtime decisions changed
-  - `docs/architecture/` when execution flow/system design changed
-- Do NOT ask "do you want me to update docs?" when required changes are clear.
-- Only ask the user if the required documentation target is ambiguous.
-- If no docs changes are needed, explicitly state why in the final response.
-
-### Autonomy rule
-- Assume user consent for documentation updates that are directly related to implemented code changes.
-
-### Completion gate
-- A task is incomplete until required documentation updates are applied.
-
-### Delegation requirement
-- Use `@documentation-specialist` automatically after implementation for docs updates.
-
-### ADR triggers
-- Create or update ADRs after significant design or architecture sessions.
-- Create or update ADRs when decisions affect structure, dependencies, interfaces, runtime, or behavior.
-- Create or update ADRs when adopting new technologies or patterns.
-
-### Context note triggers
-- Create context notes after research or exploratory work.
-- Create context notes during planning sessions.
-- Create context notes when documenting "why" behind experiments.
-
-### Architecture doc triggers
-- Update architecture docs after refactors that change system structure.
-- Update architecture docs when adding new major components or services.
-- Update architecture docs when data flows or integrations change.
-
-## General Documentation Principles
-- Keep files focused on one topic
-- Use Markdown format for all documentation
-- Link between documents (ADRs reference context notes, context notes link to ADRs)
-- Documentation is version-controlled alongside code
-- Never commit secrets, credentials, or sensitive PII to documentation folders
+## Documentation Update Policy
+- For non-trivial changes, run docs impact check in same turn.
+- Update impacted files under `docs/`.
+- See `docs/AGENTS.md` for detailed ADR/context/architecture triggers and formats.
 
 ## Sub-Agent Delegation
 
-This repository has specialized Copilot agents in `.github/agents/`. **Delegate tasks to the appropriate agent** rather than handling everything directly:
+Delegate to specialized agents in `.github/agents/` when available:
+- `@research-agent` for technical research
+- `@code-reviewer` for code quality review
+- `@security-specialist` for security review
+- `@documentation-specialist` for docs/ADR/context updates
+```
 
-| Task type | Delegate to | How to invoke |
-|-----------|------------|---------------|
-| Technical research, library docs, version lookups, API references | `@research-agent` | Use for any question requiring up-to-date technical documentation or exploratory research |
-| Code quality review, standards compliance, refactoring suggestions | `@code-reviewer` | Use when reviewing code changes, PRs, or assessing code quality |
-| Security analysis, vulnerability scanning, secrets detection | `@security-specialist` | Use for security reviews, dependency audits, or assessing attack surface |
-| ADRs, architecture docs, context notes, README updates | `@documentation-specialist` | Use when creating or updating any documentation in `docs/` |
+If a generated root `AGENTS.md` is over 100 lines, automatically split by concern into nested `AGENTS.md` files and regenerate root until compliant.
 
-### When to delegate
-- **Research**: Before implementing unfamiliar patterns, integrating new libraries, or answering questions about framework best practices → `@research-agent`
-- **Code review**: When reviewing pull requests, assessing code quality, or checking standards adherence → `@code-reviewer`
-- **Security**: When adding authentication, handling user input, managing secrets, updating dependencies, or assessing vulnerabilities → `@security-specialist`
-- **Documentation**: When architectural decisions are made, after significant refactors, or when creating planning/research notes → `@documentation-specialist`
+#### Nested `AGENTS.md` skeleton examples
 
-### Delegation guidelines
-- Provide the sub-agent with relevant context (file paths, code snippets, requirements)
-- Let the sub-agent complete its full analysis before acting on results
-- Multiple agents can be used in sequence (e.g., `@research-agent` for research → `@documentation-specialist` to write the ADR)
-- When a task spans multiple agent specializations, break it into sub-tasks and delegate each to the appropriate agent
-- After any non-trivial implementation change, use `@documentation-specialist` automatically to apply required docs updates in the same turn
+```markdown
+# app/AGENTS.md
+
+## Scope
+Rules for route handlers, rendering/data-fetching patterns, and framework-specific constraints.
+
+## Conventions
+- Keep this file scoped to `app/**`.
+- Avoid repeating global rules from root `AGENTS.md`.
+```
+
+```markdown
+# docs/AGENTS.md
+
+## Scope
+Rules for ADR creation, context note updates, architecture documentation, and task tracker maintenance.
+
+## Conventions
+- Keep templates and verbose documentation process details here.
+- Root `AGENTS.md` should only contain short docs policy pointers.
 ```
 
 ## 9. Custom Agents
@@ -1252,6 +1230,7 @@ Execute all tasks in the order listed above. For each task:
 11. **Actively maintain docs/TODO.md**: Add newly discovered major tasks during execution and mark tasks completed as soon as they are finished
 12. **Initialize TODO template when needed**: If `docs/TODO.md` is created during onboarding, seed it with the standard starter template from Section 2, then adapt it to the detected stack and project scope
 13. **Report blocked work in final summary**: Include any remaining items from the `Blocked` section of `docs/TODO.md`, along with dependency notes and recommended next action
+14. **Validate root instruction size**: Ensure generated root `AGENTS.md` stays under 100 lines. If it exceeds 100, split verbose/scoped content into nested `AGENTS.md` files and regenerate root.
 
 After completing all tasks, provide a summary of:
 - What was created
