@@ -85,8 +85,8 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
       wavesurfer.js:
-        specifier: ^7.12.1
-        version: 7.12.1
+        specifier: ^7.12.3
+        version: 7.12.3
     devDependencies:
       '@playwright/test':
         specifier: ^1.58.2
@@ -2554,8 +2554,8 @@ packages:
   walker@1.0.8:
     resolution: {integrity: sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==}
 
-  wavesurfer.js@7.12.1:
-    resolution: {integrity: sha512-NswPjVHxk0Q1F/VMRemCPUzSojjuHHisQrBqQiRXg7MVbe3f5vQ6r0rTTXA/a/neC/4hnOEC4YpXca4LpH0SUg==}
+  wavesurfer.js@7.12.3:
+    resolution: {integrity: sha512-+QtFRftd/AktiQJerW7pa9jA8g/LZmMJjBDHDQtDa0PwCX+047KOUZqfvoQb5CClVSwNilhoABIYupUymqfjhw==}
 
   webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
@@ -5495,7 +5495,7 @@ snapshots:
     dependencies:
       makeerror: 1.0.12
 
-  wavesurfer.js@7.12.1: {}
+  wavesurfer.js@7.12.3: {}
 
   webidl-conversions@7.0.0: {}
 
