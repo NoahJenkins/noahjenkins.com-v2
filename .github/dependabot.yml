@@ -60,6 +60,9 @@ updates:
       # Pin TypeScript to avoid potential compatibility issues
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # Ignore major updates for Vercel packages (auto-merge only handles patch/minor)
+      - dependency-name: "@vercel/*"
+        update-types: ["version-update:semver-major"]
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
