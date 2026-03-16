@@ -106,7 +106,8 @@ jobs:
               })
             } catch (error) {
               if (error.status === 422) {
-                core.info('Approval already exists for this actor; continuing.')
+                core.info(`Review not created (422): ${error.message}`)
+                core.info('This may mean the approval already exists, or Actions is not permitted to approve PRs (check Settings > Actions > General).')
               } else {
                 throw error
               }
