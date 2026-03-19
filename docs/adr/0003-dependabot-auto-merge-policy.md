@@ -50,3 +50,16 @@ Three bugs were discovered and fixed after the workflow's first real-world use a
 3. **Repository auto-merge disabled** — GitHub's auto-merge feature was not enabled on the repository. Enabled via API (`allow_auto_merge: true`).
 
 Additionally, `dismiss_stale_reviews: true` in branch protection means approvals added by the workflow are discarded whenever Dependabot rebases. This is expected behavior; future rebases on already-approved PRs may require a re-approval trigger.
+
+## Amendment — 2026-03-16: Ignore major version updates for @vercel/* packages
+
+PR #126 exposed a gap: `dependabot.yml` had no ignore rule for the `vercel` package group's major versions. The auto-merge workflow correctly excluded the PR (major updates are outside policy), but Dependabot continued opening PRs that could never auto-merge.
+
+Added an ignore rule to `dependabot.yml`:
+
+```yaml
+- dependency-name: "@vercel/*"
+  update-types: ["version-update:semver-major"]
+```
+
+This aligns `@vercel/*` with the existing treatment of `tailwindcss`, `typescript`, and other packages where major version changes require manual review.

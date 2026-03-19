@@ -22,6 +22,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-03-02 Stored XSS Alert Remediation](./2026-03-02-stored-xss-alert-remediation.md)
 
 - [2026-03-09 Dependabot Auto-Merge Bug Investigation](./2026-03-09-dependabot-auto-merge-bug-investigation.md)
+- [2026-03-16 Dependabot Major Version Ignore Rule and PR Rebase](./2026-03-16-dependabot-major-version-ignore-and-pr-rebase.md)
 
 ## Linked ADRs
 
