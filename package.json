@@ -17,7 +17,7 @@
     "test:all:clean": "pkill -f 'next dev' || true && pnpm test && pnpm test:ui"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "4.2.1",
+    "@tailwindcss/postcss": "4.2.2",
     "@types/node": "25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -39,7 +39,7 @@
     "sanitize-html": "^2.17.2",
     "sugar-high": "^0.9.5",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "4.2.1",
+    "tailwindcss": "4.2.2",
     "typescript": "5.9.3",
     "wavesurfer.js": "^7.12.4"
   },
