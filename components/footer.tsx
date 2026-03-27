@@ -1,5 +1,6 @@
 "use client"
-import { Rss, Linkedin, Twitter, Mail } from "lucide-react"
+import { Rss, Mail } from "lucide-react"
+import { LinkedinIcon as Linkedin, TwitterIcon as Twitter } from "@/components/icons/brand-icons"
 import { useState, useEffect } from "react"
 import Script from "next/script"
 

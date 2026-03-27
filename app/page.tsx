@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowRight, Github, Linkedin, Mail, Twitter, Code, Mic, FileText } from "lucide-react"
+import { ArrowRight, Mail, Code, Mic, FileText } from "lucide-react"
+import { GithubIcon as Github, LinkedinIcon as Linkedin, TwitterIcon as Twitter } from "@/components/icons/brand-icons"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

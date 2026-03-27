@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Github, Download, Calendar, MapPin } from "lucide-react"
+import { Download, Calendar, MapPin } from "lucide-react"
+import { GithubIcon as Github } from "@/components/icons/brand-icons"
 import { getGitHubReadme, getGitHubStats, getFeaturedRepos, GitHubStats, GitHubRepo } from "../../lib/github-api"
 import { GitHubStatsComponent } from "@/components/ui/github-stats"
 import { RepoCard } from "@/components/ui/repo-card"
