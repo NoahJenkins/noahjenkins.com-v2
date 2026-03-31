@@ -33,6 +33,7 @@ Last Updated: 2026-03-31
 - [x] Align branch protection required status-check contexts to current CI job names
 - [x] Enable administrator bypass on `main` branch protection to preserve VS Code direct push workflow
 - [x] Remediate GitHub CodeQL stored XSS alerts in blog links, JSON-LD serialization, and RSS feed generation
+- [x] Enable Dependabot security updates, add Dependency Review workflow, and enforce SHA-pinned GitHub Actions refs
 
 ## Content Management
 
@@ -48,6 +49,7 @@ Last Updated: 2026-03-31
 - [x] # TODO: Fix Dependabot auto-merge workflow (npm_and_yarn ecosystem mismatch, contents:write permission, repo allow_auto_merge flag) — 2026-03-09
 - [ ] # TODO: Re-review Dependabot auto-merge policy scope quarterly (ecosystems, semver scope, allowed file paths)
 - [ ] # TODO: Revisit administrator bypass decision if team size or branch safety requirements increase
+- [ ] # TODO: Observe `Dependency Review` results and decide whether to add it to required branch protection checks
 - [ ] # TODO: Add regression tests for generated RSS/XML and blog URL composition paths beyond utility-level coverage
 - [ ] # TODO: Re-evaluate `pnpm.overrides` regularly and remove overrides when upstream chains are fully patched
 - [ ] # TODO: Monitor VS Code memory behavior with `pnpm run dev` (webpack mode) across longer sessions

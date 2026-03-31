@@ -1,20 +1,24 @@
 # CI/CD Pipeline
 
 ## Overview
-This repository uses a single GitHub Actions workflow (`.github/workflows/ci.yml`) named **CI** to validate code quality and build integrity on changes to `main`.
+This repository uses two GitHub Actions workflows for validation:
+
+- `.github/workflows/ci.yml` named **CI** for application validation
+- `.github/workflows/dependency-review.yml` named **Dependency Review** for pull request dependency-diff scanning
 
 - **Triggers**
   - `push` to `main`
   - `pull_request` targeting `main`
 - **Execution model**
-  - Five independent jobs run on `ubuntu-latest`: `security-audit`, `jest-tests`, `playwright-tests`, `typecheck`, `build`
+  - Five independent jobs run on `ubuntu-latest` in **CI**: `security-audit`, `jest-tests`, `playwright-tests`, `typecheck`, `build`
   - Workflow-level concurrency cancels in-progress runs for the same ref:
     - `group: ${{ github.workflow }}-${{ github.ref }}`
     - `cancel-in-progress: true`
 - **Security baseline**
-  - Minimal workflow permissions:
+  - Minimal permissions in the main `CI` workflow:
     - `contents: read`
     - `actions: read`
+  - Workflow action references are pinned to full commit SHAs
 
 ## Pipeline Stages
 
@@ -26,7 +30,7 @@ Purpose: unit/integration validation and coverage upload.
 Steps:
 1. Checkout (`actions/checkout@v4`)
 2. Setup Node.js 20 (`actions/setup-node@v4`)
-3. Setup pnpm (`pnpm/action-setup@v4`, `version: latest`)
+3. Setup pnpm (`pnpm/action-setup`)
 4. Resolve pnpm store path into env var `STORE_PATH`
 5. Restore/save pnpm cache (`actions/cache@v4`) keyed by `pnpm-lock.yaml`
 6. Install dependencies (`pnpm install --frozen-lockfile`, fallback to `--no-frozen-lockfile`)
@@ -100,6 +104,21 @@ Steps:
 There is **no deploy job** in the current workflow.  
 The pipeline is currently CI-only (validation), not CD deployment.
 
+### 4a) Dependency Review Workflow
+
+This repository includes a dedicated workflow (`.github/workflows/dependency-review.yml`) named **Dependency Review**.
+
+- **Trigger**
+  - `pull_request` targeting `main`
+- **Permissions**
+  - `contents: read`
+- **Actions**
+  - Runs `actions/dependency-review-action`
+  - Fails when a pull request introduces new `high` or `critical` vulnerabilities
+  - License checks are disabled because the repository does not maintain a license policy
+
+This check is currently informational only and is not yet part of the protected-branch required status check list.
+
 ### 5) Dependabot Auto-Merge Flow
 
 This repository includes a dedicated workflow (`.github/workflows/dependabot-auto-merge.yml`) named **Dependabot Auto-Merge**.
@@ -122,6 +141,13 @@ This repository includes a dedicated workflow (`.github/workflows/dependabot-aut
 Branch protection remains authoritative: merge completes only after required checks pass (`Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, `Build Check`) and review requirements are satisfied.
 
 Current branch protection configuration does not enforce these rules for administrators (`enforce_admins: false`), allowing admin direct pushes to `main` when needed.
+
+## Repository Security Settings
+
+- **Dependabot version updates** are configured in `.github/dependabot.yml`
+- **Dependabot security updates** are enabled at the repository level so GitHub can open automated remediation PRs
+- **Secret scanning** and **push protection** are enabled at the repository level
+- **GitHub Actions SHA pinning required** is enabled at the repository level
 
 ## Deployment Environments
 No GitHub Actions deployment environments are defined in `.github/workflows/ci.yml` (e.g., no `environment:` blocks such as staging/production).  
@@ -170,13 +196,15 @@ Deployments, if any, are handled outside this workflow.
 ## Maintenance
 
 - Keep action versions current (`checkout`, `setup-node`, `cache`, `upload-artifact`, `codecov-action`, `pnpm/action-setup`).
+- Update pinned workflow SHAs when upstream action releases are adopted.
 - Reassess `pnpm install --no-frozen-lockfile` fallback policy if stricter reproducibility is required.
 - Periodically review:
   - Node version pin (`20`)
   - artifact retention duration (currently 30 days)
   - workflow permissions for least privilege
+- Observe `Dependency Review` results before deciding whether to promote it to a required branch protection check.
 - If CD is needed, add explicit deploy job(s) with:
   - environment protection rules
   - scoped secrets
   - branch/tag deployment strategy
-- Consider extending security coverage beyond dependency audit with dedicated SAST/secret scanning jobs.
+- Consider extending security coverage beyond dependency audit with additional SAST coverage where GitHub default setup is insufficient.
