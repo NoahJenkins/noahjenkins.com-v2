@@ -34,6 +34,7 @@ Last Updated: 2026-03-31
 - [x] Enable administrator bypass on `main` branch protection to preserve VS Code direct push workflow
 - [x] Remediate GitHub CodeQL stored XSS alerts in blog links, JSON-LD serialization, and RSS feed generation
 - [x] Enable Dependabot security updates, add Dependency Review workflow, and enforce SHA-pinned GitHub Actions refs
+- [x] Remediate open Dependabot alert for transitive `brace-expansion` via `pnpm.overrides`
 
 ## Content Management
 

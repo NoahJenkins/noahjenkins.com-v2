@@ -18,6 +18,7 @@ Implemented the next GitHub security hardening pass focused on dependency remedi
 - Enabled repository-level Dependabot security updates so GitHub can open security remediation PRs automatically.
 - Enabled repository-level GitHub Actions SHA pinning enforcement after updating workflow references.
 - Left branch protection unchanged for this pass, so `Dependency Review` is informational rather than required.
+- Added a `pnpm.overrides` remediation for `brace-expansion` so the open moderate Dependabot alert can be resolved immediately without waiting for a backfilled security PR.
 
 ## Validation
 
@@ -26,6 +27,7 @@ Implemented the next GitHub security hardening pass focused on dependency remedi
   - `dependabot_security_updates.status = enabled`
   - `sha_pinning_required = true`
 - Confirmed branch protection required status checks remain unchanged from the prior CI baseline.
+- Confirmed the lockfile resolves `brace-expansion` to a patched version after reinstall.
 
 ## Related
 
