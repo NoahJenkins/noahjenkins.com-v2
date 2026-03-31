@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -29,10 +30,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Validate allowed ecosystem and semver range
-        id: eligibility
+      - name: Evaluate auto-merge policy
+        id: policy
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGE_ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
           UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
         run: |
           set -euo pipefail
@@ -47,23 +51,18 @@ jobs:
             is_supported_update=true
           fi
 
-          if [[ "$is_supported_ecosystem" == "true" && "$is_supported_update" == "true" ]]; then
-            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          if [[ "$is_supported_ecosystem" != "true" || "$is_supported_update" != "true" ]]; then
+            reason="Auto-closing: Dependabot update is outside the repository auto-merge policy (ecosystem=$PACKAGE_ECOSYSTEM, update_type=$UPDATE_TYPE)."
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            echo "should_close=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "close_reason<<EOF"
+              echo "$reason"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          echo "eligible=false" >> "$GITHUB_OUTPUT"
-          echo "Skipping: ecosystem=$PACKAGE_ECOSYSTEM update_type=$UPDATE_TYPE"
-
-      - name: Validate changed files scope
-        id: filescope
-        if: steps.eligibility.outputs.eligible == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
 
           mapfile -t changed_files < <(gh api \
             "repos/$REPO/pulls/$PR_NUMBER/files" \
@@ -71,8 +70,15 @@ jobs:
             --jq '.[].filename')
 
           if [[ ${#changed_files[@]} -eq 0 ]]; then
-            echo "No changed files found, refusing to auto-merge."
+            reason="Auto-closing: Dependabot PR changed no files, so it cannot be auto-merged safely."
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
             echo "safe=false" >> "$GITHUB_OUTPUT"
+            echo "should_close=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "close_reason<<EOF"
+              echo "$reason"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -81,15 +87,24 @@ jobs:
               continue
             fi
 
-            echo "Unsupported changed file for auto-merge: $file"
+            reason="Auto-closing: Dependabot PR touches files outside the allowed auto-merge scope ($file)."
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
             echo "safe=false" >> "$GITHUB_OUTPUT"
+            echo "should_close=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "close_reason<<EOF"
+              echo "$reason"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           done
 
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
           echo "safe=true" >> "$GITHUB_OUTPUT"
+          echo "should_close=false" >> "$GITHUB_OUTPUT"
 
       - name: Auto-approve Dependabot PR
-        if: steps.eligibility.outputs.eligible == 'true' && steps.filescope.outputs.safe == 'true'
+        if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +129,7 @@ jobs:
             }
 
       - name: Enable auto-merge
-        if: steps.eligibility.outputs.eligible == 'true' && steps.filescope.outputs.safe == 'true'
+        if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -141,3 +156,28 @@ jobs:
             } catch (error) {
               core.warning(`Unable to enable auto-merge: ${error.message}`)
             }
+
+      - name: Comment and close unsupported PR
+        if: steps.policy.outputs.should_close == 'true'
+        uses: actions/github-script@v8
+        env:
+          CLOSE_REASON: ${{ steps.policy.outputs.close_reason }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pull_number = context.payload.pull_request.number
+            const body = process.env.CLOSE_REASON
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pull_number,
+              body
+            })
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number,
+              state: 'closed'
+            })

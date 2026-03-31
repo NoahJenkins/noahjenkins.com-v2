@@ -23,6 +23,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 - [2026-03-09 Dependabot Auto-Merge Bug Investigation](./2026-03-09-dependabot-auto-merge-bug-investigation.md)
 - [2026-03-16 Dependabot Major Version Ignore Rule and PR Rebase](./2026-03-16-dependabot-major-version-ignore-and-pr-rebase.md)
+- [2026-03-31 Dependabot Auto-Close Policy and Audit Unblock](./2026-03-31-dependabot-auto-close-and-audit-unblock.md)
 
 ## Linked ADRs
 
@@ -31,3 +32,4 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [ADR 0003: Dependabot Auto-Merge Policy](../adr/0003-dependabot-auto-merge-policy.md)
 - [ADR 0004: Allow Administrator Bypass on Main](../adr/0004-allow-administrator-bypass-on-main.md)
 - [ADR 0005: Standardize Output Encoding for User-Controlled Content](../adr/0005-standardize-output-encoding-for-user-controlled-content.md)
+- [ADR 0006: Auto-Close Out-of-Policy Dependabot PRs](../adr/0006-auto-close-out-of-policy-dependabot-prs.md)

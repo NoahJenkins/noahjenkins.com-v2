@@ -116,7 +116,8 @@ This repository includes a dedicated workflow (`.github/workflows/dependabot-aut
   - Changed files limited to `package.json`, `pnpm-lock.yaml`, and workflow YAML files under `.github/workflows/`
 - **Actions**
   - Auto-approve PR when policy checks pass
-  - Enable GitHub auto-merge (squash)
+  - Enable GitHub auto-merge (squash) for eligible PRs
+  - Comment on and close unsupported or out-of-scope Dependabot PRs instead of leaving them open
 
 Branch protection remains authoritative: merge completes only after required checks pass (`Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, `Build Check`) and review requirements are satisfied.
 

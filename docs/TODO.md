@@ -1,6 +1,6 @@
 # Project Task Tracker
 
-Last Updated: 2026-03-09
+Last Updated: 2026-03-31
 
 > Living document for major project tasks. Update status continuously during planning and implementation.
 
@@ -29,6 +29,7 @@ Last Updated: 2026-03-09
 - [x] Add manual `dev:clean` script for safe lock/process cleanup before dev startup
 - [x] Switch local dev script to Webpack mode for stability under VS Code
 - [x] Add Dependabot auto-merge automation for eligible patch/minor updates
+- [x] Auto-close out-of-policy Dependabot PRs and remove unused audit-blocking `ts-jest`
 - [x] Align branch protection required status-check contexts to current CI job names
 - [x] Enable administrator bypass on `main` branch protection to preserve VS Code direct push workflow
 - [x] Remediate GitHub CodeQL stored XSS alerts in blog links, JSON-LD serialization, and RSS feed generation
