@@ -105,7 +105,7 @@ jobs:
 
       - name: Auto-approve Dependabot PR
         if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -130,7 +130,7 @@ jobs:
 
       - name: Enable auto-merge
         if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: Comment and close unsupported PR
         if: steps.policy.outputs.should_close == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           CLOSE_REASON: ${{ steps.policy.outputs.close_reason }}
         with:
