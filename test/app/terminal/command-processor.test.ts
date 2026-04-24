@@ -108,7 +108,12 @@ describe('CommandProcessor', () => {
       
       expect(result.output).toContain('Notable Projects:')
       expect(result.output).toContain('🌐 Noah Jenkins Portfolio v2 (Active)')
+      expect(result.output).toContain('🎮 VGC Coach (Active)')
       expect(result.output).toContain('☕ Coffee Shop Mobile App (Completed)')
+      expect(result.output).toContain('🏗️ Ark Builder Labs (Active)')
+      expect(result.output).toContain('⛪ Abbas House DFW (Completed)')
+      expect(result.output).not.toContain('☕ Coffee Shop Website (Completed)')
+      expect(result.output).not.toContain('🎨 CSS Gradient Generator (Active)')
     })
   })
 

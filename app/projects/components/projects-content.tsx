@@ -41,13 +41,14 @@ const projects: Project[] = [
     status: "Active"
   },
   {
-    id: "css-generator",
-    title: "CSS Gradient Generator",
-    description: "Interactive tool for creating custom CSS gradients with real-time preview, code generation, and modern UI components.",
+    id: "vgc-coach",
+    title: "VGC Coach",
+    description: "Open-source AI coaching platform for Pokemon VGC with a dedicated website, plugin packages, and tools for team building, replay review, and meta prep.",
     category: "Web/Mobile Development",
-    technologies: ["Next.js", "TypeScript", "Tailwind CSS", "CSS"],
-    liveUrl: "https://noahjenkins.com/tools/css-generator",
-    featured: false,
+    technologies: ["React", "TypeScript", "Vite", "Vercel"],
+    liveUrl: "https://www.vgccoach.com",
+    githubUrl: "https://github.com/NoahJenkins/vgc-coach",
+    featured: true,
     status: "Active"
   },
   {
@@ -61,24 +62,24 @@ const projects: Project[] = [
     status: "Completed"
   },
   {
-    id: "coffee-shop-website",
-    title: "Coffee Shop Website",
-    description: "Modern coffee shop website built with Next.js featuring responsive design, menu showcase, and optimized performance. Deployed with Vercel for fast global delivery.",
+    id: "ark-builder-labs",
+    title: "Ark Builder Labs",
+    description: "Marketing site for Ark Builder Labs with service pages, a full MDX blog, animated interactions, and responsive UX built for a modern consulting brand.",
     category: "Web/Mobile Development",
-    technologies: ["Next.js", "React", "CSS", "Vercel"],
-    liveUrl: "https://coffee-shop-next-js-site.vercel.app",
-    githubUrl: "https://github.com/NoahJenkins/Coffee-Shop-Next-JS-Site",
-    featured: true,
-    status: "Completed"
+    technologies: ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion", "MDX", "Vercel"],
+    liveUrl: "https://www.arkbuilderlabs.com",
+    githubUrl: "https://github.com/NoahJenkins/ark-builder-labs-site",
+    featured: false,
+    status: "Active"
   },
   {
-    id: "noahjenkins-com-v1",
-    title: "Noah Jenkins Portfolio v1",
-    description: "First version of my personal portfolio website showcasing early web development skills and design approach.",
+    id: "abbas-house-dfw",
+    title: "Abbas House DFW",
+    description: "Production church website for Abbas House DFW with accessible multi-page content, custom theming, and a streamlined Next.js deployment.",
     category: "Web/Mobile Development",
-    technologies: ["HTML", "CSS", "JavaScript", "Bootstrap", "GitHub Actions", "Jest"],
-    liveUrl: "https://noahjenkins.github.io/noahjenkins.com-v1/",
-    githubUrl: "https://github.com/NoahJenkins/noahjenkins.com-v1",
+    technologies: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Vercel"],
+    liveUrl: "https://www.abbashousedfw.org",
+    githubUrl: "https://github.com/NoahJenkins/abbas-house-dfw",
     featured: false,
     status: "Completed"
   },
