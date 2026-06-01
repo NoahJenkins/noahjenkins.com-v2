@@ -26,6 +26,10 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-03-31 Dependabot Auto-Close Policy and Audit Unblock](./2026-03-31-dependabot-auto-close-and-audit-unblock.md)
 - [2026-03-31 GitHub Security Hardening Pass](./2026-03-31-github-security-hardening-pass.md)
 
+## 2026-06
+
+- [2026-06-01 pnpm Workspace Root Memory Investigation](./2026-06-01-pnpm-workspace-root-memory-investigation.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)

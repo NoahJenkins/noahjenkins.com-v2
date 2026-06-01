@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Download, Calendar, MapPin } from "lucide-react"
 import { GithubIcon as Github } from "@/components/icons/brand-icons"
-import { getGitHubReadme, getGitHubStats, getFeaturedRepos, GitHubStats, GitHubRepo } from "../../lib/github-api"
+import { getGitHubReadme, getGitHubStats, GitHubStats } from "../../lib/github-api"
 import { GitHubStatsComponent } from "@/components/ui/github-stats"
-import { RepoCard } from "@/components/ui/repo-card"
 import { ScrollReveal } from "@/components/animations/scroll-reveal"
 import { Button } from "@/components/ui/button"
 import sanitizeHtml from 'sanitize-html'
@@ -14,21 +13,18 @@ import sanitizeHtml from 'sanitize-html'
 export default function AboutPage() {
   const [readme, setReadme] = useState<string>("")
   const [stats, setStats] = useState<GitHubStats | null>(null)
-  const [repos, setRepos] = useState<GitHubRepo[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [readmeData, statsData, reposData] = await Promise.all([
+        const [readmeData, statsData] = await Promise.all([
           getGitHubReadme(),
-          getGitHubStats(),
-          getFeaturedRepos()
+          getGitHubStats()
         ])
         
         setReadme(readmeData)
         setStats(statsData)
-        setRepos(reposData)
       } catch (error) {
         console.error('Failed to fetch GitHub data:', error)
       } finally {
@@ -302,26 +298,6 @@ export default function AboutPage() {
               />
             </div>
           </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Featured Repositories */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <ScrollReveal>
-            <h2 className="text-3xl font-bold text-center mb-4 text-white">
-              Featured Projects
-            </h2>
-            <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
-              A showcase of my most popular and interesting repositories
-            </p>
-          </ScrollReveal>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {repos.map((repo, index) => (
-              <RepoCard key={repo.name} repo={repo} index={index} />
-            ))}
-          </div>
         </div>
       </section>
 

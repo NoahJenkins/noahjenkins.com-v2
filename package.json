@@ -1,11 +1,15 @@
 {
   "private": true,
   "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_config_user_agent||'')){console.error('This repository uses pnpm only. Run: pnpm install');process.exit(1)}\"",
     "dev": "next dev --webpack",
     "dev:clean": "pkill -f 'next dev' || true && rm -f .next/dev/lock && pnpm dev",
-    "build": "next build",
+    "build": "next build --webpack",
+    "build:turbo": "next build",
     "start": "next start",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
@@ -50,13 +54,5 @@
     "@types/jest": "^30.0.0",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "brace-expansion": ">=5.0.5",
-      "minimatch": ">=10.2.1",
-      "test-exclude": ">=7.0.1",
-      "picomatch": ">=4.0.4"
-    }
   }
 }
