@@ -17,7 +17,7 @@
     "test:all:clean": "pkill -f 'next dev' || true && pnpm test && pnpm test:ui"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "4.3.1",
+    "@tailwindcss/postcss": "4.3.2",
     "@types/node": "25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -26,12 +26,12 @@
     "@vercel/speed-insights": "^1.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.40.0",
+    "framer-motion": "^12.42.2",
     "geist": "^1.7.2",
-    "lucide-react": "^1.18.0",
-    "next": "^16.2.9",
+    "lucide-react": "^1.23.0",
+    "next": "^16.2.10",
     "next-themes": "^0.4.6",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
@@ -39,24 +39,16 @@
     "sanitize-html": "^2.17.5",
     "sugar-high": "^1.2.1",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss": "4.3.1",
+    "tailwindcss": "4.3.2",
     "typescript": "5.9.3",
-    "wavesurfer.js": "^7.12.8"
+    "wavesurfer.js": "^7.12.10"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1"
-  },
-  "pnpm": {
-    "overrides": {
-      "brace-expansion": ">=5.0.5",
-      "minimatch": ">=10.2.1",
-      "test-exclude": ">=7.0.1",
-      "picomatch": ">=4.0.4"
-    }
   }
 }
