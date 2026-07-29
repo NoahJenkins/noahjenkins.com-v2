@@ -30,6 +30,10 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 - [2026-06-01 pnpm Workspace Root Memory Investigation](./2026-06-01-pnpm-workspace-root-memory-investigation.md)
 
+## 2026-07
+
+- [2026-07-29 Dependabot Remediation and PR Consolidation](./2026-07-29-dependabot-remediation-and-pr-consolidation.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
