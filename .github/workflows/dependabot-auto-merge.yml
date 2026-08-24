@@ -6,178 +6,573 @@ on:
       - opened
       - reopened
       - synchronize
+      - closed
+      - edited
+      - converted_to_draft
       - ready_for_review
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - "dependabot/**"
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+permissions: {}
+
+concurrency:
+  group: >-
+    dependabot-auto-merge-${{ github.event.workflow_run.head_branch ||
+    (github.event.pull_request.user.login == 'dependabot[bot]' &&
+    (github.event.action != 'edited' || github.event.changes.base.ref.from) &&
+    github.event.pull_request.head.ref) ||
+    github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   dependabot-auto-merge:
-    name: Auto-approve and enable auto-merge
+    name: Validate and enable native auto-merge
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
-    if: >-
-      github.actor == 'dependabot[bot]' &&
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.draft == false
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
 
     steps:
-      - name: Fetch Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v2
+      - name: Checkout trusted policy code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
-      - name: Evaluate auto-merge policy
-        id: policy
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGE_ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
-        run: |
-          set -euo pipefail
-
-          is_supported_ecosystem=false
-          if [[ "$PACKAGE_ECOSYSTEM" == "npm" || "$PACKAGE_ECOSYSTEM" == "npm_and_yarn" || "$PACKAGE_ECOSYSTEM" == "github-actions" || "$PACKAGE_ECOSYSTEM" == "github_actions" ]]; then
-            is_supported_ecosystem=true
-          fi
-
-          is_supported_update=false
-          if [[ "$UPDATE_TYPE" == "version-update:semver-patch" || "$UPDATE_TYPE" == "version-update:semver-minor" ]]; then
-            is_supported_update=true
-          fi
-
-          if [[ "$is_supported_ecosystem" != "true" || "$is_supported_update" != "true" ]]; then
-            reason="Auto-closing: Dependabot update is outside the repository auto-merge policy (ecosystem=$PACKAGE_ECOSYSTEM, update_type=$UPDATE_TYPE)."
-            echo "eligible=false" >> "$GITHUB_OUTPUT"
-            echo "safe=false" >> "$GITHUB_OUTPUT"
-            echo "should_close=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "close_reason<<EOF"
-              echo "$reason"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          mapfile -t changed_files < <(gh api \
-            "repos/$REPO/pulls/$PR_NUMBER/files" \
-            --paginate \
-            --jq '.[].filename')
-
-          if [[ ${#changed_files[@]} -eq 0 ]]; then
-            reason="Auto-closing: Dependabot PR changed no files, so it cannot be auto-merged safely."
-            echo "eligible=true" >> "$GITHUB_OUTPUT"
-            echo "safe=false" >> "$GITHUB_OUTPUT"
-            echo "should_close=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "close_reason<<EOF"
-              echo "$reason"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          for file in "${changed_files[@]}"; do
-            if [[ "$file" == "package.json" || "$file" == "pnpm-lock.yaml" || "$file" =~ ^\.github/workflows/.+\.ya?ml$ ]]; then
-              continue
-            fi
-
-            reason="Auto-closing: Dependabot PR touches files outside the allowed auto-merge scope ($file)."
-            echo "eligible=true" >> "$GITHUB_OUTPUT"
-            echo "safe=false" >> "$GITHUB_OUTPUT"
-            echo "should_close=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "close_reason<<EOF"
-              echo "$reason"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          done
-
-          echo "eligible=true" >> "$GITHUB_OUTPUT"
-          echo "safe=true" >> "$GITHUB_OUTPUT"
-          echo "should_close=false" >> "$GITHUB_OUTPUT"
-
-      - name: Auto-approve Dependabot PR
-        if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
+      - name: Validate Dependabot PR and apply result
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pull_number = context.payload.pull_request.number
+            const {
+              REQUIRED_CHECKS,
+              evaluateDependabotPolicy,
+              isStaleHead,
+              shouldBlockExistingApproval,
+            } = require('./.github/scripts/dependabot-auto-merge-policy.cjs')
+
+            const workflowRun = context.payload.workflow_run
+            if (workflowRun.event !== 'pull_request') {
+              core.info('Ignoring a CI run that was not triggered by a pull request.')
+              return
+            }
+
+            let candidates = workflowRun.pull_requests || []
+            if (candidates.length === 0) {
+              candidates = await github.paginate(
+                github.rest.repos.listPullRequestsAssociatedWithCommit,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: workflowRun.head_sha,
+                  per_page: 100,
+                },
+              )
+            }
+
+            const matchingCandidates = candidates.filter((candidate) =>
+              candidate.head?.sha === workflowRun.head_sha ||
+              candidate.head?.ref === workflowRun.head_branch,
+            )
+            if (matchingCandidates.length !== 1) {
+              const reason =
+                `Expected one pull request for CI head ${workflowRun.head_sha}; found ${matchingCandidates.length}.`
+              await core.summary
+                .addHeading('Dependabot auto-merge blocked')
+                .addRaw(reason)
+                .write()
+              core.setFailed(reason)
+              return
+            }
+
+            const pullNumber = matchingCandidates[0].number
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            const validatedHeadSha = workflowRun.head_sha
+            const changedFiles = (
+              await github.paginate(github.rest.pulls.listFiles, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              })
+            ).map((file) => file.filename)
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: workflowRun.id,
+                filter: 'latest',
+                per_page: 100,
+              },
+            )
+
+            const decision = evaluateDependabotPolicy({
+              triggeringActor: workflowRun.actor?.login,
+              author: pull.user?.login,
+              baseRef: pull.base.ref,
+              draft: pull.draft,
+              state: pull.state,
+              headRef: pull.head.ref,
+              headSha: pull.head.sha,
+              workflowHeadSha: workflowRun.head_sha,
+              workflowConclusion: workflowRun.conclusion,
+              mergeableState: pull.mergeable_state,
+              checks: jobs.map((job) => ({
+                name: job.name,
+                conclusion: job.conclusion,
+              })),
+              changedFiles,
+            })
+
+            await core.summary
+              .addHeading('Dependabot auto-merge policy')
+              .addTable([
+                [{ data: 'Gate', header: true }, { data: 'Result', header: true }],
+                ['PR', `#${pullNumber}`],
+                ['Head', pull.head.sha],
+                ['Required checks', REQUIRED_CHECKS.join(', ')],
+                ['Decision', decision.status],
+                ['Reason', decision.reason],
+              ])
+              .write()
+
+            if (decision.status === 'ignored') {
+              core.info(decision.reason)
+              return
+            }
+
+            const blockedLabel = 'automation-blocked'
+            const ensureBlockedLabel = async () => {
+              const { data: labelPull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+              })
+              if (
+                labelPull.state !== 'open' ||
+                isStaleHead({
+                  currentHeadSha: labelPull.head.sha,
+                  validatedHeadSha,
+                })
+              ) {
+                core.info('Skipping a blocked label for a closed or newer pull request head.')
+                return false
+              }
+
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: blockedLabel,
+                })
+              } catch (error) {
+                if (error.status !== 404) throw error
+
+                try {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: blockedLabel,
+                    color: 'b60205',
+                    description: 'Automation cannot safely merge this pull request.',
+                  })
+                } catch (createError) {
+                  if (createError.status !== 422) throw createError
+                }
+              }
+
+              const { data: labelWritePull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+              })
+              if (
+                labelWritePull.state !== 'open' ||
+                isStaleHead({
+                  currentHeadSha: labelWritePull.head.sha,
+                  validatedHeadSha,
+                })
+              ) {
+                core.info('Skipping a blocked label for a closed or newer pull request head.')
+                return false
+              }
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                labels: [blockedLabel],
+              })
+              return true
+            }
+
+            const disableNativeAutoMerge = async () => {
+              const { data: ownedPull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+              })
+              if (
+                isStaleHead({
+                  currentHeadSha: ownedPull.head.sha,
+                  validatedHeadSha,
+                })
+              ) {
+                core.info('Skipping auto-merge rollback for a newer pull request head.')
+                return false
+              }
+
+              if (ownedPull.state !== 'open' || !ownedPull.auto_merge) return true
+
+              await github.graphql(
+                `mutation($pullRequestId: ID!) {
+                  disablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId
+                  }) {
+                    pullRequest {
+                      number
+                    }
+                  }
+                }`,
+                { pullRequestId: ownedPull.node_id },
+              )
+              return true
+            }
+
+            if (decision.status === 'blocked') {
+              try {
+                if (!(await disableNativeAutoMerge())) return
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `${decision.reason} Native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed(decision.reason)
+              return
+            }
+
+            const { data: currentPull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            if (
+              isStaleHead({
+                currentHeadSha: currentPull.head.sha,
+                validatedHeadSha,
+              })
+            ) {
+              core.info('Ignoring a stale workflow run after policy validation.')
+              return
+            }
+
+            if (
+              currentPull.base.ref !== 'main' ||
+              currentPull.draft ||
+              currentPull.state !== 'open' ||
+              currentPull.mergeable_state === 'dirty'
+            ) {
+              try {
+                if (!(await disableNativeAutoMerge())) return
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed after policy validation, and native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed('Pull request state changed after policy validation.')
+              return
+            }
+
+            const { data: labelRemovalPull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            if (
+              isStaleHead({
+                currentHeadSha: labelRemovalPull.head.sha,
+                validatedHeadSha,
+              })
+            ) {
+              core.info('Skipping label removal for a newer pull request head.')
+              return
+            }
+
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullNumber,
+                name: blockedLabel,
+              })
+            } catch (error) {
+              if (error.status !== 404) throw error
+            }
+
+            const getCurrentApprovals = async () => {
+              const reviews = await github.paginate(
+                github.rest.pulls.listReviews,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                  per_page: 100,
+                },
+              )
+
+              return reviews.filter(
+                (review) =>
+                  review.state === 'APPROVED' &&
+                  review.commit_id === validatedHeadSha,
+              )
+            }
+
+            const { data: mergePull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            if (
+              isStaleHead({
+                currentHeadSha: mergePull.head.sha,
+                validatedHeadSha,
+              })
+            ) {
+              core.info('Ignoring a stale workflow run before native auto-merge.')
+              return
+            }
+
+            if (
+              mergePull.base.ref !== 'main' ||
+              mergePull.state !== 'open' ||
+              mergePull.draft ||
+              mergePull.mergeable_state === 'dirty'
+            ) {
+              try {
+                if (!(await disableNativeAutoMerge())) return
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed before native auto-merge, and rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed('Pull request state changed before native auto-merge.')
+              return
+            }
+
+            if (
+              mergePull.auto_merge &&
+              mergePull.auto_merge.merge_method?.toLowerCase() !== 'squash'
+            ) {
+              try {
+                if (!(await disableNativeAutoMerge())) return
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Existing native auto-merge request does not use squash, and rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed('Existing native auto-merge request does not use squash.')
+              return
+            }
+
+            let autoMergeEnabledByThisRun = false
+            if (!mergePull.auto_merge) {
+              const currentApprovals = await getCurrentApprovals()
+              if (
+                shouldBlockExistingApproval({
+                  approvalCount: currentApprovals.length,
+                  mergeableState: mergePull.mergeable_state,
+                })
+              ) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  'Native auto-merge cannot be queued because a current approval already releases the final branch gate.',
+                )
+                return
+              }
+
+              try {
+                await github.graphql(
+                  `mutation($pullRequestId: ID!, $expectedHeadOid: GitObjectID!) {
+                    enablePullRequestAutoMerge(input: {
+                      pullRequestId: $pullRequestId,
+                      expectedHeadOid: $expectedHeadOid,
+                      mergeMethod: SQUASH
+                    }) {
+                      pullRequest {
+                        number
+                        autoMergeRequest {
+                          enabledAt
+                        }
+                      }
+                    }
+                  }`,
+                  {
+                    pullRequestId: mergePull.node_id,
+                    expectedHeadOid: validatedHeadSha,
+                  },
+                )
+                autoMergeEnabledByThisRun = true
+              } catch (error) {
+                const { data: failedEnablePull } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                })
+                if (
+                  failedEnablePull.merged ||
+                  isStaleHead({
+                    currentHeadSha: failedEnablePull.head.sha,
+                    validatedHeadSha,
+                  })
+                ) {
+                  core.info(
+                    'Ignoring an auto-merge response for a merged or newer pull request head.',
+                  )
+                  return
+                }
+
+                await ensureBlockedLabel()
+                const approvalSuffix = (await getCurrentApprovals()).length > 0
+                  ? ' A current approval appeared before the request completed.'
+                  : ''
+                core.setFailed(
+                  `Unable to enable native auto-merge: ${error.message}${approvalSuffix}`,
+                )
+                return
+              }
+            } else {
+              core.info('Native auto-merge is already enabled for this head.')
+            }
+
+            const { data: approvalPull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            if (approvalPull.merged) {
+              core.notice(
+                `Native squash auto-merge completed for #${pullNumber} using an existing approval.`,
+              )
+              return
+            }
+
+            if (
+              isStaleHead({
+                currentHeadSha: approvalPull.head.sha,
+                validatedHeadSha,
+              })
+            ) {
+              core.info('Ignoring a stale workflow run before final approval.')
+              return
+            }
+
+            if (
+              approvalPull.base.ref !== 'main' ||
+              approvalPull.state !== 'open' ||
+              approvalPull.draft ||
+              approvalPull.mergeable_state === 'dirty' ||
+              approvalPull.auto_merge?.merge_method?.toLowerCase() !== 'squash'
+            ) {
+              try {
+                if (autoMergeEnabledByThisRun) {
+                  if (!(await disableNativeAutoMerge())) return
+                }
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed before final approval, and native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed('Pull request state changed before final approval.')
+              return
+            }
 
             try {
               await github.rest.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number,
+                pull_number: pullNumber,
+                commit_id: validatedHeadSha,
                 event: 'APPROVE',
-                body: 'Auto-approved for Dependabot patch/minor update after policy checks.'
+                body: 'Auto-approved after native squash auto-merge was queued and the protected CI suite passed.',
               })
             } catch (error) {
+              let approvalExists = false
               if (error.status === 422) {
-                core.info(`Review not created (422): ${error.message}`)
-                core.info('This may mean the approval already exists, or Actions is not permitted to approve PRs (check Settings > Actions > General).')
-              } else {
-                throw error
+                approvalExists = (await getCurrentApprovals()).length > 0
               }
-            }
 
-      - name: Enable auto-merge
-        if: steps.policy.outputs.eligible == 'true' && steps.policy.outputs.safe == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const pullRequestId = context.payload.pull_request.node_id
+              if (!approvalExists) {
+                const { data: rollbackPull } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                })
+                if (
+                  rollbackPull.merged ||
+                  isStaleHead({
+                    currentHeadSha: rollbackPull.head.sha,
+                    validatedHeadSha,
+                  })
+                ) {
+                  core.info(
+                    'Ignoring an approval response for a merged or newer pull request head.',
+                  )
+                  return
+                }
 
-            try {
-              await github.graphql(
-                `mutation($pullRequestId: ID!) {
-                  enablePullRequestAutoMerge(input: {
-                    pullRequestId: $pullRequestId,
-                    mergeMethod: SQUASH
-                  }) {
-                    pullRequest {
-                      number
-                      autoMergeRequest {
-                        enabledAt
-                      }
-                    }
+                try {
+                  if (autoMergeEnabledByThisRun) {
+                    if (!(await disableNativeAutoMerge())) return
                   }
-                }`,
-                { pullRequestId }
-              )
-            } catch (error) {
-              core.warning(`Unable to enable auto-merge: ${error.message}`)
+                } catch (rollbackError) {
+                  await ensureBlockedLabel()
+                  core.setFailed(
+                    `Unable to confirm approval for the validated head, and native auto-merge rollback failed: ${rollbackError.message}`,
+                  )
+                  return
+                }
+
+                await ensureBlockedLabel()
+                core.setFailed(`Unable to confirm approval for the validated head: ${error.message}`)
+                return
+              }
+
+              core.info('An approval already exists for the validated head.')
             }
 
-      - name: Comment and close unsupported PR
-        if: steps.policy.outputs.should_close == 'true'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          CLOSE_REASON: ${{ steps.policy.outputs.close_reason }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const pull_number = context.payload.pull_request.number
-            const body = process.env.CLOSE_REASON
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pull_number,
-              body
-            })
-
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number,
-              state: 'closed'
-            })
+            core.notice(
+              `Native squash auto-merge is enabled and approved for #${pullNumber} after all protected checks passed.`,
+            )
