@@ -35,6 +35,7 @@ jobs:
             const {
               REQUIRED_CHECKS,
               evaluateDependabotPolicy,
+              shouldBlockExistingApproval,
             } = require('./.github/scripts/dependabot-auto-merge-policy.cjs')
 
             const workflowRun = context.payload.workflow_run
@@ -302,7 +303,12 @@ jobs:
             let autoMergeEnabledByThisRun = false
             if (!mergePull.auto_merge) {
               const currentApprovals = await getCurrentApprovals()
-              if (currentApprovals.length > 0) {
+              if (
+                shouldBlockExistingApproval({
+                  approvalCount: currentApprovals.length,
+                  mergeableState: mergePull.mergeable_state,
+                })
+              ) {
                 await ensureBlockedLabel()
                 core.setFailed(
                   'Native auto-merge cannot be queued because a current approval already releases the final branch gate.',

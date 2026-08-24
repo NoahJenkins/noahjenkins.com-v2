@@ -51,6 +51,13 @@ function isAllowedFile(ecosystem, file) {
   return /^\.github\/workflows\/.+\.ya?ml$/.test(file)
 }
 
+function shouldBlockExistingApproval({ approvalCount, mergeableState }) {
+  return (
+    approvalCount > 0 &&
+    ['clean', 'has_hooks', 'unstable'].includes(mergeableState)
+  )
+}
+
 function evaluateDependabotPolicy(input) {
   if (input.triggeringActor !== DEPENDABOT) {
     return ignored('The triggering workflow actor is not Dependabot.')
@@ -135,4 +142,5 @@ function evaluateDependabotPolicy(input) {
 module.exports = {
   REQUIRED_CHECKS,
   evaluateDependabotPolicy,
+  shouldBlockExistingApproval,
 }

@@ -4,6 +4,7 @@ const { join } = require('node:path')
 const {
   REQUIRED_CHECKS,
   evaluateDependabotPolicy,
+  shouldBlockExistingApproval,
 } = require('../../.github/scripts/dependabot-auto-merge-policy.cjs')
 
 const successfulChecks = REQUIRED_CHECKS.map((name: string) => ({
@@ -27,6 +28,36 @@ const npmInput = {
 }
 
 describe('Dependabot native auto-merge policy', () => {
+  test('allows native auto-merge to queue when an approved PR is behind main', () => {
+    expect(
+      shouldBlockExistingApproval({
+        approvalCount: 1,
+        mergeableState: 'behind',
+      }),
+    ).toBe(false)
+  })
+
+  test('blocks native auto-merge when an approval makes the PR immediately mergeable', () => {
+    expect(
+      shouldBlockExistingApproval({
+        approvalCount: 1,
+        mergeableState: 'clean',
+      }),
+    ).toBe(true)
+  })
+
+  test.each(['unstable', 'has_hooks'])(
+    'treats approved GitHub mergeable state %s as immediately mergeable',
+    (mergeableState) => {
+      expect(
+        shouldBlockExistingApproval({
+          approvalCount: 1,
+          mergeableState,
+        }),
+      ).toBe(true)
+    },
+  )
+
   test('enables native auto-merge before approval can release the final branch gate', () => {
     const workflow = readFileSync(
       join(process.cwd(), '.github/workflows/dependabot-auto-merge.yml'),
