@@ -9,60 +9,25 @@ updates:
       time: "09:00"
       timezone: "America/Chicago"
     open-pull-requests-limit: 10
-    reviewers:
-      - "NoahJenkins"
-    assignees:
-      - "NoahJenkins"
     commit-message:
       prefix: "deps"
       include: "scope"
     labels:
       - "dependencies"
       - "automated"
-    # Group related updates together
+    # Version updates stay weekly; security groups remain advisory-triggered.
     groups:
-      react:
+      npm-routine:
+        applies-to: "version-updates"
         patterns:
-          - "react*"
-          - "@types/react*"
-      next:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+      npm-security:
+        applies-to: "security-updates"
         patterns:
-          - "next*"
-          - "@next/*"
-      testing:
-        patterns:
-          - "jest*"
-          - "@testing-library/*"
-          - "@playwright/*"
-          - "@types/jest"
-          - "ts-jest"
-      tailwind:
-        patterns:
-          - "tailwind*"
-          - "@tailwindcss/*"
-          - "postcss"
-      types:
-        patterns:
-          - "@types/*"
-      vercel:
-        patterns:
-          - "@vercel/*"
-    # Ignore specific packages that might cause breaking changes
-    ignore:
-      # Pin Next.js canary version for stability
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      # Pin Tailwind CSS alpha version 
-      - dependency-name: "tailwindcss"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@tailwindcss/postcss"
-        update-types: ["version-update:semver-major"]
-      # Pin TypeScript to avoid potential compatibility issues
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      # Ignore major updates for Vercel packages (auto-merge only handles patch/minor)
-      - dependency-name: "@vercel/*"
-        update-types: ["version-update:semver-major"]
+          - "*"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -73,13 +38,21 @@ updates:
       time: "09:30"
       timezone: "America/Chicago"
     open-pull-requests-limit: 5
-    reviewers:
-      - "NoahJenkins"
-    assignees:
-      - "NoahJenkins"
     commit-message:
       prefix: "ci"
       include: "scope"
     labels:
       - "github-actions"
       - "automated"
+    groups:
+      github-actions-routine:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+      github-actions-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"

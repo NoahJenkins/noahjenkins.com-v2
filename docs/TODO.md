@@ -1,6 +1,6 @@
 # Project Task Tracker
 
-Last Updated: 2026-03-31
+Last Updated: 2026-08-24
 
 > Living document for major project tasks. Update status continuously during planning and implementation.
 
@@ -48,7 +48,7 @@ Last Updated: 2026-03-31
 
 - [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
 - [x] # TODO: Fix Dependabot auto-merge workflow (npm_and_yarn ecosystem mismatch, contents:write permission, repo allow_auto_merge flag) — 2026-03-09
-- [ ] # TODO: Re-review Dependabot auto-merge policy scope quarterly (ecosystems, semver scope, allowed file paths)
+- [x] # TODO: Re-review Dependabot auto-merge policy scope quarterly (ecosystems, semver scope, allowed file paths) — 2026-08-24
 - [ ] # TODO: Revisit administrator bypass decision if team size or branch safety requirements increase
 - [ ] # TODO: Observe `Dependency Review` results and decide whether to add it to required branch protection checks
 - [ ] # TODO: Add regression tests for generated RSS/XML and blog URL composition paths beyond utility-level coverage

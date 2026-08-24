@@ -119,32 +119,65 @@ This repository includes a dedicated workflow (`.github/workflows/dependency-rev
 
 This check is currently informational only and is not yet part of the protected-branch required status check list.
 
-### 5) Dependabot Auto-Merge Flow
+### 5) Dependabot Update Creation
 
-This repository includes a dedicated workflow (`.github/workflows/dependabot-auto-merge.yml`) named **Dependabot Auto-Merge**.
+`.github/dependabot.yml` separates routine version updates from security updates for both supported ecosystems.
 
-- **Trigger**
-  - `pull_request_target` on `opened`, `reopened`, `synchronize`, `ready_for_review`
-- **Gate conditions**
-  - PR author and actor must both be `dependabot[bot]`
-  - Base branch must be `main`
-  - PR must not be draft
-- **Policy checks**
-  - Ecosystem limited to `npm` and `github-actions`
-  - Update type limited to `semver-patch` and `semver-minor`
-  - Changed files limited to `package.json`, `pnpm-lock.yaml`, and workflow YAML files under `.github/workflows/`
-- **Actions**
-  - Auto-approve PR when policy checks pass
-  - Enable GitHub auto-merge (squash) for eligible PRs
-  - Comment on and close unsupported or out-of-scope Dependabot PRs instead of leaving them open
+- **npm version updates**
+  - Run weekly.
+  - Put all eligible patch and minor updates in one catch-all routine group.
+  - Leave major updates outside that group so they can be evaluated as standalone pull requests.
+- **GitHub Actions version updates**
+  - Run weekly.
+  - Put all eligible patch and minor updates in one catch-all routine group.
+  - Leave major updates outside that group for manual review.
+- **Security updates**
+  - Use separate npm and GitHub Actions groups with `applies-to: security-updates`.
+  - Remain event-driven by Dependabot security alerts instead of waiting for the weekly version-update schedule.
+- **Triage**
+  - Do not assign a routine reviewer or assignee.
+  - Use ecosystem and automation labels to identify the pull request type.
 
-Branch protection remains authoritative: merge completes only after required checks pass (`Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, `Build Check`) and review requirements are satisfied.
+### 6) Dependabot Post-CI Auto-Merge Flow
+
+This repository includes a dedicated write-capable Dependabot evaluator. It runs trusted workflow code from the default branch after the **CI** workflow completes.
+
+- **Trigger and trust boundary**
+  - Trigger on `workflow_run` completion for the **CI** workflow.
+  - Do not use `pull_request_target` for write-capable Dependabot decisions.
+  - Re-fetch the current pull request, changed files, and CI jobs from GitHub before a write.
+- **Identity and state gates**
+  - The completed workflow actor and current pull request author must both be `dependabot[bot]`.
+  - The pull request must be open, must not be a draft, and must target `main`.
+  - The current head SHA must exactly match the head SHA validated by the completed CI run.
+  - The Dependabot branch must identify the npm or GitHub Actions ecosystem.
+- **File-scope gates**
+  - npm pull requests can change only `package.json` and `pnpm-lock.yaml`.
+  - GitHub Actions pull requests can change only workflow YAML files under `.github/workflows/`.
+- **Exact CI gates**
+  - Each of these jobs must exist and have the exact conclusion `success` for the current head SHA:
+    - `Security Audit`
+    - `Jest Tests`
+    - `Playwright Tests`
+    - `TypeScript Check`
+    - `Build Check`
+- **Eligible outcomes**
+  - A safe npm update, including a safe standalone npm major, can receive policy-gated approval and enable GitHub native auto-merge with the squash method.
+  - A grouped GitHub Actions patch/minor or security update can use the same approval and native squash auto-merge path.
+  - The evaluator never merges a pull request directly.
+- **Blocked outcomes**
+  - A standalone GitHub Actions major remains open for manual review.
+  - Failed or missing CI, a conflict, changed head state, a disallowed file, or another policy failure leaves the pull request open.
+  - The evaluator applies the `automation-blocked` label and publishes a check summary with the blocking reason.
+  - The evaluator does not auto-close the pull request or approve it before all policy gates pass.
+
+Branch protection remains authoritative. Enabling native auto-merge records intent only; the merge completes after all repository protection requirements are satisfied.
 
 Current branch protection configuration does not enforce these rules for administrators (`enforce_admins: false`), allowing admin direct pushes to `main` when needed.
 
 ## Repository Security Settings
 
-- **Dependabot version updates** are configured in `.github/dependabot.yml`
+- **Dependabot version updates** are configured in `.github/dependabot.yml` as weekly ecosystem-wide patch/minor groups
 - **Dependabot security updates** are enabled at the repository level so GitHub can open automated remediation PRs
 - **Secret scanning** and **push protection** are enabled at the repository level
 - **GitHub Actions SHA pinning required** is enabled at the repository level
@@ -203,6 +236,7 @@ Deployments, if any, are handled outside this workflow.
   - artifact retention duration (currently 30 days)
   - workflow permissions for least privilege
 - Observe `Dependency Review` results before deciding whether to promote it to a required branch protection check.
+- Keep the Dependabot evaluator's required job names, branch patterns, and allowed file scopes aligned with CI and `.github/dependabot.yml`.
 - If CD is needed, add explicit deploy job(s) with:
   - environment protection rules
   - scoped secrets

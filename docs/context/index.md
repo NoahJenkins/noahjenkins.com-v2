@@ -34,6 +34,10 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 - [2026-07-29 Dependabot Remediation and PR Consolidation](./2026-07-29-dependabot-remediation-and-pr-consolidation.md)
 
+## 2026-08
+
+- [2026-08-24 Dependabot Volume Reduction](./2026-08-24-dependabot-volume-reduction.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
@@ -43,3 +47,4 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [ADR 0005: Standardize Output Encoding for User-Controlled Content](../adr/0005-standardize-output-encoding-for-user-controlled-content.md)
 - [ADR 0006: Auto-Close Out-of-Policy Dependabot PRs](../adr/0006-auto-close-out-of-policy-dependabot-prs.md)
 - [ADR 0007: Adopt Dependency Review and SHA-Pinned GitHub Actions](../adr/0007-adopt-dependency-review-and-sha-pinned-github-actions.md)
+- [ADR 0008: Reduce Dependabot Volume and Harden Post-CI Automation](../adr/0008-reduce-dependabot-volume-and-harden-post-ci-automation.md)
