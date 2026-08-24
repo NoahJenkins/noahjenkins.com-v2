@@ -39,6 +39,22 @@ describe('Dependabot native auto-merge policy', () => {
     )
   })
 
+  test('checks for an existing approval before enabling native auto-merge', () => {
+    const workflow = readFileSync(
+      join(process.cwd(), '.github/workflows/dependabot-auto-merge.yml'),
+      'utf8',
+    )
+
+    expect(
+      workflow.indexOf('const currentApprovals = await getCurrentApprovals()'),
+    ).toBeGreaterThan(-1)
+    expect(
+      workflow.indexOf('const currentApprovals = await getCurrentApprovals()'),
+    ).toBeLessThan(
+      workflow.indexOf('enablePullRequestAutoMerge'),
+    )
+  })
+
   test('enables native squash auto-merge for a grouped routine npm update', () => {
     expect(evaluateDependabotPolicy(npmInput)).toEqual(
       expect.objectContaining({

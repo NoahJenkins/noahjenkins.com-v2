@@ -235,6 +235,24 @@ jobs:
               if (error.status !== 404) throw error
             }
 
+            const getCurrentApprovals = async () => {
+              const reviews = await github.paginate(
+                github.rest.pulls.listReviews,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                  per_page: 100,
+                },
+              )
+
+              return reviews.filter(
+                (review) =>
+                  review.state === 'APPROVED' &&
+                  review.commit_id === validatedHeadSha,
+              )
+            }
+
             const { data: mergePull } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -283,6 +301,15 @@ jobs:
 
             let autoMergeEnabledByThisRun = false
             if (!mergePull.auto_merge) {
+              const currentApprovals = await getCurrentApprovals()
+              if (currentApprovals.length > 0) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  'Native auto-merge cannot be queued because a current approval already releases the final branch gate.',
+                )
+                return
+              }
+
               try {
                 await github.graphql(
                   `mutation($pullRequestId: ID!, $expectedHeadOid: GitObjectID!) {
@@ -307,7 +334,12 @@ jobs:
                 autoMergeEnabledByThisRun = true
               } catch (error) {
                 await ensureBlockedLabel()
-                core.setFailed(`Unable to enable native auto-merge: ${error.message}`)
+                const approvalSuffix = (await getCurrentApprovals()).length > 0
+                  ? ' A current approval appeared before the request completed.'
+                  : ''
+                core.setFailed(
+                  `Unable to enable native auto-merge: ${error.message}${approvalSuffix}`,
+                )
                 return
               }
             } else {
@@ -363,20 +395,7 @@ jobs:
             } catch (error) {
               let approvalExists = false
               if (error.status === 422) {
-                const reviews = await github.paginate(
-                  github.rest.pulls.listReviews,
-                  {
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    pull_number: pullNumber,
-                    per_page: 100,
-                  },
-                )
-                approvalExists = reviews.some(
-                  (review) =>
-                    review.state === 'APPROVED' &&
-                    review.commit_id === validatedHeadSha,
-                )
+                approvalExists = (await getCurrentApprovals()).length > 0
               }
 
               if (!approvalExists) {
