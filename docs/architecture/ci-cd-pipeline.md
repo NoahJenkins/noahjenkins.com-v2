@@ -167,9 +167,11 @@ This repository includes a dedicated write-capable Dependabot evaluator. It runs
   - The evaluator never merges a pull request directly.
 - **Blocked outcomes**
   - A standalone GitHub Actions major remains open for manual review.
-  - Failed or missing CI, a conflict, changed head state, a disallowed file, or another policy failure leaves the pull request open.
+  - Failed or missing CI, a conflict, a disallowed file, or another policy failure on the validated current head leaves the pull request open.
   - The evaluator applies the `automation-blocked` label and publishes a check summary with the blocking reason.
   - The evaluator does not auto-close the pull request or approve it before all policy gates pass.
+  - A stale evaluator whose validated SHA no longer owns the pull request exits without changing labels, reviews, or native auto-merge for the newer head.
+  - A zero-permission `pull_request_target` event only cancels an in-progress evaluator through workflow concurrency. The write-capable evaluator job runs only for `workflow_run`.
 
 Branch protection remains authoritative. Enabling native auto-merge records intent only; the merge completes after all repository protection requirements are satisfied.
 

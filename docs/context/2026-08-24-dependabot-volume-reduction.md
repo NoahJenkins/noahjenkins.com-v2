@@ -48,7 +48,7 @@ The evaluator re-fetches the current pull request, changed files, and CI jobs. I
 
 An eligible npm pull request, including a safe npm major update, can receive policy-gated approval and use GitHub's native squash auto-merge. Eligible GitHub Actions patch/minor updates can use the same path. Standalone GitHub Actions major updates remain open and blocked for manual review. The evaluator never merges directly.
 
-CI failures, missing jobs, stale state, conflicts, unsupported scope, and other policy failures leave the pull request open. The automation applies the `automation-blocked` label and publishes a check summary with the reason. It does not auto-close the pull request or approve it before all policy gates pass.
+CI failures, missing jobs, conflicts, unsupported scope, and other current-head policy failures leave the pull request open. The automation applies the `automation-blocked` label and publishes a check summary with the reason. If the pull request head no longer matches the validated CI head, the stale evaluator exits without changing the newer head's labels, reviews, or native auto-merge state. It does not auto-close the pull request or approve it before all policy gates pass.
 
 ## Outcome
 

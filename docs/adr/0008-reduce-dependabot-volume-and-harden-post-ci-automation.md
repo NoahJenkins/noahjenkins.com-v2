@@ -55,6 +55,8 @@ Replace write-capable `pull_request_target` handling with a `workflow_run` evalu
 - the exact required CI jobs named `Security Audit`, `Jest Tests`, `Playwright Tests`, `TypeScript Check`, and `Build Check` all completed successfully for that head SHA
 - the pull request has no merge conflict and satisfies the remaining automation policy
 
+If the pull request head changes after CI or at any later write boundary, the evaluator treats the run as stale and exits without changing labels, reviews, or native auto-merge. A zero-permission `pull_request_target` signal from the trusted base workflow cancels the in-progress evaluator when Dependabot changes the pull request, while the write-capable job remains restricted to `workflow_run`. A rollback must re-confirm that the evaluator still owns the validated head before it disables auto-merge.
+
 When an npm update passes all gates, including a safe npm major update, the evaluator can add its policy-gated approval and enable GitHub's native squash auto-merge. It must not merge the pull request directly.
 
 Grouped GitHub Actions patch, minor, and security updates can use the same native auto-merge path when all gates pass. A standalone GitHub Actions major update must remain open and blocked for manual review.
@@ -70,7 +72,7 @@ If CI fails, a required job is missing, the pull request conflicts, state has ch
 - Native auto-merge keeps branch protection authoritative and avoids a direct merge path.
 - Safe npm majors can move without unnecessary manual work, while GitHub Actions majors remain visible for manual review.
 - Autonomous GitHub Actions patch/minor and security updates still trust the upstream action release selected by Dependabot. Full-SHA pins prevent a mutable ref, but they do not remove the risk of a compromised upstream release. This residual risk is accepted to preserve the required autonomous update path.
-- Failed, conflicting, stale, or disallowed pull requests remain open with a durable blocked reason.
+- Failed, conflicting, or disallowed current-head pull requests remain open with a durable blocked reason. Stale evaluators exit without writing to the newer head.
 - The required job-name list, file scopes, branch conventions, and Dependabot metadata mapping require maintenance when CI or dependency policy changes.
 
 ## Related context

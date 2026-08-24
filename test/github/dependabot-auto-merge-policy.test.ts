@@ -4,6 +4,7 @@ const { join } = require('node:path')
 const {
   REQUIRED_CHECKS,
   evaluateDependabotPolicy,
+  isStaleHead,
   shouldBlockExistingApproval,
 } = require('../../.github/scripts/dependabot-auto-merge-policy.cjs')
 
@@ -28,6 +29,51 @@ const npmInput = {
 }
 
 describe('Dependabot native auto-merge policy', () => {
+  test('cancels an in-progress evaluator when a Dependabot PR changes', () => {
+    const workflow = readFileSync(
+      join(process.cwd(), '.github/workflows/dependabot-auto-merge.yml'),
+      'utf8',
+    )
+
+    expect(workflow).toContain('pull_request_target:')
+    expect(workflow).not.toMatch(/\n  pull_request:\n/)
+    expect(workflow).toContain('cancel-in-progress: true')
+    expect(workflow).toContain('github.event.workflow_run.head_branch')
+    expect(workflow).toContain('github.event.pull_request.head.ref')
+    expect(workflow).toContain("github.event_name == 'workflow_run'")
+  })
+
+  test('identifies a workflow run that no longer owns the current PR head', () => {
+    expect(
+      isStaleHead({
+        currentHeadSha: 'new-head',
+        validatedHeadSha: 'old-head',
+      }),
+    ).toBe(true)
+    expect(
+      isStaleHead({
+        currentHeadSha: 'same-head',
+        validatedHeadSha: 'same-head',
+      }),
+    ).toBe(false)
+  })
+
+  test('ignores a stale CI run instead of blocking the current PR head', () => {
+    expect(
+      evaluateDependabotPolicy({
+        ...npmInput,
+        workflowHeadSha: 'old-head',
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        status: 'ignored',
+        shouldEnableAutoMerge: false,
+        shouldClose: false,
+        reason: expect.stringContaining('stale'),
+      }),
+    )
+  })
+
   test('allows native auto-merge to queue when an approved PR is behind main', () => {
     expect(
       shouldBlockExistingApproval({

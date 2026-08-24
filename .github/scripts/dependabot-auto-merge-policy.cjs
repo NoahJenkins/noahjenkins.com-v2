@@ -51,6 +51,10 @@ function isAllowedFile(ecosystem, file) {
   return /^\.github\/workflows\/.+\.ya?ml$/.test(file)
 }
 
+function isStaleHead({ currentHeadSha, validatedHeadSha }) {
+  return !currentHeadSha || currentHeadSha !== validatedHeadSha
+}
+
 function shouldBlockExistingApproval({ approvalCount, mergeableState }) {
   return (
     approvalCount > 0 &&
@@ -75,8 +79,13 @@ function evaluateDependabotPolicy(input) {
     return blocked('Dependabot automation requires an open, non-draft pull request.')
   }
 
-  if (!input.headSha || input.headSha !== input.workflowHeadSha) {
-    return blocked('The validated CI head does not match the current pull request head.')
+  if (
+    isStaleHead({
+      currentHeadSha: input.headSha,
+      validatedHeadSha: input.workflowHeadSha,
+    })
+  ) {
+    return ignored('The workflow run is stale for the current pull request head.')
   }
 
   const ecosystem = getEcosystem(input.headRef || '')
@@ -142,5 +151,6 @@ function evaluateDependabotPolicy(input) {
 module.exports = {
   REQUIRED_CHECKS,
   evaluateDependabotPolicy,
+  isStaleHead,
   shouldBlockExistingApproval,
 }
