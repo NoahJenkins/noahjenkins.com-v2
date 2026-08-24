@@ -1,3 +1,6 @@
+const { readFileSync } = require('node:fs')
+const { join } = require('node:path')
+
 const {
   REQUIRED_CHECKS,
   evaluateDependabotPolicy,
@@ -24,6 +27,18 @@ const npmInput = {
 }
 
 describe('Dependabot native auto-merge policy', () => {
+  test('enables native auto-merge before approval can release the final branch gate', () => {
+    const workflow = readFileSync(
+      join(process.cwd(), '.github/workflows/dependabot-auto-merge.yml'),
+      'utf8',
+    )
+
+    expect(workflow.indexOf('enablePullRequestAutoMerge')).toBeGreaterThan(-1)
+    expect(workflow.indexOf('createReview')).toBeGreaterThan(
+      workflow.indexOf('enablePullRequestAutoMerge'),
+    )
+  })
+
   test('enables native squash auto-merge for a grouped routine npm update', () => {
     expect(evaluateDependabotPolicy(npmInput)).toEqual(
       expect.objectContaining({

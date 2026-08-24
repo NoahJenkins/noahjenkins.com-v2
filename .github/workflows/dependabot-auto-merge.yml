@@ -163,7 +163,34 @@ jobs:
               })
             }
 
+            const disableNativeAutoMerge = async (current) => {
+              if (current.state !== 'open' || !current.auto_merge) return
+
+              await github.graphql(
+                `mutation($pullRequestId: ID!) {
+                  disablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId
+                  }) {
+                    pullRequest {
+                      number
+                    }
+                  }
+                }`,
+                { pullRequestId: current.node_id },
+              )
+            }
+
             if (decision.status === 'blocked') {
+              try {
+                await disableNativeAutoMerge(pull)
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `${decision.reason} Native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
               await ensureBlockedLabel()
               core.setFailed(decision.reason)
               return
@@ -182,6 +209,16 @@ jobs:
               currentPull.state !== 'open' ||
               currentPull.mergeable_state === 'dirty'
             ) {
+              try {
+                await disableNativeAutoMerge(currentPull)
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed after policy validation, and native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
               await ensureBlockedLabel()
               core.setFailed('Pull request state changed after policy validation.')
               return
@@ -198,43 +235,6 @@ jobs:
               if (error.status !== 404) throw error
             }
 
-            try {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pullNumber,
-                commit_id: validatedHeadSha,
-                event: 'APPROVE',
-                body: 'Auto-approved after the protected CI suite and Dependabot policy passed.',
-              })
-            } catch (error) {
-              let approvalExists = false
-              if (error.status === 422) {
-                const reviews = await github.paginate(
-                  github.rest.pulls.listReviews,
-                  {
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    pull_number: pullNumber,
-                    per_page: 100,
-                  },
-                )
-                approvalExists = reviews.some(
-                  (review) =>
-                    review.state === 'APPROVED' &&
-                    review.commit_id === validatedHeadSha,
-                )
-              }
-
-              if (!approvalExists) {
-                await ensureBlockedLabel()
-                core.setFailed(`Unable to confirm approval for the validated head: ${error.message}`)
-                return
-              }
-
-              core.info('An approval already exists for the validated head.')
-            }
-
             const { data: mergePull } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -247,8 +247,18 @@ jobs:
               mergePull.draft ||
               mergePull.mergeable_state === 'dirty'
             ) {
+              try {
+                await disableNativeAutoMerge(mergePull)
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed before native auto-merge, and rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
               await ensureBlockedLabel()
-              core.setFailed('Pull request state changed after approval.')
+              core.setFailed('Pull request state changed before native auto-merge.')
               return
             }
 
@@ -256,11 +266,22 @@ jobs:
               mergePull.auto_merge &&
               mergePull.auto_merge.merge_method?.toLowerCase() !== 'squash'
             ) {
+              try {
+                await disableNativeAutoMerge(mergePull)
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Existing native auto-merge request does not use squash, and rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
               await ensureBlockedLabel()
               core.setFailed('Existing native auto-merge request does not use squash.')
               return
             }
 
+            let autoMergeEnabledByThisRun = false
             if (!mergePull.auto_merge) {
               try {
                 await github.graphql(
@@ -283,6 +304,7 @@ jobs:
                     expectedHeadOid: validatedHeadSha,
                   },
                 )
+                autoMergeEnabledByThisRun = true
               } catch (error) {
                 await ensureBlockedLabel()
                 core.setFailed(`Unable to enable native auto-merge: ${error.message}`)
@@ -292,6 +314,97 @@ jobs:
               core.info('Native auto-merge is already enabled for this head.')
             }
 
+            const { data: approvalPull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+            })
+            if (approvalPull.merged) {
+              core.notice(
+                `Native squash auto-merge completed for #${pullNumber} using an existing approval.`,
+              )
+              return
+            }
+
+            if (
+              approvalPull.head.sha !== validatedHeadSha ||
+              approvalPull.base.ref !== 'main' ||
+              approvalPull.state !== 'open' ||
+              approvalPull.draft ||
+              approvalPull.mergeable_state === 'dirty' ||
+              approvalPull.auto_merge?.merge_method?.toLowerCase() !== 'squash'
+            ) {
+              try {
+                if (autoMergeEnabledByThisRun) {
+                  await disableNativeAutoMerge(approvalPull)
+                }
+              } catch (rollbackError) {
+                await ensureBlockedLabel()
+                core.setFailed(
+                  `Pull request state changed before final approval, and native auto-merge rollback failed: ${rollbackError.message}`,
+                )
+                return
+              }
+
+              await ensureBlockedLabel()
+              core.setFailed('Pull request state changed before final approval.')
+              return
+            }
+
+            try {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullNumber,
+                commit_id: validatedHeadSha,
+                event: 'APPROVE',
+                body: 'Auto-approved after native squash auto-merge was queued and the protected CI suite passed.',
+              })
+            } catch (error) {
+              let approvalExists = false
+              if (error.status === 422) {
+                const reviews = await github.paginate(
+                  github.rest.pulls.listReviews,
+                  {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pullNumber,
+                    per_page: 100,
+                  },
+                )
+                approvalExists = reviews.some(
+                  (review) =>
+                    review.state === 'APPROVED' &&
+                    review.commit_id === validatedHeadSha,
+                )
+              }
+
+              if (!approvalExists) {
+                const { data: rollbackPull } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                })
+                try {
+                  if (autoMergeEnabledByThisRun) {
+                    await disableNativeAutoMerge(rollbackPull)
+                  }
+                } catch (rollbackError) {
+                  await ensureBlockedLabel()
+                  core.setFailed(
+                    `Unable to confirm approval for the validated head, and native auto-merge rollback failed: ${rollbackError.message}`,
+                  )
+                  return
+                }
+
+                await ensureBlockedLabel()
+                core.setFailed(`Unable to confirm approval for the validated head: ${error.message}`)
+                return
+              }
+
+              core.info('An approval already exists for the validated head.')
+            }
+
             core.notice(
-              `Native squash auto-merge is enabled for #${pullNumber} after all protected checks passed.`,
+              `Native squash auto-merge is enabled and approved for #${pullNumber} after all protected checks passed.`,
             )
