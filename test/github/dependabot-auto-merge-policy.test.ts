@@ -40,7 +40,18 @@ describe('Dependabot native auto-merge policy', () => {
     expect(workflow).toContain('cancel-in-progress: true')
     expect(workflow).toContain('github.event.workflow_run.head_branch')
     expect(workflow).toContain('github.event.pull_request.head.ref')
+    expect(workflow).toContain("github.event.action != 'edited'")
+    expect(workflow).toContain('github.event.changes.base')
     expect(workflow).toContain("github.event_name == 'workflow_run'")
+    expect(workflow).toContain('      - edited')
+    expect(workflow).toContain('      - converted_to_draft')
+    expect(workflow).toContain('      - ready_for_review')
+
+    const ciWorkflow = readFileSync(
+      join(process.cwd(), '.github/workflows/ci.yml'),
+      'utf8',
+    )
+    expect(ciWorkflow).toContain('      - ready_for_review')
   })
 
   test('identifies a workflow run that no longer owns the current PR head', () => {
