@@ -1,5 +1,5 @@
-import { baseUrl } from 'app/sitemap'
-import { getBlogPosts } from 'app/blog/utils'
+import { baseUrl } from '@/app/sitemap'
+import { getBlogPosts } from '@/app/blog/utils'
 import { encodePathSegment, escapeXml } from '@/lib/security'
 
 export async function GET() {

@@ -1,4 +1,4 @@
-import { getBlogPosts } from 'app/blog/utils'
+import { getBlogPosts } from '@/app/blog/utils'
 
 export const baseUrl = 'https://noahjenkins.com'
 

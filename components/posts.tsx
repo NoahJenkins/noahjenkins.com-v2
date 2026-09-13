@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { motion } from "framer-motion"
 import { ArrowRight, Calendar, Clock } from "lucide-react"
-import { formatDate } from 'app/blog/format-date'
+import { formatDate } from '@/app/blog/format-date'
 import { encodePathSegment } from '@/lib/security'
 
 interface BlogPost {
