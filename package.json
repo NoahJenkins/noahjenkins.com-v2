@@ -45,7 +45,7 @@
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "wavesurfer.js": "^7.12.12"
+    "wavesurfer.js": "^8.0.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
