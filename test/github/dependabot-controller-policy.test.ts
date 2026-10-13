@@ -5,7 +5,7 @@ const sha = 'a'.repeat(40)
 const base = 'b'.repeat(40)
 const pr = { id: 42, number: 281, state: 'open', draft: false, user: { id: 49699333, type: 'Bot' }, base: { ref: 'main', sha: base, repo: { id: 1 } }, head: { ref: 'dependabot/github_actions/actions/setup-node-7.1.0', sha, repo: { id: 1 } }, mergeable: true, mergeable_state: 'clean' }
 const names = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
-const good = () => ({ pr, repositoryId: 1, mainSha: base, containsMain: true, scope: { allowed: true }, ci: { head_sha: sha, workflow_id: 8, head_branch: pr.head.ref, head_repository: { id: 1 }, event: 'pull_request', status: 'completed', conclusion: 'success', pull_requests: [{ number: 281, base: { sha: base } }] }, ciWorkflowId: 8, jobs: names.map((name, i) => ({ name, conclusion: 'success', status: 'completed', check_run_url: `https://api.github.com/repos/o/r/check-runs/${i+1}` })), checks: names.map((name, i) => ({ id: i+1, name, head_sha: sha, app: { id: 15368 }, status: 'completed', conclusion: 'success' })), statuses: [{ context: 'Vercel', state: 'success', creator: { id: 35613825 }, target_url: 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/abc' }], vercelAppId: 8329, vercelChecks: [{ app: { id: 8329 }, head_sha: sha }], reviews: [{ id: 1, user: { id: 175728472, type: 'Bot' }, commit_id: sha, state: 'APPROVED' }], reviewerId: 175728472 })
+const good = () => ({ pr, repositoryId: 1, mainSha: base, containsMain: true, scope: { allowed: true }, ci: { head_sha: sha, workflow_id: 8, head_branch: pr.head.ref, head_repository: { id: 1 }, event: 'pull_request', status: 'completed', conclusion: 'success', pull_requests: [{ number: 281, base: { sha: base } }] }, ciWorkflowId: 8, jobs: names.map((name, i) => ({ name, conclusion: 'success', status: 'completed', check_run_url: `https://api.github.com/repos/o/r/check-runs/${i+1}` })), checks: names.map((name, i) => ({ id: i+1, name, head_sha: sha, app: { id: 15368 }, status: 'completed', conclusion: 'success' })), statuses: [{ context: 'Vercel', state: 'success', creator: { id: 35613825 }, target_url: 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/abc' }], vercelAppId: 8329, vercelChecks: [{ app: { id: 8329 }, head_sha: sha }], independentReview: { task: {head:sha,base}, passed:true, report:{verdict:'approve'} } })
 
 describe('reviewed Dependabot policy', () => {
   test('allows an Actions major refreshed by a human', () => {
@@ -17,17 +17,11 @@ describe('reviewed Dependabot policy', () => {
   test('waits for refresh when main advanced', () => {
     expect(evaluateCandidate({ ...good(), containsMain: false }).kind).toBe('refresh')
   })
-  test('requests a review of the actual current head', () => {
-    expect(evaluateCandidate({ ...good(), reviews: [{ ...good().reviews[0], commit_id: base }] }).kind).toBe('review')
-  })
-  test.each(['COMMENTED', 'DISMISSED', 'CHANGES_REQUESTED'])('does not interpret %s as approval', (state) => {
-    expect(evaluateCandidate({ ...good(), reviews: [{ ...good().reviews[0], state }] }).kind).not.toBe('ready')
-  })
-  test('rejects a review from the coding agent even though both bots use login Copilot', () => {
-    expect(evaluateCandidate({ ...good(), reviews: [{ ...good().reviews[0], user: { id: 198982749, type: 'Bot' } }] }).kind).toBe('review')
-  })
-  test('latest dismissal supersedes an earlier approval', () => {
-    expect(evaluateCandidate({ ...good(), reviews: [...good().reviews, { ...good().reviews[0], id: 2, state: 'DISMISSED' }] }).kind).toBe('review')
+  test('requires authentic exact-head and base evidence', () => {
+    expect(evaluateCandidate({ ...good(), independentReview: null }).kind).toBe('review')
+    expect(evaluateCandidate({ ...good(), independentReview: { ...good().independentReview, task:{head:base,base} } }).kind).toBe('review')
+    expect(evaluateCandidate({ ...good(), independentReview: { ...good().independentReview, passed:false, report:{verdict:'request_changes'} } }).kind).toBe('repair')
+    expect(evaluateCandidate({ ...good(), independentReview: { ...good().independentReview, passed:false, report:{verdict:'blocked'} } }).kind).toBe('blocked')
   })
   test.each(['queued', 'waiting', 'action_required'])('does not spend repair budget on %s CI', (status) => {
     expect(evaluateCandidate({ ...good(), ci: { ...good().ci, status } }).kind).toBe('waiting')
@@ -102,7 +96,7 @@ describe('repair scope', () => {
     expect(evaluateScope([change('test/foo.test.ts', '', 'test("new", () => {})', 'added')]).allowed).toBe(true)
     expect(evaluateScope([change('test/foo.test.ts', 'test("old", () => {})', '', 'removed')]).allowed).toBe(false)
   })
-  test.each(['.github/workflows/dependabot-auto-merge.yml', '.github/scripts/dependabot-controller.cjs', '.github/copilot-instructions.md', 'jest.config.js', 'tsconfig.json', 'lib/AGENTS.md'])('blocks protected file %s', (filename) => {
+  test.each(['.github/workflows/dependabot-auto-merge.yml', '.github/scripts/dependabot-controller.cjs', '.github/copilot-instructions.md', 'jest.config.js', 'tsconfig.json', 'lib/AGENTS.md', '.github/scripts/dependabot-opencode-worker.cjs', '.github/scripts/dependabot-opencode-proxy.cjs', '.github/scripts/dependabot-opencode-publish.cjs', '.github/scripts/dependabot-opencode-validate.cjs', '.github/opencode/repair.md', '.github/opencode/review.md', '.github/opencode/validator.Dockerfile', 'app/nested/CLAUDE.md', 'test/existing.test.ts'])('blocks protected file %s', (filename) => {
     expect(evaluateScope([change(filename, 'old', 'new')]).allowed).toBe(false)
   })
 })

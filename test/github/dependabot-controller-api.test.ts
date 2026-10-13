@@ -81,7 +81,8 @@ describe('GitHub provider boundary', () => {
       return { ok: true, status: 200, json: async () => data }
     }
     const client = createClient({ repo: 'o/r', appId: 99, repositoryId: 1, reviewerId: 175728472, vercelAppId: 8329 }, 'read-token', 'app-token', fetcher)
-    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('ready')
+    // Legacy Copilot approval is not authenticated OpenCode evidence.
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('review')
     pr.changed_files = 2
     await expect(client.snapshot(pr, base)).rejects.toThrow('Incomplete')
   })

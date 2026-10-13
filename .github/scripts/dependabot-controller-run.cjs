@@ -3,7 +3,7 @@
 const fs = require('node:fs')
 const { createClient } = require('./dependabot-controller-api.cjs')
 const { reconcileOne, dispatchOne } = require('./dependabot-controller.cjs')
-const { evaluateCandidate, REVIEWER_ID } = require('./dependabot-controller-policy.cjs')
+const { evaluateCandidate } = require('./dependabot-controller-policy.cjs')
 
 function configFromEnv(env) {
   const number = (key, fallback = 0) => {
@@ -13,13 +13,13 @@ function configFromEnv(env) {
   }
   const config = {
     repo: env.GITHUB_REPOSITORY, appId: number('DEPENDABOT_CONTROLLER_APP_ID'), appSlug: env.DEPENDABOT_CONTROLLER_APP_SLUG,
-    stateIssue: number('DEPENDABOT_STATE_ISSUE_NUMBER'), dispatchUserId: number('DEPENDABOT_DISPATCH_USER_ID'),
-    reviewerId: number('DEPENDABOT_REVIEWER_ID', REVIEWER_ID), vercelAppId: number('DEPENDABOT_VERCEL_APP_ID', 8329),
+    stateIssue: number('DEPENDABOT_STATE_ISSUE_NUMBER'),
+    vercelAppId: number('DEPENDABOT_VERCEL_APP_ID', 8329),
     automationEnabled: env.DEPENDABOT_AUTOMATION_ENABLED === 'true', agentEnabled: env.DEPENDABOT_AGENT_ENABLED === 'true',
     runAttempt: number('GITHUB_RUN_ATTEMPT', 1), get now() { return new Date().toISOString() },
   }
   if (config.automationEnabled && (config.appId <= 0 || [15368, 8329].includes(config.appId))) throw new Error('A dedicated controller App is required')
-  if (config.automationEnabled && config.agentEnabled && (!config.stateIssue || !config.dispatchUserId)) throw new Error('Configure the state issue and dispatch user before enabling agents')
+  if (config.automationEnabled && config.agentEnabled && !config.stateIssue) throw new Error('Configure the state issue before enabling agents')
   return config
 }
 

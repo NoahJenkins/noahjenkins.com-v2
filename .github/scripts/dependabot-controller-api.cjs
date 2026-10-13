@@ -1,5 +1,7 @@
 'use strict'
-const { GATE, REVIEWER_ID, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
+const { GATE, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
+// Legacy dispatcher removed in Task 3; this identifier is not approval evidence.
+const REVIEWER_ID = 175728472
 const { readLedger, encodeLedger } = require('./dependabot-controller-ledger.cjs')
 
 function createClient(config, readToken, writeToken, fetcher = fetch) {

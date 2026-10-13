@@ -3,8 +3,6 @@
 const REQUIRED_CHECKS = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
 const GATE = 'Dependabot Merge Gate'
 const DEPENDABOT_ID = 49699333
-const REVIEWER_ID = 175728472
-const CODING_AGENT_ID = 198982749
 const VERCEL_BOT_ID = 35613825
 const VERCEL_PREFIX = 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/'
 const range = /^(?:[~^]|>=?)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/
@@ -90,7 +88,7 @@ function eligiblePr(pr, repositoryId) {
 
 function evaluateCandidate(input) {
   const result = (kind, reason) => ({ kind, reason })
-  const { pr, repositoryId, mainSha, ci, jobs = [], checks = [], reviews = [], reviewerId } = input
+  const { pr, repositoryId, mainSha, ci, jobs = [], checks = [] } = input
   if (!eligiblePr(pr, repositoryId)) return result('blocked', 'Only open, same-repository Dependabot PRs targeting main are eligible.')
   if (!input.scope.allowed) return result('blocked', input.scope.reason)
   if (pr.base.sha !== mainSha) return result('waiting', 'Main changed during evaluation.')
@@ -111,11 +109,11 @@ function evaluateCandidate(input) {
   if (!vercel || vercel.creator?.id !== VERCEL_BOT_ID || !vercel.target_url?.startsWith(VERCEL_PREFIX) || !input.vercelChecks?.some((item) => item.head_sha === pr.head.sha && item.app?.id === input.vercelAppId) || input.vercelAppId !== 8329) return result('waiting', 'Trusted Vercel deployment status is missing.')
   if (['failure', 'error'].includes(vercel.state)) return result('blocked', 'Vercel failed without a classified CI code failure; inspect platform logs before repair.')
   if (vercel.state !== 'success') return result('waiting', 'Vercel preview is still pending.')
-  if (reviewerId !== REVIEWER_ID || reviewerId === CODING_AGENT_ID) return result('blocked', 'The independent review identity is not configured correctly.')
-  const current = reviews.filter((review) => review.user?.id === reviewerId && review.user.type === 'Bot' && review.commit_id === pr.head.sha).sort((a, b) => b.id - a.id)[0]
-  if (current?.state === 'CHANGES_REQUESTED') return result('repair', 'Independent review requested changes to this head.')
-  if (current?.state !== 'APPROVED') return result('review', 'Independent current-head approval is required.')
+  const current = input.independentReview
+  if (!current || current.task.head !== pr.head.sha || current.task.base !== mainSha) return result('review', 'Independent current-head review is required.')
+  if (current.report.verdict === 'request_changes') return result('repair', 'Independent review requested changes to this head.')
+  if (!current.passed) return result('blocked', 'Independent review is blocked or incomplete.')
   return result('ready', 'Current-head validation and independent review passed.')
 }
 
-module.exports = { REQUIRED_CHECKS, GATE, DEPENDABOT_ID, REVIEWER_ID, evaluateScope, evaluateCandidate, eligiblePr, actionPins }
+module.exports = { REQUIRED_CHECKS, GATE, DEPENDABOT_ID, evaluateScope, evaluateCandidate, eligiblePr, actionPins }
