@@ -28,7 +28,8 @@ concurrency:
 jobs:
   controller:
     name: Reconcile Dependabot PRs
-    if: vars.DEPENDABOT_CONTROLLER_APP_ID != ''
+    if: vars.DEPENDABOT_CONTROLLER_APP_ID != '' && github.ref == 'refs/heads/main'
+    environment: dependabot-controller
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:
@@ -77,6 +78,7 @@ jobs:
   dispatch:
     name: Dispatch reserved Copilot work
     needs: controller
+    environment: dependabot-dispatch
     if: always() && !cancelled() && needs.controller.outputs.has_tasks == 'true' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 10
