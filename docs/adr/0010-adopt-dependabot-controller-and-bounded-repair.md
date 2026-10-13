@@ -51,3 +51,17 @@ Adopt option 3.
 - [Controller setup guide](../dependabot-controller-setup.md)
 - [CI/CD pipeline](../architecture/ci-cd-pipeline.md)
 - [ADR 0008](./0008-reduce-dependabot-volume-and-harden-post-ci-automation.md)
+
+## Credential environment boundary correction — 2026-10-13
+
+After PR #286 was merged at `f440`, a security follow-up identified that automatic CI on Copilot pushes can run unreviewed workflow changes with Actions secret access. The scope guard checks acceptance before merge; it cannot enforce secret isolation before those workflows run. [GitHub's Copilot workflow settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings)
+
+Complete the approved separation of controller and dispatcher authority with dedicated environment secrets: the App key only in `dependabot-controller`, and the PAT only in `dependabot-dispatch`. Both environments require selected deployment branches/tags with exactly one Branch rule, `main`, no tag or PR-ref rules, and no administrator bypass. Verify those policies before storing credentials. Do not duplicate the credentials in repository, organization, Dependabot, or Agents secrets. Keep existing `copilot`, `Preview`, and `Production` environments unchanged.
+
+Trusted jobs declare these environments; ordinary CI stays outside them. GitHub enforces the deployment policy before releasing environment secrets. Default-branch checkout and the trusted `pull_request_target` base remain required, and manual dispatch from another ref must be denied. [GitHub deployment and environment rules](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+
+At discovery, credentials and activation variables were absent, so the merged controller was inactive and no credential exposure was observed. This is an implementation boundary correction before activation. The verified environment setup is recorded below; credential configuration and activation remain incomplete.
+
+### Environment setup status — 2026-10-13
+
+The owner saved both dedicated environments through Safari settings on October 13. API read-back confirmed selected-branch policies, exactly one Branch `main` rule each, no tags, `can_admins_bypass: false`, and zero secrets. The environment security setup is complete. Credentials and activation flags remain absent, and dispatch is inactive. Credential storage must wait until the workflow follow-up is merged and the remaining App, Copilot, and billing prerequisites are verified; completed environment policies alone do not establish activation.

@@ -152,7 +152,7 @@ The controller reconciles same-repository Dependabot PRs from events and a sched
 
 The dedicated controller GitHub App owns the required `Dependabot Merge Gate`. Branch protection must bind that check to the App's ID, require strict up-to-date CI, dismiss stale reviews, and require at least one approval. Publish the gate with flags off before making it required; human PRs receive success only when the commit is not shared with an open Dependabot PR. Multiple bot PRs sharing a commit require manual duplicate resolution; check ownership is per commit. The controller queues native auto-merge with `expectedHeadOid` while the gate is pending, then revalidates before submitting its approval and gate success. Missing proof, stale state, or configuration failure blocks acceptance. No administrator bypass is used.
 
-A separate user-PAT dispatcher requests Copilot branch repair and independent review. Agent execution receives no controller App credentials. A central App-authored JSON ledger comment on `DEPENDABOT_STATE_ISSUE_NUMBER` records reservations before dispatch. Load it only for bot credit reservations, so an invalid ledger does not block unrelated human gates. Per-PR controller errors remain failures; a non-cancelled dispatcher verifies valid saved reservations for other PRs even if another PR failed. Each UTC day allows two repair requests and eight review requests across the repository. Each PR allows at most two lifetime repairs; a new head does not reset that limit. Both operations deduplicate by head, count uncertain dispatches, and do not retry the same SHA. Reservations expire for dispatch after 15 minutes but remain charged; dispatcher reruns do not send work. A PAT-authored claim on the central issue is written before provider dispatch. No head change within 30 minutes requires manual intervention. A ledger larger than 60,000 bytes fails closed without automatic pruning.
+A separate user-PAT dispatcher requests Copilot branch repair and independent review. The controller job uses the `dependabot-controller` environment; the dispatcher uses `dependabot-dispatch`. Each permits only a Branch rule for exact `main`, without tags, PR refs, or administrator bypass. Verify these policies before storing the App key or PAT, and do not duplicate them at repository/organization/Dependabot/Agents scope. Agent execution receives no controller App credentials. A central App-authored JSON ledger comment on `DEPENDABOT_STATE_ISSUE_NUMBER` records reservations before dispatch. Load it only for bot credit reservations, so an invalid ledger does not block unrelated human gates. Per-PR controller errors remain failures; a non-cancelled dispatcher verifies valid saved reservations for other PRs even if another PR failed. Each UTC day allows two repair requests and eight review requests across the repository. Each PR allows at most two lifetime repairs; a new head does not reset that limit. Both operations deduplicate by head, count uncertain dispatches, and do not retry the same SHA. Reservations expire for dispatch after 15 minutes but remain charged; dispatcher reruns do not send work. A PAT-authored claim on the central issue is written before provider dispatch. No head change within 30 minutes requires manual intervention. A ledger larger than 60,000 bytes fails closed without automatic pruning.
 
 Branch protection remains authoritative. Native auto-merge intent, dispatched review, and agent completion do not establish merge acceptance. Only verified upstream Action version pins can change in the privileged controller workflow; its Node version, inputs, permissions, and commands are frozen. Existing controller scripts, instructions, tests, and validation commands are protected. Unclassified platform failures require operator action. Disabling automation cancels native merge intent and blocks bot gates on reconciliation. External App installation, state issue, PAT, dispatcher user identity, trusted IDs, workflow approval settings, and billing controls are prerequisites; no activation is assumed.
 
@@ -164,15 +164,15 @@ Branch protection remains authoritative. Native auto-merge intent, dispatched re
 - **GitHub Actions SHA pinning required** is enabled at the repository level
 
 ## Deployment Environments
-No GitHub Actions deployment environments are defined in `.github/workflows/ci.yml` (e.g., no `environment:` blocks such as staging/production).  
+Ordinary CI in `.github/workflows/ci.yml` has no credential environment. The two privileged automation jobs declare dedicated main-only environments as described above. GitHub must enforce their deployment restrictions before releasing credentials; the merge scope guard does not protect pre-merge workflow execution.
 Vercel preview and production deployments are handled by the Git integration outside this workflow.
 
 ## Required Secrets / Environment Names
 
 ### Secrets (names only)
 - **None explicitly required by `ci.yml`**
-- Controller: `DEPENDABOT_CONTROLLER_PRIVATE_KEY`
-- Separate Copilot dispatcher: `COPILOT_AUTOMATION_TOKEN`
+- `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY`
+- `dependabot-dispatch` environment only: `COPILOT_AUTOMATION_TOKEN`
 
 ### Environment variables (names only)
 - `STORE_PATH` (set in each job for pnpm cache path)

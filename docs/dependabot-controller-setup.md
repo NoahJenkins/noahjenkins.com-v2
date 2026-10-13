@@ -11,14 +11,38 @@ Configure values through repository Actions settings or a secure local CLI input
 | `DEPENDABOT_CONTROLLER_APP_ID` | Actions variable | Numeric ID of the dedicated controller GitHub App |
 | `DEPENDABOT_DISPATCH_USER_ID` | Actions variable | Numeric ID of the user who owns the dispatcher PAT |
 | `DEPENDABOT_STATE_ISSUE_NUMBER` | Actions variable | Number of the repository issue holding the central App-authored ledger |
-| `DEPENDABOT_CONTROLLER_PRIVATE_KEY` | Actions secret | Controller App private key used to create an installation token |
-| `COPILOT_AUTOMATION_TOKEN` | Actions secret | User PAT used only by the Copilot dispatcher |
+| `DEPENDABOT_CONTROLLER_PRIVATE_KEY` | `dependabot-controller` environment secret only | Controller App private key used to create an installation token |
+| `COPILOT_AUTOMATION_TOKEN` | `dependabot-dispatch` environment secret only | User PAT used only by the Copilot dispatcher |
 | `DEPENDABOT_AUTOMATION_ENABLED` | Actions variable | Controller activation flag; only the exact value `true` enables it |
 | `DEPENDABOT_AGENT_ENABLED` | Actions variable | Dispatcher activation flag; only the exact value `true` enables it |
 | `DEPENDABOT_REVIEWER_ID` | Actions variable | Numeric user ID of the trusted reviewer; default `175728472` is the Copilot review identity |
 | `DEPENDABOT_VERCEL_APP_ID` | Actions variable | Trusted Vercel App ID; default and supported value `8329` |
 
 Missing or invalid configuration must fail closed. Obtain IDs from authenticated metadata rather than inferring them from account names. The reviewer process must provide independent acceptance evidence. The configured Copilot ID is not proof that a qualifying formal review will be emitted; verify that behavior before activation.
+
+## Main-only credential environments
+
+Create two dedicated GitHub Actions environments: `dependabot-controller` for the App private key, and `dependabot-dispatch` for the PAT. Before storing either credential, configure each environment with **Selected branches and tags**, exactly one **Branch** rule named `main`, no tag or PR-ref rules, and administrator bypass disabled. Read both policies back and verify the exact rule type and name. Repository variables remain public configuration.
+
+Store the App key only in `dependabot-controller` and the PAT only in `dependabot-dispatch`. Do not duplicate either value as a repository, organization, Dependabot, or Agents secret. Leave the existing `copilot`, `Preview`, and `Production` environments unchanged. Ordinary CI must not reference either credential environment.
+
+The trusted controller and dispatcher jobs declare their respective environment. GitHub evaluates its deployment policy before a job receives environment secrets. The retained `pull_request_target` path uses the trusted base `main` ref and default-branch checkout; a manual dispatch from another ref must be denied by the environment policy. [Deployment policies and environment secrets](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+
+The scope guard protects merge acceptance. It cannot prevent an unreviewed PR workflow from attempting secret access before merge. GitHub documents that automatic workflows on Copilot pushes can access Actions secrets, so credential isolation must precede unattended activation. [Copilot workflow approval settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings)
+
+Environment creation, policy verification, and credential storage are separate completion steps. Current progress and the remaining activation blocker are recorded below.
+
+## Current configuration status — 2026-10-13
+
+- `dependabot-controller` was created with environment ID `24225904096`.
+- `dependabot-dispatch` was created with environment ID `24225905373`.
+- Both use selected deployment branches/tags (`custom_branch_policies: true`, `protected_branches: false`), with exactly one Branch rule for `main` and no Tag rules.
+- Both have zero environment secrets. Repository variables and repository secrets are also empty. Existing `copilot`, `Preview`, and `Production` environments are unchanged.
+- Both were saved through the owner's Safari settings UI on October 13. API read-back confirmed `can_admins_bypass: false`, selected branch policies, exactly one Branch `main` rule, no Tag rules, and zero secrets in each environment. The no-bypass security setup is complete.
+
+**Credential storage must still wait until the environment enforcement workflow follow-up is merged and the remaining App, Copilot, and billing prerequisites are verified.** Credentials and enable flags remain absent; dispatch remains inactive. Environment configuration alone does not establish activation.
+
+PR #286 is merged at `f440`; its production deployment is READY, and home/RSS requests returned HTTP 200 with six RSS items. The environment enforcement follow-up is separate and is not recorded as merged or deployed. Its worktree remains active pending review and cleanup after merge; the old PR #286 worktree and local/remote task branches were removed.
 
 ## Dedicated controller App
 
@@ -32,7 +56,7 @@ Create a repository state issue and set `DEPENDABOT_STATE_ISSUE_NUMBER` to its n
 
 ## Copilot dispatcher and review
 
-Use a repository-authorized user PAT with Pull requests write and Issues write for dispatch, stored only as `COPILOT_AUTOMATION_TOKEN`. Copilot's public-preview task API supports user tokens; installation tokens are not supported for Copilot tasks. The existing-PR path uses an `@copilot` request authored by a user with write access so the agent can repair that branch. [API access](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-via-the-api), [existing PR requests](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github)
+Use a repository-authorized user PAT with Pull requests write and Issues write for dispatch, stored only as `COPILOT_AUTOMATION_TOKEN` in the `dependabot-dispatch` environment. Copilot's public-preview task API supports user tokens; installation tokens are not supported for Copilot tasks. The existing-PR path uses an `@copilot` request authored by a user with write access so the agent can repair that branch. [API access](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-via-the-api), [existing PR requests](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github)
 
 Set `DEPENDABOT_DISPATCH_USER_ID` to the PAT owner's numeric user ID; the dispatcher verifies that identity before a provider write. Configure the independent reviewer identity and test that a formal review is emitted as `APPROVED` for the exact current head. Requesting Copilot review does not itself satisfy this gate. The review identity is Copilot `175728472`, separate from coding-agent identity `198982749`; a comments-only result, stale approval, coding-agent approval, or untrusted reviewer identity leaves the PR blocked.
 
@@ -74,12 +98,13 @@ Do not delete or manually reset the ledger to retry an exhausted PR. Inspect the
 ## Activation verification
 
 1. Merge the tested implementation into the default branch while both enable flags are unset.
-2. Install the dedicated App, configure its private key and non-secret ID, and run the controller with flags off. Verify it publishes `Dependabot Merge Gate`: success for human PRs and blocked for Dependabot PRs. Missing App setup cannot publish this check.
-3. Only after the gate exists, make it required and bind it to the controller App ID. Require strict up-to-date CI, at least one approval, and stale-review dismissal; read protection back to verify the settings.
-4. Configure the state issue, PAT, dispatcher user ID, reviewer ID, and Vercel identity without exposing values. Confirm the independent provider emits qualifying formal reviews and repaired heads receive full trusted CI and Vercel validation.
-5. Confirm formal-review auto-approval, agent workflow approval behavior, the explicit provider cost cap, and the Actions budget.
-6. Set the controller and dispatcher flags to the exact value `true`. Observe a current Dependabot PR and verify one reservation, one durable dispatch claim, bounded dispatch, exact-head review, trusted CI, Vercel status, pending gate during native queueing, and final gate outcome.
-7. Confirm the resulting merge and production deployment separately. Successful preview checks do not prove production deployment.
+2. Create both dedicated environments, apply their exact Branch `main` selection and no-bypass policies, and verify both policies before storing credentials. Keep the flags unset.
+3. Install the dedicated App, store its key only in `dependabot-controller`, configure its non-secret ID, and run the controller with flags off. Verify it publishes `Dependabot Merge Gate`: success for human PRs and blocked for Dependabot PRs. Missing App setup cannot publish this check.
+4. Only after the gate exists, make it required and bind it to the controller App ID. Require strict up-to-date CI, at least one approval, and stale-review dismissal; read protection back to verify the settings.
+5. Configure the state issue, PAT only in `dependabot-dispatch`, dispatcher user ID, reviewer ID, and Vercel identity without exposing values. Confirm the independent provider emits qualifying formal reviews and repaired heads receive full trusted CI and Vercel validation.
+6. Confirm formal-review auto-approval, agent workflow approval behavior, the explicit provider cost cap, and the Actions budget.
+7. Set the controller and dispatcher flags to the exact value `true`. Observe a current Dependabot PR and verify one reservation, one durable dispatch claim, bounded dispatch, exact-head review, trusted CI, Vercel status, pending gate during native queueing, and final gate outcome.
+8. Confirm the resulting merge and production deployment separately. Successful preview checks do not prove production deployment.
 
 Until these steps pass, report the system as implemented but inactive or blocked, as applicable. No activation is assumed in this guide.
 
