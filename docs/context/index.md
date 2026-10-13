@@ -41,6 +41,7 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 ## 2026-10
 
 - [2026-10-13 Vercel Dependabot Preview Failures](./2026-10-13-vercel-dependabot-preview-failures.md)
+- [2026-10-13 Dependabot Automation Gap Investigation](./2026-10-13-dependabot-automation-gap-investigation.md)
 
 ## Linked ADRs
 
@@ -53,3 +54,4 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [ADR 0007: Adopt Dependency Review and SHA-Pinned GitHub Actions](../adr/0007-adopt-dependency-review-and-sha-pinned-github-actions.md)
 - [ADR 0008: Reduce Dependabot Volume and Harden Post-CI Automation](../adr/0008-reduce-dependabot-volume-and-harden-post-ci-automation.md)
 - [ADR 0009: Adopt Node.js 24](../adr/0009-adopt-nodejs-24.md)
+- [ADR 0010: Adopt a Dependabot Controller and Bounded Repair](../adr/0010-adopt-dependabot-controller-and-bounded-repair.md)

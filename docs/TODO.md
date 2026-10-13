@@ -38,15 +38,23 @@ Last Updated: 2026-10-13
 
 - [x] Investigate three Vercel Dependabot preview failures and confirm the discontinued Node.js 20 cause — 2026-10-13 ([context](./context/2026-10-13-vercel-dependabot-preview-failures.md))
 
+- [x] Investigate the Dependabot actor/policy gaps and missing autonomous repair path — 2026-10-13
+- [x] Approve the controller and bounded repair design: two repairs/eight reviews per day, two lifetime repairs per PR — 2026-10-13
+
 ## Content Management
 
 - [x] Organize blog posts chronologically (newest first) and update `format-blog-post` skill for date-prefix naming convention
 
 ## Blocked
 
+- [ ] Activate the controller after dedicated App/state issue/PAT setup, trusted IDs, required gate binding, agent workflow approval settings, and billing controls are verified
+
 - [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
 
 ## Follow-ups
+
+- [ ] Implement and verify the trusted controller, App ledger, bounded dispatcher, independent review, and exact-head merge gate
+- [ ] Verify formal current-head APPROVED review support and full CI/Vercel validation on repaired heads before live activation
 
 - [x] Align manifests, local pins, all five CI jobs, and the Vercel project to Node.js 24; validate frozen install, build, TypeScript, and Jest locally — 2026-10-13
 - [x] Complete final local install/build/TypeScript/Jest and 44 non-Firefox browser checks after dependency remediation — 2026-10-13
