@@ -29,7 +29,7 @@ Purpose: unit/integration validation and coverage upload.
 
 Steps:
 1. Checkout (`actions/checkout@v4`)
-2. Setup Node.js 20 (`actions/setup-node@v4`)
+2. Setup Node.js 24 (`actions/setup-node@v4`)
 3. Setup pnpm (`pnpm/action-setup`)
 4. Resolve pnpm store path into env var `STORE_PATH`
 5. Restore/save pnpm cache (`actions/cache@v4`) keyed by `pnpm-lock.yaml`
@@ -42,7 +42,7 @@ Purpose: end-to-end UI validation and artifact retention.
 
 Steps:
 1. Checkout
-2. Setup Node.js 20
+2. Setup Node.js 24
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
@@ -61,7 +61,7 @@ Purpose: fail CI when high/critical dependency vulnerabilities are present.
 
 Steps:
 1. Checkout
-2. Setup Node.js 20
+2. Setup Node.js 24
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
@@ -73,7 +73,7 @@ Purpose: static type validation.
 
 Steps:
 1. Checkout
-2. Setup Node.js 20
+2. Setup Node.js 24
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
@@ -92,7 +92,7 @@ Purpose: verify production build can be produced.
 
 Steps:
 1. Checkout
-2. Setup Node.js 20
+2. Setup Node.js 24
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
@@ -100,9 +100,15 @@ Steps:
 7. Build app: `pnpm build`
 8. Verify output directory `.next` exists; fail job if missing
 
-### 4) Deploy Stage (Not Applicable)
-There is **no deploy job** in the current workflow.  
-The pipeline is currently CI-only (validation), not CD deployment.
+### 4) Vercel Deployment Stage
+
+The GitHub Actions workflow validates the application. Vercel's Git integration creates preview deployments for pull requests and production deployments for `main` outside that workflow. This includes Dependabot pull requests that only change GitHub Actions files.
+
+Use Node.js `24.x` across `package.json` (`engines.node`), `.nvmrc`, `.node-version`, all five CI jobs, and the Vercel project setting. Vercel uses the `package.json` engine setting ahead of the project setting. Changing the dashboard setting alone does not override an unsupported version in the manifest. [Vercel Node.js version documentation](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)
+
+Vercel stopped accepting new Node.js 20 builds and functions on October 1, 2026. Existing deployments can continue to serve traffic while new previews fail. [Vercel deprecation notice](https://vercel.com/changelog/node-js-20-is-being-deprecated)
+
+The runtime decision is recorded in [ADR 0009](../adr/0009-adopt-nodejs-24.md). Dependabot grouping, approval, and auto-merge gates remain as defined in ADR 0008.
 
 ### 4a) Dependency Review Workflow
 
@@ -186,7 +192,7 @@ Current branch protection configuration does not enforce these rules for adminis
 
 ## Deployment Environments
 No GitHub Actions deployment environments are defined in `.github/workflows/ci.yml` (e.g., no `environment:` blocks such as staging/production).  
-Deployments, if any, are handled outside this workflow.
+Vercel preview and production deployments are handled by the Git integration outside this workflow.
 
 ## Required Secrets / Environment Names
 
@@ -234,7 +240,7 @@ Deployments, if any, are handled outside this workflow.
 - Update pinned workflow SHAs when upstream action releases are adopted.
 - Reassess `pnpm install --no-frozen-lockfile` fallback policy if stricter reproducibility is required.
 - Periodically review:
-  - Node version pin (`20`)
+  - Node version pin (`24`)
   - artifact retention duration (currently 30 days)
   - workflow permissions for least privilege
 - Observe `Dependency Review` results before deciding whether to promote it to a required branch protection check.
