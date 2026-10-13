@@ -1,10 +1,10 @@
 # ADR 0011: Use OpenCode Go for Dependabot Workers
 
-**Status:** proposed implementation design; provider and GitHub Actions direction selected by the user
+**Status:** accepted; implementation and external activation pending
 
 **Date:** 2026-10-13
 
-**Supersedes on acceptance:** ADR 0010's Copilot PAT dispatch and formal Copilot review requirements. Its controller, merge, scope, quota, and credential-isolation boundaries remain in effect.
+**Supersedes:** ADR 0010's Copilot PAT dispatch and formal Copilot review requirements. Its controller, merge, scope, quota, and credential-isolation boundaries remain in effect.
 
 ## Context
 
@@ -20,7 +20,7 @@ The existing main-only environments have no provider credentials. Fresh names-on
 
 ## Decision
 
-Propose option 3 for written review before code.
+Adopt option 3. The user approved the written design; implementation plan review precedes code.
 
 Pin OpenCode `1.19.0`, provider `opencode-go`, repair model `kimi-k2.7-code`, and review model `glm-5.3`. Disable provider **Use balance** before activation and enforce fixed worker time/step bounds. Keep T3 stable.
 

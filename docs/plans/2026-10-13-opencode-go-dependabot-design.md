@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-13
 
-**Status:** written design for review before implementation
+**Status:** accepted by the user; implementation plan review precedes code
 
 **Base:** `e95f9cc`; the existing controller remains inactive.
 
@@ -27,11 +27,11 @@ Pin OpenCode `1.19.0` and use provider `opencode-go`. Default repair model is `k
 
 Use a fresh home directory, trusted main-branch configuration and prompts, and a curated data directory. Candidate files are data: omit PR `AGENTS.md`, OpenCode configuration, plugins, MCP configuration, and `.git`. While the provider key is present, deny shell execution, LSP, formatters, plugins, MCP, subagents, web fetch, and external-directory access. Permit only bounded reading and repair edits within the curated data directory; review is read-only. Agent execution receives no GitHub token, App key, installation token, or Doppler token.
 
-Hard bounds: repair agent 20 minutes/24 steps; review agent 10 minutes/16 steps; secret-free validation 20 minutes; publisher 5 minutes. Configure the pinned runtime's step limit and verify it with a local fake-provider test; the trusted wrapper also enforces timeouts. It must not rely on the model to stop. A missing enforceable step limit blocks activation.
+Hard bounds: repair agent 20 minutes/24 steps; review agent 10 minutes/16 steps; secret-free validation 20 minutes; publisher 5 minutes. Use a trusted local Go API broker to enforce at most 24 repair or 16 review upstream generation requests, including retries. Native step instructions alone are not a hard limit. The broker holds the real Go key; OpenCode receives only its URL and an ephemeral token. Verify denial before upstream request 25/17 with a hostile fake provider; the wrapper also bounds events and timeouts. It must not rely on the model to stop. A missing enforceable step limit blocks activation.
 
 ## Repair artifact and publication
 
-Use a JSON data artifact containing task metadata and changed UTF-8 files. Do not accept archives, executable modes, symlinks, commands, or arbitrary filesystem extraction. Proposed limits: 64 files, 2 MiB per file, 8 MiB total content, and 240-byte relative paths. Reject traversal, absolute paths, duplicate paths, invalid UTF-8, unsupported operations, and schema extras. Bind the artifact digest to the wrapper's task, original run, and session record.
+Use a JSON data artifact containing task metadata and changed UTF-8 files. Do not accept archives, executable modes, symlinks, commands, or arbitrary filesystem extraction. Artifact limits: 64 files, 2 MiB per file, 8 MiB total content, and 240-byte relative paths. Reject traversal, absolute paths, duplicate paths, invalid UTF-8, unsupported operations, and schema extras. Bind the artifact digest to the wrapper's task, original run, and session record.
 
 The publisher verifies all of the following before a GitHub write:
 
