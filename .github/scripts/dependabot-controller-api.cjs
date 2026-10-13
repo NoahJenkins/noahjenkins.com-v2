@@ -118,6 +118,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       if (pr.requested_reviewers?.some((user) => user.id === REVIEWER_ID)) return
       const previous = await list(`${root}/pulls/${task.pr}/reviews`)
       const rerequest = previous.some((review) => review.user?.id === REVIEWER_ID)
+      if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('UTC day changed during review lookup; reservation remains consumed')
       await request('POST', `${root}/pulls/${task.pr}/requested_reviewers${rerequest ? '/rerequest' : ''}`, { reviewers: ['copilot-pull-request-reviewer[bot]'] })
     },
   }

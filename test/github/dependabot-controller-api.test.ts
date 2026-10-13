@@ -28,12 +28,22 @@ describe('GitHub provider boundary', () => {
   test('uses the exact review API alias and rerequest route for a reviewed head', async () => {
     const requests: any[] = []
     const fetcher = async (url: string, init: any) => { requests.push({ url, ...init }); return { ok: true, status: 201, json: async () => [{ user: { id: 175728472 } }] } }
-    const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'user-token', fetcher)
-    await client.requestReview({ pr: 1 }, { requested_reviewers: [] })
+    const client = createClient({ repo: 'o/r', appId: 99, now: '2026-10-13T12:00:00.000Z' }, 'read-token', 'user-token', fetcher)
+    await client.requestReview({ pr: 1, createdAt: '2026-10-13T12:00:00.000Z' }, { requested_reviewers: [] })
     expect(requests[1].url).toBe('https://api.github.com/repos/o/r/pulls/1/requested_reviewers/rerequest')
     expect(JSON.parse(requests[1].body)).toEqual({ reviewers: ['copilot-pull-request-reviewer[bot]'] })
     expect(requests[1].headers.Authorization).toBe('Bearer user-token')
     expect(requests[0].headers.Authorization).toBe('Bearer read-token')
+  })
+  test('rechecks the UTC date after the awaited review lookup', async () => {
+    const requests: any[] = []; const config = { repo: 'o/r', appId: 99, now: '2026-10-13T23:59:59.000Z' }
+    const fetcher = async (_url: string, init: any) => {
+      requests.push(init.method); config.now = '2026-10-14T00:00:01.000Z'
+      return { ok: true, status: 200, json: async () => [] }
+    }
+    const client = createClient(config, 'read-token', 'user-token', fetcher)
+    await expect(client.requestReview({ pr: 1, createdAt: '2026-10-13T23:58:00.000Z' }, { requested_reviewers: [] })).rejects.toThrow('UTC day')
+    expect(requests).toEqual(['GET'])
   })
   test('requires an official Action tag pointing to the proposed pin', async () => {
     const fetcher = async () => ({ ok: true, status: 200, json: async () => ({ object: { type: 'commit', sha: 'c'.repeat(40) } }) })
