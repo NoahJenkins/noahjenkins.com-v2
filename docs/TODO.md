@@ -1,6 +1,6 @@
 # Project Task Tracker
 
-Last Updated: 2026-08-24
+Last Updated: 2026-10-13
 
 > Living document for major project tasks. Update status continuously during planning and implementation.
 
@@ -36,6 +36,8 @@ Last Updated: 2026-08-24
 - [x] Enable Dependabot security updates, add Dependency Review workflow, and enforce SHA-pinned GitHub Actions refs
 - [x] Remediate open Dependabot alert for transitive `brace-expansion` via `pnpm.overrides`
 
+- [x] Investigate three Vercel Dependabot preview failures and confirm the discontinued Node.js 20 cause — 2026-10-13 ([context](./context/2026-10-13-vercel-dependabot-preview-failures.md))
+
 ## Content Management
 
 - [x] Organize blog posts chronologically (newest first) and update `format-blog-post` skill for date-prefix naming convention
@@ -45,6 +47,12 @@ Last Updated: 2026-08-24
 - [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
 
 ## Follow-ups
+
+- [x] Align manifests, local pins, all five CI jobs, and the Vercel project to Node.js 24; validate frozen install, build, TypeScript, and Jest locally — 2026-10-13
+- [ ] Complete final local checks and hosted preview/CI validation after Node.js 24 and dependency remediation
+- [ ] Merge the validated change and rebase affected Dependabot PRs
+- [x] Remediate the six high-severity audit findings; `pnpm audit --audit-level=high` passes locally with no gate change — 2026-10-13
+- [ ] Monitor the remaining moderate `sprintf-js` advisory for an upstream patch
 
 - [x] # TODO: Add CI audit gate for high/critical vulnerabilities (`pnpm audit --audit-level=high`)
 - [x] # TODO: Fix Dependabot auto-merge workflow (npm_and_yarn ecosystem mismatch, contents:write permission, repo allow_auto_merge flag) — 2026-03-09
