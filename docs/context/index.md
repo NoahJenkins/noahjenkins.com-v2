@@ -38,6 +38,10 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 - [2026-08-24 Dependabot Volume Reduction](./2026-08-24-dependabot-volume-reduction.md)
 
+## 2026-10
+
+- [2026-10-13 Vercel Dependabot Preview Failures](./2026-10-13-vercel-dependabot-preview-failures.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)
@@ -48,3 +52,4 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [ADR 0006: Auto-Close Out-of-Policy Dependabot PRs](../adr/0006-auto-close-out-of-policy-dependabot-prs.md)
 - [ADR 0007: Adopt Dependency Review and SHA-Pinned GitHub Actions](../adr/0007-adopt-dependency-review-and-sha-pinned-github-actions.md)
 - [ADR 0008: Reduce Dependabot Volume and Harden Post-CI Automation](../adr/0008-reduce-dependabot-volume-and-harden-post-ci-automation.md)
+- [ADR 0009: Adopt Node.js 24](../adr/0009-adopt-nodejs-24.md)
