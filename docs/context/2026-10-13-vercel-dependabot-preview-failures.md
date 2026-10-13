@@ -45,11 +45,14 @@ Dependency changes:
 Verification:
 
 - Before and after dependency remediation, Node.js `24.21.0` passed frozen install with `--config.lockfile=true`, `pnpm build`, and `tsc --noEmit`. The final build used Next.js `16.3.8`. All 107 Jest tests in eight suites passed with 85.85% line coverage after the dependency changes.
-- The initial full Playwright run had 44 passing and 19 failing tests. All failures occurred when Firefox launched with `Could not find profile folder`, before page load. A separate temporary-directory retry and a targeted test with a fresh isolated Firefox installation produced the same error. Those checks did not resolve the local launch problem. The final run for the other browsers is pending; full hosted Linux Playwright must validate Firefox after the draft PR is created.
+- The initial full Playwright run had 44 passing and 19 failing tests. All failures occurred when Firefox launched with `Could not find profile folder`, before page load. A separate temporary-directory retry and a targeted test with a fresh isolated Firefox installation produced the same error. Those checks did not resolve the local launch problem. After the dependency changes, all 44 tests for Chromium, WebKit, and mobile projects passed locally. The full hosted Linux Playwright suite passed, including Firefox. The local Firefox launch issue remains unexplained.
 - Vercel project setting: changed from `22.x` to `24.x` through an authenticated project update; a fresh project read confirmed `24.x`.
-- After dependency remediation, `pnpm audit --audit-level=high` exits successfully on Node.js `24.21.0`, with zero high or critical findings. One moderate `sprintf-js` advisory remains without an upstream patch. No audit suppression or gate change was used. A hosted `Security Audit` result is still pending.
-- Hosted preview: pending.
-- Main integration and affected PR rebases: pending hosted checks and integration.
+- After dependency remediation, `pnpm audit --audit-level=high` exits successfully on Node.js `24.21.0`, with zero high or critical findings. One moderate `sprintf-js` advisory remains without an upstream patch. No audit suppression or gate change was used. The hosted `Security Audit` check also passed for the verified PR head, with one moderate finding and zero high or critical findings.
+- Draft PR: [#285](https://github.com/NoahJenkins/noahjenkins.com-v2/pull/285), head `b899d336b645cfc0af1fd0267563a77c2698e39e`.
+- Hosted preview: [deployment 7aMviVK9qMavuD1fdeivVUUXUQEv](https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/7aMviVK9qMavuD1fdeivVUUXUQEv) is `READY`, targets preview, and matches that PR head. Authenticated requests to the [preview](https://noahjenkins-lr7qrn2jf-noahs-projects-e38437a2.vercel.app) returned HTTP 200 for the home page (title `Noah Jenkins`), RSS (`text/xml`, valid RSS), and robots (`text/plain`, expected User-Agent rules). These checks establish build recovery and route responses; they do not replace browser tests.
+- Hosted CI: [run 38464742626](https://github.com/NoahJenkins/noahjenkins.com-v2/actions/runs/38464742626) completed successfully at head `b899d336b645cfc0af1fd0267563a77c2698e39e`. The hosted logs confirm Node.js `24.21.0`. All five required checks passed: Security Audit, Jest Tests, Playwright Tests (all 63 Linux tests passed in 3.0 minutes, with zero failures), TypeScript Check, and Build Check. Both CodeQL analyzers and Dependency Review also passed.
+- These hosted results are a verified snapshot at `b899d336b645cfc0af1fd0267563a77c2698e39e`; a later documentation commit creates a new head. [PR #285 checks](https://github.com/NoahJenkins/noahjenkins.com-v2/pull/285/checks) are the source of truth for that head.
+- Main integration and affected PR rebases: pending review and approval. The fix has not reached `main`.
 
 Skipping previews for GitHub Actions-only changes could reduce deployment notifications, but it would change deployment policy and would not repair the runtime problem. No preview suppression policy was adopted. The runtime change is recorded in ADR 0009 and the CI/CD architecture document.
 
@@ -61,6 +64,5 @@ Skipping previews for GitHub Actions-only changes could reduce deployment notifi
 
 ## Open Questions
 
-- Do the final local browser run, hosted CI, and a hosted preview pass after dependency remediation?
-- Does the full hosted Linux Playwright run pass Firefox tests?
+- Why does Firefox fail to launch locally despite passing the full hosted Linux suite?
 - When will an upstream patch become available for the remaining moderate `sprintf-js` advisory?

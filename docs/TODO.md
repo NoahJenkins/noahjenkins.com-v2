@@ -49,8 +49,10 @@ Last Updated: 2026-10-13
 ## Follow-ups
 
 - [x] Align manifests, local pins, all five CI jobs, and the Vercel project to Node.js 24; validate frozen install, build, TypeScript, and Jest locally — 2026-10-13
-- [ ] Complete final local checks and hosted preview/CI validation after Node.js 24 and dependency remediation
-- [ ] Merge the validated change and rebase affected Dependabot PRs
+- [x] Complete final local install/build/TypeScript/Jest and 44 non-Firefox browser checks after dependency remediation — 2026-10-13
+- [x] Verify PR #285 Vercel preview is READY at its head SHA and authenticated home/RSS/robots responses return HTTP 200 — 2026-10-13
+- [x] Verify all hosted CI checks, including full Linux Playwright, pass for PR #285 at `b899d33` (run `38464742626`); recheck the latest head after the documentation commit — 2026-10-13
+- [ ] Review and approve PR #285, merge the validated change, and rebase affected Dependabot PRs
 - [x] Remediate the six high-severity audit findings; `pnpm audit --audit-level=high` passes locally with no gate change — 2026-10-13
 - [ ] Monitor the remaining moderate `sprintf-js` advisory for an upstream patch
 
