@@ -77,7 +77,7 @@ jobs:
   dispatch:
     name: Dispatch reserved Copilot work
     needs: controller
-    if: needs.controller.outputs.has_tasks == 'true' && github.run_attempt == 1
+    if: always() && !cancelled() && needs.controller.outputs.has_tasks == 'true' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

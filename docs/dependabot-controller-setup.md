@@ -36,15 +36,17 @@ Use a repository-authorized user PAT with Pull requests write and Issues write f
 
 Set `DEPENDABOT_DISPATCH_USER_ID` to the PAT owner's numeric user ID; the dispatcher verifies that identity before a provider write. Configure the independent reviewer identity and test that a formal review is emitted as `APPROVED` for the exact current head. Requesting Copilot review does not itself satisfy this gate. The review identity is Copilot `175728472`, separate from coding-agent identity `198982749`; a comments-only result, stale approval, coding-agent approval, or untrusted reviewer identity leaves the PR blocked.
 
+In repository **Settings → Copilot → Code review → Auto-approval**, enable **Allow Copilot to approve pull requests**. Test that the resulting review is a formal `APPROVED` record on the current commit. The separate setting that counts Copilot approvals toward merge requirements is optional for this controller: its App records approval only after qualifying independent review and validation. If using file-path restrictions for that setting, GitHub supports at most 15 globs, and every changed file must match an allowed glob. [Configure Copilot code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review)
+
 Inspect agent workflow approval settings before enabling unattended CI. Agent changes require approval by default; the repository setting can change that behavior. Also account for `GITHUB_TOKEN` recursion and workflow approval rules when verifying that every repaired head receives fresh CI. Do not assume a comment or push started a trusted validation run. [Agent settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings), [token security](https://docs.github.com/en/actions/concepts/security/github_token)
 
-Confirm an eligible Copilot paid plan, an approved AI credit budget, and an Actions minute budget. Dispatch limits bound requests; they are not a monetary spending cap. [Cloud agent costs and availability](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent)
+Confirm an eligible Copilot paid plan and configure an explicit provider cost cap and Actions budget before enabling dispatch. The approved two/eight daily limits count requests; they are not currency limits. No monetary budget is inferred from those quotas. [Cloud agent costs and availability](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent)
 
 ## Validation and protected scope
 
 A Vercel App check alone does not establish deployment readiness. The controller requires an actual successful `Vercel` commit status from creator ID `35613825`, the expected project URL prefix `https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/`, and an exact-head check from App ID `8329`. The Preview Comments check can bind the App identity but cannot substitute for successful deployment status.
 
-Human PRs receive a successful controller gate; the controller does not apply Dependabot repair or merge policy to them. Dependabot identity is numeric bot ID `49699333` and must target this repository's `main`.
+Checks belong to commits, not individual PRs. A human PR sharing the SHA of an open Dependabot PR must not write the gate for that commit. Otherwise, human PRs receive a successful controller gate. Multiple open Dependabot PRs sharing one SHA are blocked for manual duplicate resolution. The controller does not apply Dependabot repair or merge policy to human PRs. Dependabot identity is numeric bot ID `49699333` and must target this repository's `main`.
 
 Allowed repairs cover registry dependencies/overrides, supported runtime pins, application source, and newly added tests. Existing tests, controller scripts, instructions, and validation commands remain protected. In the privileged controller workflow, only full-SHA Action version pins may change, with the same upstream repository/subpath and a verified official version tag matching the SHA. Its Node version, inputs, permissions, and commands are frozen. The CI and Dependency Review workflows allow supported Node version and verified Action pin updates; other workflow semantics remain frozen.
 
@@ -52,7 +54,7 @@ A classified required-CI failure, merge conflict, or independent review requesti
 
 ## Reservations and limits
 
-The controller uses its own App-authored JSON ledger comment on the configured state issue to reserve an operation before dispatch. A comment written by another actor must not count as trusted ledger state.
+The controller uses its own App-authored JSON ledger comment on the configured state issue to reserve an operation before dispatch. A comment written by another actor must not count as trusted ledger state. Load the ledger only when a Dependabot PR needs a credit reservation; a ledger error must not block an unrelated human gate.
 
 - At most two repair dispatches per UTC day across the repository.
 - At most eight independent review requests per UTC day across the repository.
@@ -60,9 +62,12 @@ The controller uses its own App-authored JSON ledger comment on the configured s
 - Deduplicate both repair and review dispatch for the same PR and head; no same-SHA retry.
 - Count reservations with uncertain dispatch results against the limits.
 - Dispatch a reservation only within 15 minutes; expired reservations remain charged and are not retried.
+- Dispatch only on the reservation's UTC date. Crossing midnight does not add yesterday's queued requests to today's quota; the old reservation remains charged.
 - Do not dispatch from a rerun. Persist a PAT-authored claim on the central state issue before the provider write; an existing claim prevents duplicate dispatch.
 - Require manual intervention when a repair produces no head change within 30 minutes.
 - Fail closed if the ledger exceeds 60,000 bytes; do not prune it automatically.
+
+Per-PR errors keep the controller run failed, but a non-cancelled dispatcher can still verify and send valid reservations already saved for other PRs. It uses `always() && !cancelled()` and rechecks each task; controller failure is not permission to bypass verification.
 
 Do not delete or manually reset the ledger to retry an exhausted PR. Inspect the blocked reason and remaining quota instead. Uncertain dispatch results require reconciliation; they must not cause an immediate duplicate request.
 
@@ -72,7 +77,7 @@ Do not delete or manually reset the ledger to retry an exhausted PR. Inspect the
 2. Install the dedicated App, configure its private key and non-secret ID, and run the controller with flags off. Verify it publishes `Dependabot Merge Gate`: success for human PRs and blocked for Dependabot PRs. Missing App setup cannot publish this check.
 3. Only after the gate exists, make it required and bind it to the controller App ID. Require strict up-to-date CI, at least one approval, and stale-review dismissal; read protection back to verify the settings.
 4. Configure the state issue, PAT, dispatcher user ID, reviewer ID, and Vercel identity without exposing values. Confirm the independent provider emits qualifying formal reviews and repaired heads receive full trusted CI and Vercel validation.
-5. Confirm the approved workflow approval behavior and provider billing controls.
+5. Confirm formal-review auto-approval, agent workflow approval behavior, the explicit provider cost cap, and the Actions budget.
 6. Set the controller and dispatcher flags to the exact value `true`. Observe a current Dependabot PR and verify one reservation, one durable dispatch claim, bounded dispatch, exact-head review, trusted CI, Vercel status, pending gate during native queueing, and final gate outcome.
 7. Confirm the resulting merge and production deployment separately. Successful preview checks do not prove production deployment.
 

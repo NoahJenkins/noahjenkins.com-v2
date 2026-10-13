@@ -47,7 +47,7 @@ An `@copilot` request on an existing PR, authored by a user with write access, c
 
 Unattended operation needs explicit approval-setting design: Copilot workflows require approval by default, and repository settings can change that behavior. `GITHUB_TOKEN` event recursion and approval rules also affect whether repaired heads receive fresh CI. [Configure agent settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings), [GITHUB_TOKEN security](https://docs.github.com/en/actions/concepts/security/github_token)
 
-Copilot cloud agent requires an eligible paid plan and consumes AI credits and Actions minutes. This repository does not yet have the secure token configuration or confirmed approval settings and budget. Confirm those prerequisites before implementation; the platform capability itself is documented. [About cloud agent](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent)
+Copilot cloud agent requires an eligible paid plan and consumes AI credits and Actions minutes. This repository does not yet have the secure token configuration or confirmed approval settings and budget. Confirm those prerequisites before activation; the platform capability itself is documented. [About cloud agent](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent)
 
 ### Completed cleanup
 
@@ -60,16 +60,20 @@ The user requested cleanup after the investigation. The cleanup audit confirmed 
 - Preserved unique unpublished historical commit `d962df6` in the verified Git bundle `/Users/noahjenkins/Documents/Codex/branch-backups/noahjenkins.com-20261013/dependabot-security-remediation-d962df6.bundle`. Its prerequisite `5c39bf9` remains in the repository.
 - Pruned eight stale `origin` tracking refs whose branches were already absent on the server; the dry run matched the cleanup. No remote server branch was deleted. The server already contained only `main` and the four open Dependabot heads, which remain unchanged.
 
-The final local state contains only the primary worktree and local `main` branch. Remote `main` remains at `639fca6`. The primary `AGENTS.md` and `tsconfig.json` file hashes and index identifiers match their pre-cleanup values. Investigation notes and other dirty changes remain uncommitted. The stale primary checkout was not reset or overwritten.
+At the end of investigation cleanup, only the primary worktree and local `main` branch remained. Remote `main` was `639fca6`. The primary `AGENTS.md` and `tsconfig.json` file hashes and index identifiers matched their pre-cleanup values. Investigation notes and other dirty changes were preserved; the stale primary checkout was not reset or overwritten. The subsequently approved implementation uses a separate worktree and branch for [PR #286](https://github.com/NoahJenkins/noahjenkins.com-v2/pull/286), retained while that PR is open.
+
+### Validation boundary
+
+Review identified and corrected shared-commit gate ownership, ledger-error isolation for unrelated human PRs, and dispatch of valid persisted reservations when another PR fails. Multiple Dependabot PRs sharing a commit require manual resolution. Controller errors remain visible; dispatch independently revalidates saved tasks. An independent follow-up found no remaining important issues in those fixes. Local verification passed 169 Jest tests with 86.25% line coverage, Node 24 build, TypeScript checks, and the changed workflow's actionlint check. The audit has no high or critical findings and one existing moderate finding. A read-only live replay accepts the four refreshed bot heads and requires independent review. Credentials, actual agent dispatch, formal approval, App-bound production protection, and end-to-end activation remain unverified.
 
 ### Approval and activation status
 
-The user approved implementation with the limits above. [The setup guide](../dependabot-controller-setup.md) records the remaining external prerequisites: dedicated App installation, state issue, user PAT and dispatcher user ID, trusted identities, App-bound required gate with strict up-to-date CI/stale-review dismissal/one approval, agent workflow approval behavior, and billing controls. Enable flags default to disabled. No live activation is established by this note.
+The user approved implementation with the limits above. [The setup guide](../dependabot-controller-setup.md) records the remaining external prerequisites: dedicated App installation, state issue, user PAT and dispatcher user ID, trusted identities, App-bound required gate with strict up-to-date CI/stale-review dismissal/one approval, formal-review auto-approval, agent workflow approval behavior, an explicit provider cost cap, and an Actions budget. Request quotas are not monetary limits. Enable flags default to disabled. No live activation is established by this note.
 
 ## Open Questions
 
 - Does the configured independent provider emit a formal `APPROVED` review for the exact head, rather than comments only?
-- What verified Vercel App ID and state issue number will be configured?
+- Which state issue number will be configured? Vercel App `8329` and status creator `35613825` were verified through the live API.
 - Have secure credentials, required gate ownership, workflow approval settings, and billing controls been configured and tested?
 
 **Related context:** [Vercel Dependabot Preview Failures](./2026-10-13-vercel-dependabot-preview-failures.md).

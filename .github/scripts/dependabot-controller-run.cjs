@@ -16,7 +16,7 @@ function configFromEnv(env) {
     stateIssue: number('DEPENDABOT_STATE_ISSUE_NUMBER'), dispatchUserId: number('DEPENDABOT_DISPATCH_USER_ID'),
     reviewerId: number('DEPENDABOT_REVIEWER_ID', REVIEWER_ID), vercelAppId: number('DEPENDABOT_VERCEL_APP_ID', 8329),
     automationEnabled: env.DEPENDABOT_AUTOMATION_ENABLED === 'true', agentEnabled: env.DEPENDABOT_AGENT_ENABLED === 'true',
-    runAttempt: number('GITHUB_RUN_ATTEMPT', 1), now: new Date().toISOString(),
+    runAttempt: number('GITHUB_RUN_ATTEMPT', 1), get now() { return new Date().toISOString() },
   }
   if (config.automationEnabled && (config.appId <= 0 || [15368, 8329].includes(config.appId))) throw new Error('A dedicated controller App is required')
   if (config.automationEnabled && config.agentEnabled && (!config.stateIssue || !config.dispatchUserId)) throw new Error('Configure the state issue and dispatch user before enabling agents')
@@ -31,8 +31,8 @@ async function run(env = process.env, mode = process.argv[2]) {
   const repo = await client.getRepo(); config.repositoryId = repo.id
   if (mode !== 'inspect') {
     if (!/^[a-z0-9-]+$/.test(config.appSlug || '')) throw new Error('Controller App slug is missing')
-    const app = await client.request('GET', `/apps/${config.appSlug}`)
-    if (app.id !== config.appId) throw new Error('Controller App identity mismatch')
+    // Slug comes from the JWT-authenticated token action, not PR input. Gate
+    // responses verify app.id; another App's token cannot read private metadata.
     const bot = await client.request('GET', `/users/${config.appSlug}%5Bbot%5D`)
     if (bot.type !== 'Bot' || !bot.id) throw new Error('Controller bot identity is missing')
     config.appBotId = bot.id
@@ -57,7 +57,8 @@ async function run(env = process.env, mode = process.argv[2]) {
     return
   }
   if (!env.DEPENDABOT_APP_TOKEN) throw new Error('Controller App credential is missing')
-  const state = config.automationEnabled && config.agentEnabled ? await client.getLedger() : { ledger: { version: 1, reservations: [] }, commentId: null }
+  // Load the ledger only when a bot actually needs a credit reservation.
+  const state = { ledger: null, commentId: null }
   const tasks = []; let failed = false
   for (const pr of await client.listPrs()) {
     try {

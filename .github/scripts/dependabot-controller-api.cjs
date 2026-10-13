@@ -1,5 +1,5 @@
 'use strict'
-const { GATE, REVIEWER_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
+const { GATE, REVIEWER_ID, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
 const { readLedger, encodeLedger } = require('./dependabot-controller-ledger.cjs')
 
 function createClient(config, readToken, writeToken, fetcher = fetch) {
@@ -44,6 +44,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
     getPr: (number) => request('GET', `${root}/pulls/${number}`),
     getMain: async () => (await request('GET', `${root}/git/ref/heads/main`)).object.sha,
     listPrs: () => list(`${root}/pulls?state=open&base=main`),
+    hasDependabotHead: async (sha, excludeNumber) => (await client.listPrs()).some((pr) => pr.user?.id === DEPENDABOT_ID && pr.head.sha === sha && pr.number !== excludeNumber),
     getProtection: () => request('GET', `${root}/branches/main/protection`),
     getGate: async (pr) => (await checksFor(pr.head.sha)).filter((check) => check.name === GATE && check.app?.id === config.appId).sort((a, b) => b.id - a.id)[0],
     async setGate(pr, kind, reason) {

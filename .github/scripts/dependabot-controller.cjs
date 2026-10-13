@@ -16,11 +16,15 @@ async function assertFresh(client, pr, mainSha) {
 async function reconcileOne(client, config, number, state, tasks, evaluate = evaluateCandidate) {
   const pr = await client.getPr(number)
   if (pr.state !== 'open') return
-  await client.setGate(pr, 'pending', 'Evaluating current head.')
   if (pr.user?.id !== DEPENDABOT_ID) {
+    // Checks belong to commits, not PRs. A human must never release a bot's gate.
+    if (await client.hasDependabotHead(pr.head.sha)) return { kind: 'shared', reason: 'An open Dependabot PR owns this commit gate.' }
+    await client.setGate(pr, 'pending', 'Evaluating current head.')
+    if (await client.hasDependabotHead(pr.head.sha)) return { kind: 'shared', reason: 'An open Dependabot PR now owns this commit gate.' }
     await client.setGate(pr, 'success', 'Human PR: this check only enforces Dependabot automation policy.')
     return
   }
+  await client.setGate(pr, 'pending', 'Evaluating current head.')
   let cancelled = false
   const cancelQueue = async () => {
     if (pr.auto_merge && !cancelled) { await client.disableMerge(pr); cancelled = true }
@@ -32,6 +36,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   }
   if (!config.automationEnabled) return stop('blocked', 'Dependabot automation is disabled pending setup.')
   if (!eligiblePr(pr, config.repositoryId)) return stop('blocked', 'Dependabot identity, branch or repository is outside policy.')
+  if (await client.hasDependabotHead(pr.head.sha, pr.number)) return stop('blocked', 'Multiple Dependabot PRs share this commit. Resolve duplicate heads before automatic merge.')
   const main = await client.getMain()
   const decision = evaluate(await client.snapshot(pr, main))
   if (decision.kind === 'ready') {
@@ -58,6 +63,10 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
     if (!config.agentEnabled) return stop('blocked', `${decision.reason} Agent dispatch is disabled pending credentials and Copilot settings.`)
     // Fail closed before spending credits if the required gate can be forged or omitted.
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) return stop('blocked', 'Configure the App-bound required gate before agent dispatch.')
+    if (!state.ledger) {
+      try { Object.assign(state, await client.getLedger()) }
+      catch { return stop('blocked', 'The state ledger is unavailable or invalid. Operator action is required.') }
+    }
     await assertFresh(client, pr, main)
     const next = reserve(state.ledger, { pr: number, prId: pr.node_id, head: pr.head.sha, base: main, kind: decision.kind }, config.now)
     if (!next.reservation) {
@@ -82,6 +91,7 @@ async function dispatchOne(client, config, task) {
   if (!persisted || JSON.stringify(persisted) !== JSON.stringify(task)) throw new Error('Dispatch does not match a durable reservation')
   const age = Date.parse(config.now) - Date.parse(task.createdAt)
   if (age < 0 || age > 15 * 60 * 1000) throw new Error('Dispatch reservation expired')
+  if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('Dispatch reservation belongs to a different UTC day')
   const user = await client.getDispatchUser()
   if (user.type !== 'User' || user.id !== config.dispatchUserId) throw new Error('Copilot credential does not match the configured user')
   const pr = await client.getPr(task.pr)
@@ -92,6 +102,7 @@ async function dispatchOne(client, config, task) {
   // Persist the claim BEFORE a potentially ambiguous provider write. Never retry writes.
   await client.claim(task)
   await assertFresh(client, pr, task.base)
+  if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('UTC day changed before the provider write; reservation remains consumed')
   if (task.kind === 'repair') await client.requestRepair(task)
   else await client.requestReview(task, pr)
 }

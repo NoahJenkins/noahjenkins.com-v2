@@ -8,6 +8,7 @@ function fixture() {
   const tasks: any[] = []
   const state = { ledger: { version: 1, reservations: [] }, commentId: 3 }
   const client = {
+    hasDependabotHead: async (_sha: string) => false,
     getPr: async () => JSON.parse(JSON.stringify(pr)), getMain: async () => base,
     snapshot: async () => ({ pr }),
     setGate: async (_pr: any, status: string) => { gate = status; events.push(`gate:${status}`) },
@@ -48,6 +49,29 @@ describe('trusted controller', () => {
     const f = fixture(); f.pr.user = { id: 123, type: 'User' }
     await reconcileOne(f.client, f.config, 1, f.state, f.tasks, f.evaluate)
     expect(f.events).toEqual(['gate:pending', 'gate:success'])
+  })
+  test('a human PR sharing a Dependabot head cannot overwrite its blocked gate', async () => {
+    const f = fixture(); f.config.automationEnabled = false
+    await reconcileOne(f.client, f.config, 1, f.state, f.tasks, f.evaluate)
+    f.pr.user = { id: 123, type: 'User' }; f.client.hasDependabotHead = async () => true
+    const count = f.events.length
+    await reconcileOne(f.client, f.config, 1, f.state, f.tasks, f.evaluate)
+    expect(f.result().gate).toBe('blocked'); expect(f.events).toHaveLength(count)
+  })
+  test('never queues either of two Dependabot PRs sharing a commit gate', async () => {
+    const f = fixture(); f.client.hasDependabotHead = async () => true
+    await reconcileOne(f.client, f.config, 1, f.state, f.tasks, f.evaluate)
+    expect(f.result()).toMatchObject({ gate: 'blocked', queued: false })
+    expect(f.events).not.toContain('approve')
+  })
+  test('a bot ledger error leaves its gate blocked while unrelated human PRs proceed', async () => {
+    const f = fixture(); const state = { ledger: null, commentId: null }
+    f.client.getLedger = async () => { throw new Error('Untrusted ledger author') }
+    await reconcileOne(f.client, f.config, 1, state, f.tasks, () => ({ kind: 'repair', reason: 'audit failed' }))
+    expect(f.result().gate).toBe('blocked')
+    f.pr.user = { id: 123, type: 'User' }
+    await reconcileOne(f.client, f.config, 1, state, f.tasks, f.evaluate)
+    expect(f.result().gate).toBe('success')
   })
   test('reserves before handing any task to the PAT job', async () => {
     const f = fixture(); await reconcileOne(f.client, f.config, 1, f.state, f.tasks, () => ({ kind: 'repair', reason: 'audit failed' }))
@@ -106,6 +130,11 @@ describe('isolated Copilot dispatcher', () => {
   test('does not replay dispatch when GitHub reruns a job', async () => {
     const f = await prepared(); f.config.runAttempt = 2
     await dispatchOne(f.client, f.config, f.task)
+    expect(f.result().providerComments).toBe(0)
+  })
+  test('does not carry yesterday\'s reservation into today\'s dispatch budget', async () => {
+    const f = await prepared(); f.task.createdAt = '2026-10-13T23:59:00.000Z'; f.config.now = '2026-10-14T00:01:00.000Z'
+    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('UTC day')
     expect(f.result().providerComments).toBe(0)
   })
   test('rejects a wrong user credential', async () => {
