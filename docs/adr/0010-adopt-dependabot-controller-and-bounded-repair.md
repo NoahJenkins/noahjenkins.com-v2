@@ -65,3 +65,7 @@ At discovery, credentials and activation variables were absent, so the merged co
 ### Environment setup status — 2026-10-13
 
 The owner saved both dedicated environments through Safari settings on October 13. API read-back confirmed selected-branch policies, exactly one Branch `main` rule each, no tags, `can_admins_bypass: false`, and zero secrets. The environment security setup is complete. Credentials and activation flags remain absent, and dispatch is inactive. Credential storage must wait until the workflow follow-up is merged and the remaining App, Copilot, and billing prerequisites are verified; completed environment policies alone do not establish activation.
+
+## Provider supersession — 2026-10-13
+
+[ADR 0011](./0011-use-opencode-go-for-dependabot-workers.md) replaces the Copilot PAT, reviewer identity, and formal Copilot review requirements above with OpenCode Go workers and App-authenticated independent review checks. This text remains the historical decision. App-bound gate authority, exact-head/base validation, protected scope, quotas, and main-only credential environments continue. The dispatch environment now holds only `OPENCODE_GO_API_KEY`; no Copilot activation settings or PAT are required by the current implementation.

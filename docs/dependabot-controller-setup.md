@@ -1,115 +1,81 @@
 # Dependabot Controller Setup
 
-The approved design is recorded in [ADR 0010](./adr/0010-adopt-dependabot-controller-and-bounded-repair.md). Implementation and activation are separate. Keep the enable flags unset until credentials, App-bound branch protection, review behavior, and billing controls are verified.
+[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps.
 
-## Repository configuration
-
-Configure values through repository Actions settings or a secure local CLI input. Do not put secret values in source, command output, comments, or documentation.
+## Configuration and credential boundaries
 
 | Name | Storage | Purpose |
 | --- | --- | --- |
-| `DEPENDABOT_CONTROLLER_APP_ID` | Actions variable | Numeric ID of the dedicated controller GitHub App |
-| `DEPENDABOT_DISPATCH_USER_ID` | Actions variable | Numeric ID of the user who owns the dispatcher PAT |
-| `DEPENDABOT_STATE_ISSUE_NUMBER` | Actions variable | Number of the repository issue holding the central App-authored ledger |
-| `DEPENDABOT_CONTROLLER_PRIVATE_KEY` | `dependabot-controller` environment secret only | Controller App private key used to create an installation token |
-| `COPILOT_AUTOMATION_TOKEN` | `dependabot-dispatch` environment secret only | User PAT used only by the Copilot dispatcher |
-| `DEPENDABOT_AUTOMATION_ENABLED` | Actions variable | Controller activation flag; only the exact value `true` enables it |
-| `DEPENDABOT_AGENT_ENABLED` | Actions variable | Dispatcher activation flag; only the exact value `true` enables it |
-| `DEPENDABOT_REVIEWER_ID` | Actions variable | Numeric user ID of the trusted reviewer; default `175728472` is the Copilot review identity |
-| `DEPENDABOT_VERCEL_APP_ID` | Actions variable | Trusted Vercel App ID; default and supported value `8329` |
+| `DEPENDABOT_CONTROLLER_APP_ID` | Repository Actions variable | Dedicated GitHub App's numeric ID |
+| `DEPENDABOT_STATE_ISSUE_NUMBER` | Repository Actions variable | Repository issue holding App-authored reservations and claims |
+| `DEPENDABOT_VERCEL_APP_ID` | Repository Actions variable | Trusted Vercel App; supported default `8329` |
+| `DEPENDABOT_AUTOMATION_ENABLED` | Repository Actions variable | Controller flag; only exact `true` enables it |
+| `DEPENDABOT_AGENT_ENABLED` | Repository Actions variable | Worker flag; only exact `true` enables it |
+| `DEPENDABOT_CONTROLLER_PRIVATE_KEY` | `dependabot-controller` environment secret only | Dedicated App private key |
+| `OPENCODE_GO_API_KEY` | `dependabot-dispatch` environment secret only | Go key supplied only to the trusted broker |
 
-Missing or invalid configuration must fail closed. Obtain IDs from authenticated metadata rather than inferring them from account names. The reviewer process must provide independent acceptance evidence. The configured Copilot ID is not proof that a qualifying formal review will be emitted; verify that behavior before activation.
+`DEPENDABOT_CONTROLLER_APP_SLUG` is obtained from App-token action output and passed between trusted jobs; it is not an additional secret. Runtime read/installation tokens are job-local. Copilot PAT, dispatcher user ID, and reviewer ID are no longer used.
 
-## Main-only credential environments
+Both environments require selected deployment policies with exactly one Branch `main` rule, no Tag or PR-ref rules, and `can_admins_bypass: false`. Prior API read-back verified these policies and zero secrets for `dependabot-controller` (ID `24225904096`) and `dependabot-dispatch` (ID `24225905373`). Reverify before storing credentials. Leave `copilot`, `Preview`, and `Production` unchanged. Do not duplicate keys as repository, organization, Dependabot, or Agents secrets.
 
-Create two dedicated GitHub Actions environments: `dependabot-controller` for the App private key, and `dependabot-dispatch` for the PAT. Before storing either credential, configure each environment with **Selected branches and tags**, exactly one **Branch** rule named `main`, no tag or PR-ref rules, and administrator bypass disabled. Read both policies back and verify the exact rule type and name. Repository variables remain public configuration.
+The merge scope guard cannot prevent pre-merge workflow secret access. Environment policy and `refs/heads/main` job conditions are enforced before secrets are released; trusted checkouts use immutable `github.workflow_sha`. Ordinary CI does not reference either credential environment. [GitHub environment rules](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 
-Store the App key only in `dependabot-controller` and the PAT only in `dependabot-dispatch`. Do not duplicate either value as a repository, organization, Dependabot, or Agents secret. Leave the existing `copilot`, `Preview`, and `Production` environments unchanged. Ordinary CI must not reference either credential environment.
+## App and branch protection
 
-The trusted controller and dispatcher jobs declare their respective environment. GitHub evaluates its deployment policy before a job receives environment secrets. The retained `pull_request_target` path uses the trusted base `main` ref and default-branch checkout; a manual dispatch from another ref must be denied by the environment policy. [Deployment policies and environment secrets](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+Install a dedicated App for this repository with Actions/Administration read, Checks/Issues/Pull requests/Contents write, and Metadata read. Store its key only in `dependabot-controller`. Create a state issue without secrets and configure its issue number.
 
-The scope guard protects merge acceptance. It cannot prevent an unreviewed PR workflow from attempting secret access before merge. GitHub documents that automatic workflows on Copilot pushes can access Actions secrets, so credential isolation must precede unattended activation. [Copilot workflow approval settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings)
+With both enable flags off, publish `Dependabot Merge Gate` before making it required. Bind the required check to the App ID. Require all five CI checks with strict up-to-date branches, at least one approval, and stale-review dismissal. Read branch protection back. App installation, gate ownership, and live publication remain unverified; no configuration is inferred from source code.
 
-Environment creation, policy verification, and credential storage are separate completion steps. Current progress and the remaining activation blocker are recorded below.
+Human PRs receive gate success unless their commit is shared with an open Dependabot PR. Multiple bot PRs sharing one commit require manual resolution. Check state belongs to commits, not individual PRs.
 
-## Current configuration status — 2026-10-13
+## Go access and billing
 
-- `dependabot-controller` was created with environment ID `24225904096`.
-- `dependabot-dispatch` was created with environment ID `24225905373`.
-- Both use selected deployment branches/tags (`custom_branch_policies: true`, `protected_branches: false`), with exactly one Branch rule for `main` and no Tag rules.
-- Both have zero environment secrets. Repository variables and repository secrets are also empty. Existing `copilot`, `Preview`, and `Production` environments are unchanged.
-- Both were saved through the owner's Safari settings UI on October 13. API read-back confirmed `can_admins_bypass: false`, selected branch policies, exactly one Branch `main` rule, no Tag rules, and zero secrets in each environment. The no-bypass security setup is complete.
+Pin OpenCode `1.19.0`, provider `opencode-go`, repair model `kimi-k2.7-code`, and review model `glm-5.3`. No provider/model fallback is configured. The Linux baseline runtime download must match SHA-256 `6334d70db3990721ea454357e9cf2573c8685524ad7769af9d52cbffb7008438`.
 
-**Credential storage must still wait until the environment enforcement workflow follow-up is merged and the remaining App, Copilot, and billing prerequisites are verified.** Credentials and enable flags remain absent; dispatch remains inactive. Environment configuration alone does not establish activation.
+The Go key is unresolved. Fresh names-only checks found no Go key in homelab `prd`, `prd_admin`, or `prd_dns-pi` under ArkBuilderLabs. Local OpenCode credential metadata exists, but does not prove that a key is valid or authorized for this runner. Use secure local input to transfer only the verified Go key; do not send a broad Doppler token to Actions or print credentials.
 
-PR #286 is merged at `f440`; its production deployment is READY, and home/RSS requests returned HTTP 200 with six RSS items. The environment enforcement follow-up is separate and is not recorded as merged or deployed. Its worktree remains active pending review and cleanup after merge; the old PR #286 worktree and local/remote task branches were removed.
+Before activation, verify Go **Use balance** is off, model access is valid, and explicit provider/Actions budgets are configured. These settings are currently unknown. Request quotas are not currency limits. No paid request or credential change was performed for this documentation update.
 
-## Dedicated controller App
+## Worker flow and limits
 
-Create and install a dedicated GitHub App for this repository. Grant repository permissions: Actions and Administration read; Checks, Issues, Pull requests, and Contents write; and the mandatory Metadata read. Administration read is needed to verify branch protection; Contents write supports branch refresh and native queueing. Install it only for the required repository. Do not give its private key or installation token to Copilot or PR code. The dispatcher PAT must not replace this App identity.
+The workflow is controller → claim → worker matrix → fresh validation job → publisher → reconciliation. Controller, claim, publisher, and reconciliation use `dependabot-controller`; only the worker job uses `dependabot-dispatch`. Both matrices use `fail-fast: false`. Global concurrency serializes controller runs; schedule is every ten minutes. Original run attempt 1, main ref, and workflow source equal to reserved base are required for work.
 
-Add `Dependabot Merge Gate` to `main`'s required status checks and bind it to the numeric controller App ID. Require all five CI checks with `strict: true` (the branch must be up to date), at least one approving review, and stale-review dismissal. Verify the binding by reading branch protection back; a required check with any-source ownership does not provide this boundary. The controller uses no administrator bypass.
+App-authored ledger reservations allow two repairs/eight reviews per UTC day across the repository and two lifetime repairs per PR. New heads do not reset lifetime limits. Claim once before launch; expired, ambiguous, and failed operations remain charged. Launch only within 15 minutes on the reservation's UTC date, never from a rerun or duplicate head reservation. A stalled task requires operator action after 30 minutes; a ledger over 60,000 bytes fails closed without automatic pruning.
 
-While the gate is pending, the controller queues native auto-merge with the expected PR head. It reports success only after current-head checks and independent approval pass final validation. Do not activate the controller before this gate is required: otherwise native auto-merge may complete before the controller's final decision.
+The isolated broker holds the real Go key. The OpenCode container receives only a local broker URL and ephemeral token, with no real Go/GitHub/App/Doppler credentials. Its internal network reaches the broker only. The broker permits one fixed Go chat endpoint and model, rejects redirects, counts retries before upstream requests, and caps repair/review at 24/16 generation calls. Request and response streams are bounded at 20 MiB; per-request time is at most 120 seconds. No keys or raw bodies are logged.
 
-Create a repository state issue and set `DEPENDABOT_STATE_ISSUE_NUMBER` to its number. The controller owns a JSON ledger comment on this issue; do not populate it with credentials or treat user-authored ledger text as trusted state.
+Worker wall limits are 20 minutes for repair and ten for review; event steps are capped at 24/16 as a second boundary. Fresh HOME/XDG directories and trusted prompts/configuration disable project config, default plugins, external skills, Claude integration, model fetching, formatters, LSP, snapshots, sharing, auto-update, and automatic compaction. Read/glob/grep/list are allowed; edits are repair-only. Shell, subagents, MCP, web tools, skills, and external directories are denied. Candidate instructions/config/tool directories are omitted at every depth.
 
-## Copilot dispatcher and review
+Validation runs in a separate fresh job. The candidate container receives curated candidate data, no credentials, host home, persistent Git authentication, or container socket. It uses the pinned Node 24 Linux amd64 image and pnpm `10.17.1`. Fixed commands generate the lockfile with scripts disabled, install frozen dependencies with scripts disabled, then run audit, TypeScript, Jest coverage, and build. Validation is bounded at 20 minutes; publisher at five. Full hosted CI still validates the resulting head, including Playwright.
 
-Use a repository-authorized user PAT with Pull requests write and Issues write for dispatch, stored only as `COPILOT_AUTOMATION_TOKEN` in the `dependabot-dispatch` environment. Copilot's public-preview task API supports user tokens; installation tokens are not supported for Copilot tasks. The existing-PR path uses an `@copilot` request authored by a user with write access so the agent can repair that branch. [API access](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-via-the-api), [existing PR requests](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-on-github)
+## Artifact and review proof
 
-Set `DEPENDABOT_DISPATCH_USER_ID` to the PAT owner's numeric user ID; the dispatcher verifies that identity before a provider write. Configure the independent reviewer identity and test that a formal review is emitted as `APPROVED` for the exact current head. Requesting Copilot review does not itself satisfy this gate. The review identity is Copilot `175728472`, separate from coding-agent identity `198982749`; a comments-only result, stale approval, coding-agent approval, or untrusted reviewer identity leaves the PR blocked.
+Artifacts contain task/origin/session/config/input digests and bounded UTF-8 data: 64 files, 2 MiB each, 8 MiB total, 240-byte relative paths. No executable modes, symlinks, commands, or arbitrary archives are accepted. GitHub ZIP is transport only: API digest and origin are checked, exactly one bounded `result.json` entry is parsed in memory, and nothing is extracted to execute.
 
-In repository **Settings → Copilot → Code review → Auto-approval**, enable **Allow Copilot to approve pull requests**. Test that the resulting review is a formal `APPROVED` record on the current commit. The separate setting that counts Copilot approvals toward merge requirements is optional for this controller: its App records approval only after qualifying independent review and validation. If using file-path restrictions for that setting, GitHub supports at most 15 globs, and every changed file must match an allowed glob. [Configure Copilot code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review)
+The publisher verifies the persisted App claim, original run/job success, validator digest chain, current head/base, complete expected coverage, and protected scope. It records publication intent before a possibly ambiguous write. Repair commits use GraphQL `createCommitOnBranch(expectedHeadOid)` with base64 file additions; an altered head blocks publication. Protected instructions/scripts/tests/commands and official upstream Action-tag checks remain enforced.
 
-Inspect agent workflow approval settings before enabling unattended CI. Agent changes require approval by default; the repository setting can change that behavior. Also account for `GITHUB_TOKEN` recursion and workflow approval rules when verifying that every repaired head receives fresh CI. Do not assume a comment or push started a trusted validation run. [Agent settings](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/configuring-agent-settings), [token security](https://docs.github.com/en/actions/concepts/security/github_token)
+Review uses a fresh read-only session with complete base/head changed-file contents, including manifests and lockfile. Strict output contains verdict, findings, exact covered files, and security/compatibility assessments. Only `approve`, complete coverage, both assessments `pass`, and no critical/high/medium findings can pass; low/info findings remain visible. Missing, unknown, oversized, or malformed proof blocks acceptance.
 
-Confirm an eligible Copilot paid plan and configure an explicit provider cost cap and Actions budget before enabling dispatch. The approved two/eight daily limits count requests; they are not currency limits. No monetary budget is inferred from those quotas. [Cloud agent costs and availability](https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent)
+The App publishes `Dependabot Independent Review` on the exact head, bound to base, task nonce, original run, and digests. The controller accepts only the latest authentic check matching a published durable claim. Model prose, requested review, same-named foreign checks, and stale evidence do not suffice. After independent evidence plus CI/Vercel/scope pass, it queues native auto-merge while the required gate is pending, then revalidates before App approval and gate success.
 
-## Validation and protected scope
+## Current verification evidence
 
-A Vercel App check alone does not establish deployment readiness. The controller requires an actual successful `Vercel` commit status from creator ID `35613825`, the expected project URL prefix `https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/`, and an exact-head check from App ID `8329`. The Preview Comments check can bind the App identity but cannot substitute for successful deployment status.
+Local verification passed 228 Jest tests, build, post-build TypeScript checks, and actionlint. The secret-free Docker validator also exited successfully with scripts-disabled install, high-threshold audit, TypeScript, 227 tests at its snapshot, and build. Its named container is removed after failed or timed-out execution; a reproduced cleanup regression was fixed and included in the later local count.
 
-Checks belong to commits, not individual PRs. A human PR sharing the SHA of an open Dependabot PR must not write the gate for that commit. Otherwise, human PRs receive a successful controller gate. Multiple open Dependabot PRs sharing one SHA are blocked for manual duplicate resolution. The controller does not apply Dependabot repair or merge policy to human PRs. Dependabot identity is numeric bot ID `49699333` and must target this repository's `main`.
+The pinned Linux OpenCode runtime passed fake-SSE isolation checks: no real provider key or paid call, no external agent network, and no broker files/socket in the agent. The fake response's cost field is not billing evidence. Audit retains one existing moderate `sprintf-js` finding, with no high/critical findings. Hosted checks/preview and independent whole-branch review remain pending; these results do not establish activation.
 
-Allowed repairs cover registry dependencies/overrides, supported runtime pins, application source, and newly added tests. Existing tests, controller scripts, instructions, and validation commands remain protected. In the privileged controller workflow, only full-SHA Action version pins may change, with the same upstream repository/subpath and a verified official version tag matching the SHA. Its Node version, inputs, permissions, and commands are frozen. The CI and Dependency Review workflows allow supported Node version and verified Action pin updates; other workflow semantics remain frozen.
+## Activation sequence
 
-A classified required-CI failure, merge conflict, or independent review requesting changes may request bounded repair. Unclassified Vercel failures, timeouts, skipped/cancelled validation, and infrastructure problems need operator investigation; they do not consume a code-repair attempt.
+1. Complete local and hosted verification and merge the trusted implementation through the authorized review path while flags remain off.
+2. Reverify both main-only/no-bypass environment policies, App installation, state issue, and required gate binding.
+3. Resolve the Go key securely and verify billing controls/model access before storing only the correct key in each environment.
+4. Confirm runtime checksum, enforced isolation/call/time limits, exact-run claims/artifacts, independent review proof, and full CI/Vercel validation.
+5. Enable the exact `true` flags only under authorized activation conditions. Observe one complete bounded live flow; separately confirm any merge and production deployment.
 
-## Reservations and limits
+Missing prerequisites keep flags off. Green local tests or artifact metadata alone do not establish activation.
 
-The controller uses its own App-authored JSON ledger comment on the configured state issue to reserve an operation before dispatch. A comment written by another actor must not count as trusted ledger state. Load the ledger only when a Dependabot PR needs a credit reservation; a ledger error must not block an unrelated human gate.
+## Disable and recovery
 
-- At most two repair dispatches per UTC day across the repository.
-- At most eight independent review requests per UTC day across the repository.
-- At most two repairs in total per PR, even after a new head is pushed.
-- Deduplicate both repair and review dispatch for the same PR and head; no same-SHA retry.
-- Count reservations with uncertain dispatch results against the limits.
-- Dispatch a reservation only within 15 minutes; expired reservations remain charged and are not retried.
-- Dispatch only on the reservation's UTC date. Crossing midnight does not add yesterday's queued requests to today's quota; the old reservation remains charged.
-- Do not dispatch from a rerun. Persist a PAT-authored claim on the central state issue before the provider write; an existing claim prevents duplicate dispatch.
-- Require manual intervention when a repair produces no head change within 30 minutes.
-- Fail closed if the ledger exceeds 60,000 bytes; do not prune it automatically.
+Unset both enable flags. On reconciliation, native auto-merge intent is cancelled and Dependabot gates are blocked; verify those effects. Already launched workers are not automatically cancelled. Inspect reservations, claims, run/job state, artifact IDs/digests, and publication intent before acting.
 
-Per-PR errors keep the controller run failed, but a non-cancelled dispatcher can still verify and send valid reservations already saved for other PRs. It uses `always() && !cancelled()` and rechecks each task; controller failure is not permission to bypass verification.
-
-Do not delete or manually reset the ledger to retry an exhausted PR. Inspect the blocked reason and remaining quota instead. Uncertain dispatch results require reconciliation; they must not cause an immediate duplicate request.
-
-## Activation verification
-
-1. Merge the tested implementation into the default branch while both enable flags are unset.
-2. Create both dedicated environments, apply their exact Branch `main` selection and no-bypass policies, and verify both policies before storing credentials. Keep the flags unset.
-3. Install the dedicated App, store its key only in `dependabot-controller`, configure its non-secret ID, and run the controller with flags off. Verify it publishes `Dependabot Merge Gate`: success for human PRs and blocked for Dependabot PRs. Missing App setup cannot publish this check.
-4. Only after the gate exists, make it required and bind it to the controller App ID. Require strict up-to-date CI, at least one approval, and stale-review dismissal; read protection back to verify the settings.
-5. Configure the state issue, PAT only in `dependabot-dispatch`, dispatcher user ID, reviewer ID, and Vercel identity without exposing values. Confirm the independent provider emits qualifying formal reviews and repaired heads receive full trusted CI and Vercel validation.
-6. Confirm formal-review auto-approval, agent workflow approval behavior, the explicit provider cost cap, and the Actions budget.
-7. Set the controller and dispatcher flags to the exact value `true`. Observe a current Dependabot PR and verify one reservation, one durable dispatch claim, bounded dispatch, exact-head review, trusted CI, Vercel status, pending gate during native queueing, and final gate outcome.
-8. Confirm the resulting merge and production deployment separately. Successful preview checks do not prove production deployment.
-
-Until these steps pass, report the system as implemented but inactive or blocked, as applicable. No activation is assumed in this guide.
-
-## Disable and recover
-
-Unset both enable flags. On reconciliation, the controller cancels existing native auto-merge intent and blocks the gate for Dependabot PRs. Confirm those outcomes rather than assuming that a variable change completed them. Inspect existing reservations and pending Copilot work separately; dispatched agent work is not automatically cancelled. Preserve the required gate and its ledger until in-flight state is understood.
-
-For a blocked PR, inspect the latest head, review state, CI provenance, Vercel App ownership, quota state, and configuration. Keep the audit gate and independent review intact. A local retry does not justify resetting lifetime limits or bypassing branch protection.
+Never reset lifetime limits or rerun an ambiguous publication automatically. Head/base movement, expired tasks, incomplete review, invalid provenance, unclassified Vercel failures, and infrastructure failures need operator investigation. Keep branch protection and the gate intact until in-flight state is understood.

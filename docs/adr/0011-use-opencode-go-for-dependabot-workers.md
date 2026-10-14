@@ -48,3 +48,7 @@ Store the Go key only in the existing main-only `dependabot-dispatch` environmen
 - [OpenCode Go Dependabot design](../plans/2026-10-13-opencode-go-dependabot-design.md)
 - [ADR 0010](./0010-adopt-dependabot-controller-and-bounded-repair.md)
 - [Controller setup guide](../dependabot-controller-setup.md)
+
+## Implemented broker boundary
+
+The trusted broker holds the real Go key and calls only the fixed Go chat endpoint/model. The isolated OpenCode child receives only an ephemeral proxy token on an internal network. Retries consume the 24/16 generation-call budget before upstream writes; wall/event bounds remain independent. Candidate execution and validation never receive the provider key. Publication trusts the App claim and original successful run/job/digest chain, not model metadata or prose. External provider credentials, billing controls, App gate configuration, and live activation remain unverified.

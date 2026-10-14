@@ -136,7 +136,7 @@ This check is currently informational only and is not yet part of the protected-
 - **GitHub Actions version updates**
   - Run weekly.
   - Put all eligible patch and minor updates in one catch-all routine group.
-  - Leave major updates outside that group; the controller requires independent formal review before acceptance.
+  - Leave major updates outside that group; the controller requires authenticated independent review evidence before acceptance.
 - **Security updates**
   - Use separate npm and GitHub Actions groups with `applies-to: security-updates`.
   - Remain event-driven by Dependabot security alerts instead of waiting for the weekly version-update schedule.
@@ -144,17 +144,17 @@ This check is currently informational only and is not yet part of the protected-
   - Do not assign a routine reviewer or assignee.
   - Use ecosystem and automation labels to identify the pull request type.
 
-### 6) Dependabot Controller and Bounded Repair
+### 6) Dependabot Controller and OpenCode Go Workers
 
-[ADR 0010](../adr/0010-adopt-dependabot-controller-and-bounded-repair.md) replaces ADR 0008's evaluator semantics. Its implementation runs trusted default-branch code and remains disabled until the [external setup](../dependabot-controller-setup.md) is complete.
+[ADR 0011](../adr/0011-use-opencode-go-for-dependabot-workers.md) supersedes ADR 0010's Copilot dispatcher/reviewer. Controller acceptance, quotas, protected scope, App authority, and main-only environments remain. The [setup guide](../dependabot-controller-setup.md) separates implementation from activation.
 
-The controller reconciles same-repository Dependabot PRs from events and a scheduled scan. It identifies the PR by author and current head, so a human or agent CI trigger does not disqualify it. Before acceptance, it requires exact-head trusted CI provenance and successful Security Audit, Jest Tests, Playwright Tests, TypeScript Check, and Build Check; an exact-head Vercel App check plus successful deployment status from the trusted creator and project URL; and a formal current-head `APPROVED` review from the configured reviewer. Major updates and source repairs use these same gates.
+The trusted workflow reconciles same-repository Dependabot PRs on PR/CI/status events and a ten-minute schedule. A passing human-triggered CI run is eligible. Exact-head/current-base CI provenance, all five required jobs, trusted Vercel deployment status, protected scope, and authentic independent review evidence are required. Human/shared-commit and duplicate bot-head safeguards remain.
 
-The dedicated controller GitHub App owns the required `Dependabot Merge Gate`. Branch protection must bind that check to the App's ID, require strict up-to-date CI, dismiss stale reviews, and require at least one approval. Publish the gate with flags off before making it required; human PRs receive success only when the commit is not shared with an open Dependabot PR. Multiple bot PRs sharing a commit require manual duplicate resolution; check ownership is per commit. The controller queues native auto-merge with `expectedHeadOid` while the gate is pending, then revalidates before submitting its approval and gate success. Missing proof, stale state, or configuration failure blocks acceptance. No administrator bypass is used.
+Flow: controller → App claim → isolated Go worker matrix → fresh secret-free validator → trusted publisher → reconciliation. Trusted jobs checkout immutable workflow source matching the reserved base and run only from main; launch is original attempt 1. The controller App owns `Dependabot Merge Gate`, the ledger, task claims, repair commits, and `Dependabot Independent Review`. Branch protection must bind the gate to this App and require strict up-to-date CI, one approval, and stale-review dismissal.
 
-A separate user-PAT dispatcher requests Copilot branch repair and independent review. The controller job uses the `dependabot-controller` environment; the dispatcher uses `dependabot-dispatch`. Each permits only a Branch rule for exact `main`, without tags, PR refs, or administrator bypass. Verify these policies before storing the App key or PAT, and do not duplicate them at repository/organization/Dependabot/Agents scope. Agent execution receives no controller App credentials. A central App-authored JSON ledger comment on `DEPENDABOT_STATE_ISSUE_NUMBER` records reservations before dispatch. Load it only for bot credit reservations, so an invalid ledger does not block unrelated human gates. Per-PR controller errors remain failures; a non-cancelled dispatcher verifies valid saved reservations for other PRs even if another PR failed. Each UTC day allows two repair requests and eight review requests across the repository. Each PR allows at most two lifetime repairs; a new head does not reset that limit. Both operations deduplicate by head, count uncertain dispatches, and do not retry the same SHA. Reservations expire for dispatch after 15 minutes but remain charged; dispatcher reruns do not send work. A PAT-authored claim on the central issue is written before provider dispatch. No head change within 30 minutes requires manual intervention. A ledger larger than 60,000 bytes fails closed without automatic pruning.
+The broker alone holds the real Go key; the containerized agent uses an ephemeral local proxy token. Pinned OpenCode 1.19.0 uses Kimi repair and GLM review sessions with denied execution/extensions and capped calls/time. Fixed validation runs separately without secrets. The publisher executes no artifact, verifies immutable run/job/claim/digest evidence and scope, atomically commits repairs with expected head, or publishes App-owned review proof bound to head/base. The controller queues native auto-merge while its gate is pending and revalidates before formal App approval and gate success.
 
-Branch protection remains authoritative. Native auto-merge intent, dispatched review, and agent completion do not establish merge acceptance. Only verified upstream Action version pins can change in the privileged controller workflow; its Node version, inputs, permissions, and commands are frozen. Existing controller scripts, instructions, tests, and validation commands are protected. Unclassified platform failures require operator action. Disabling automation cancels native merge intent and blocks bot gates on reconciliation. External App installation, state issue, PAT, dispatcher user identity, trusted IDs, workflow approval settings, and billing controls are prerequisites; no activation is assumed.
+The central ledger limits the repository to two repairs/eight reviews per UTC day and two lifetime repairs per PR. Expired or uncertain reservations remain charged; reruns cannot dispatch. Invalid provenance, stale base/head, incomplete review, quota exhaustion, or missing credentials blocks acceptance. Missing external App/gate/provider/budget configuration keeps flags off.
 
 ## Repository Security Settings
 
@@ -164,7 +164,7 @@ Branch protection remains authoritative. Native auto-merge intent, dispatched re
 - **GitHub Actions SHA pinning required** is enabled at the repository level
 
 ## Deployment Environments
-Ordinary CI in `.github/workflows/ci.yml` has no credential environment. The two privileged automation jobs declare dedicated main-only environments as described above. GitHub must enforce their deployment restrictions before releasing credentials; the merge scope guard does not protect pre-merge workflow execution.
+Ordinary CI in `.github/workflows/ci.yml` has no credential environment. Controller, claim, publisher, and reconciliation jobs use `dependabot-controller`; isolated worker jobs use `dependabot-dispatch`. The validator uses no credential environment. GitHub must enforce their deployment restrictions before releasing credentials; the merge scope guard does not protect pre-merge workflow execution.
 Vercel preview and production deployments are handled by the Git integration outside this workflow.
 
 ## Required Secrets / Environment Names
@@ -172,12 +172,12 @@ Vercel preview and production deployments are handled by the Git integration out
 ### Secrets (names only)
 - **None explicitly required by `ci.yml`**
 - `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY`
-- `dependabot-dispatch` environment only: `COPILOT_AUTOMATION_TOKEN`
+- `dependabot-dispatch` environment only: `OPENCODE_GO_API_KEY`
 
 ### Environment variables (names only)
 - `STORE_PATH` (set in each job for pnpm cache path)
 - `GITHUB_ENV` (GitHub Actions runtime environment file used to persist `STORE_PATH`)
-- Controller configuration: `DEPENDABOT_CONTROLLER_APP_ID`, `DEPENDABOT_STATE_ISSUE_NUMBER`, `DEPENDABOT_DISPATCH_USER_ID`, `DEPENDABOT_AUTOMATION_ENABLED`, `DEPENDABOT_AGENT_ENABLED`, `DEPENDABOT_REVIEWER_ID`, `DEPENDABOT_VERCEL_APP_ID`
+- Controller configuration: `DEPENDABOT_CONTROLLER_APP_ID`, `DEPENDABOT_STATE_ISSUE_NUMBER`, `DEPENDABOT_AUTOMATION_ENABLED`, `DEPENDABOT_AGENT_ENABLED`, `DEPENDABOT_VERCEL_APP_ID`
 - Enable flags must be exactly `true`; unset or other values remain disabled
 
 ## Troubleshooting
@@ -221,7 +221,7 @@ Vercel preview and production deployments are handled by the Git integration out
   - artifact retention duration (currently 30 days)
   - workflow permissions for least privilege
 - Observe `Dependency Review` results before deciding whether to promote it to a required branch protection check.
-- Keep controller CI provenance, trusted reviewer and Vercel identities, App-bound branch protection, ledger capacity, and daily/lifetime limits aligned with the implementation and setup guide.
+- Keep controller CI provenance, authentic independent-review evidence and Vercel identities, App-bound branch protection, ledger capacity, and daily/lifetime limits aligned with the implementation and setup guide.
 - If CD is needed, add explicit deploy job(s) with:
   - environment protection rules
   - scoped secrets

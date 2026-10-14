@@ -40,6 +40,7 @@ Last Updated: 2026-10-13
 
 - [x] Investigate the Dependabot actor/policy gaps and missing autonomous repair path — 2026-10-13
 - [x] Approve the controller and bounded repair design: two repairs/eight reviews per day, two lifetime repairs per PR — 2026-10-13
+- [x] Approve OpenCode Go worker design and record current implementation/activation boundaries — 2026-10-13 ([context](./context/2026-10-13-opencode-go-dependabot-workers.md))
 
 ## Content Management
 
@@ -47,14 +48,15 @@ Last Updated: 2026-10-13
 
 ## Blocked
 
-- [ ] Activate the controller after dedicated App/state issue/PAT setup, trusted IDs, required gate binding, agent workflow approval settings, and billing controls are verified
+- [ ] Activate only after App/state issue setup, App-bound required gate, secure Go key, verified Use balance off/model access/budgets, hosted validation, and an authorized live flow
 
 - [x] Resolve pre-existing `app/layout.tsx` client hook build error (unrelated to pnpm/security remediation)
 
 ## Follow-ups
 
-- [ ] Implement and verify the trusted controller, App ledger, bounded dispatcher, independent review, and exact-head merge gate
-- [ ] Verify formal current-head APPROVED review support and full CI/Vercel validation on repaired heads before live activation
+- [x] Verify 228 local Jest tests, build, post-build TypeScript, actionlint, actual pinned Linux worker isolation with a fake provider, and secret-free Docker validator — 2026-10-13
+- [ ] Finish independent whole-branch/security review and hosted verification of OpenCode publication and exact-head merge gate
+- [ ] Verify authentic App-published independent review claims and full CI/Vercel validation on repaired heads before live activation
 
 - [x] Align manifests, local pins, all five CI jobs, and the Vercel project to Node.js 24; validate frozen install, build, TypeScript, and Jest locally — 2026-10-13
 - [x] Complete final local install/build/TypeScript/Jest and 44 non-Firefox browser checks after dependency remediation — 2026-10-13

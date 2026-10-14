@@ -75,3 +75,9 @@ test('validator rejects symlink ancestry before materializing edits',async()=>{
  await expect(validateRepair(a.task,{...snapshot(),task:a.task},sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{throw Error('unsafe execution')}})).rejects.toThrow('Symlink')
  expect(existsSync(join(outside,'new.ts'))).toBe(false)
 })
+test('validator destroys its named container after timeout',async()=>{
+ const r=root();const a:any=artifact('repair');const cleanup=jest.fn()
+ await expect(validateRepair(a.task,{...snapshot(),task:a.task},sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{throw Error('timeout')},cleanup})).rejects.toThrow('timeout')
+ expect(cleanup).toHaveBeenCalledWith(expect.stringMatching(/^dependabot-validation-/))
+ expect(validationArgs(r,'fixture','known-name')).toContain('known-name')
+})
