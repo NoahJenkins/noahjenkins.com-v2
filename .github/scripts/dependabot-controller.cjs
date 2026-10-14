@@ -1,5 +1,7 @@
 'use strict'
 const { REQUIRED_CHECKS, GATE, DEPENDABOT_ID, eligiblePr, evaluateCandidate } = require('./dependabot-controller-policy.cjs')
+const { verifyRun } = require('./dependabot-opencode-publish.cjs')
+const { defaultBranchEvent } = require('./dependabot-opencode-contract.cjs')
 const { reserve, validateTask } = require('./dependabot-controller-ledger.cjs')
 
 function protectionAllowsMerge(protection, appId) {
@@ -60,7 +62,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
     return decision
   }
   if (['repair', 'review'].includes(decision.kind)) {
-    if (config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a controller run from current main.')
+    if (!defaultBranchEvent(config.eventName) || config.workSourceVerified !== true || config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a controller run from current main.')
     if (!config.agentEnabled) return stop('blocked', `${decision.reason} Agent dispatch is disabled pending credentials and OpenCode settings.`)
     // Fail closed before spending credits if the required gate can be forged or omitted.
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) return stop('blocked', 'Configure the App-bound required gate before agent dispatch.')
@@ -87,7 +89,8 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
 async function claimOne(client, config, task) {
   if (!config.automationEnabled || !config.agentEnabled || config.runAttempt !== 1) return
   validateTask(task)
-  if (config.ref !== 'refs/heads/main' || config.workflowSha !== task.base) throw new Error('Untrusted workflow source')
+  if (!defaultBranchEvent(config.eventName) || config.ref !== 'refs/heads/main' || config.workflowSha !== task.base) throw new Error('Untrusted workflow source')
+  verifyRun(await client.getRun(config.runId),{runId:config.runId,workflowSha:task.base,workflowPath:'.github/workflows/dependabot-auto-merge.yml',ref:config.ref},config)
   const ledger = (await client.getLedger()).ledger
   const persisted = ledger.reservations.find((item) => item.nonce === task.nonce)
   if (!persisted || JSON.stringify(persisted) !== JSON.stringify(task)) throw new Error('Claim does not match a durable reservation')

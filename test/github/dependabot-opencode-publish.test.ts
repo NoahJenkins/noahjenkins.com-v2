@@ -3,12 +3,12 @@ const {sealArtifact,digest}=require('../../.github/scripts/dependabot-opencode-c
 const {publishResult,parseArtifactZip}=require('../../.github/scripts/dependabot-opencode-publish.cjs')
 function boundary(kind='review') {
  const raw=artifact(kind);const t=raw.task
- const snapshot={task:t,changedFiles:['package.json','pnpm-lock.yaml'],baseFiles:{'package.json':'{}','pnpm-lock.yaml':'old'},headFiles:{'package.json':'{}','pnpm-lock.yaml':'new'},contextFiles:{}}
+ const snapshot={existingPaths:['package.json','pnpm-lock.yaml'],task:t,changedFiles:['package.json','pnpm-lock.yaml'],baseFiles:{'package.json':'{}','pnpm-lock.yaml':'old'},headFiles:{'package.json':'{}','pnpm-lock.yaml':'new'},contextFiles:{}}
  raw.agent.inputDigest=digest(snapshot);raw.agent.configDigest=digest(require('../../.github/scripts/dependabot-opencode-worker.cjs').agentConfig(kind,'http://broker:8080/v1','EPHEMERAL'));const a=sealArtifact(raw)
  const claim:any={id:7,task:t,origin:{...origin},publishAttempted:false,published:false,digest:null};delete claim.origin.jobId
  const pr={number:t.pr,node_id:t.prId,state:'open',draft:false,user:{id:49699333,type:'Bot'},head:{sha:t.head,ref:'dependabot/npm_and_yarn/x',repo:{id:1}},base:{sha:t.base,ref:'main',repo:{id:1}}}
- const client={getClaims:async()=>[claim],getPr:async()=>pr,getMain:async()=>t.base,getRun:async()=>({id:10,run_attempt:1,head_sha:t.base,head_branch:'main',path:origin.workflowPath,repository:{id:1}}),getJobs:async()=>[{id:20,name:`OpenCode worker (${t.nonce})`,status:'completed',conclusion:'success'},{id:21,name:`OpenCode validation (${t.nonce})`,status:'completed',conclusion:'success'}],getArtifact:async()=>({artifact:a,checks:{inputDigest:a.digest,outputDigest:a.digest,success:true}}),prepareSnapshot:async()=>snapshot,getWorkerArtifact:async()=>a,markClaim:jest.fn(async(_claim:any,fields:any)=>Object.assign(claim,fields)),verifyActionPins:async()=>{},commitFiles:jest.fn(async()=>({id:'commit'})),publishReview:jest.fn(async()=>({id:42}))}
- return {client,claim,a,t,pr,config:{appId:99,repositoryId:1,runId:10,runAttempt:1,workflowSha:t.base,ref:'refs/heads/main'}}
+ const client={getClaims:async()=>[claim],getPr:async()=>pr,getMain:async()=>t.base,getRun:async()=>({id:10,event:'schedule',run_attempt:1,head_sha:t.base,head_branch:'main',path:origin.workflowPath,repository:{id:1}}),getJobs:async()=>[{id:20,name:`OpenCode worker (${t.nonce})`,status:'completed',conclusion:'success'},{id:21,name:`OpenCode validation (${t.nonce})`,status:'completed',conclusion:'success'}],getArtifact:async()=>({artifact:a,checks:{inputDigest:a.digest,outputDigest:a.digest,success:true}}),prepareSnapshot:async()=>snapshot,getWorkerArtifact:async()=>a,markClaim:jest.fn(async(_claim:any,fields:any)=>Object.assign(claim,fields)),verifyActionPins:async()=>{},commitFiles:jest.fn(async()=>({id:'commit'})),publishReview:jest.fn(async()=>({id:42}))}
+ return {client,claim,a,t,pr,config:{eventName:'schedule',appId:99,repositoryId:1,runId:10,runAttempt:1,workflowSha:t.base,ref:'refs/heads/main'}}
 }
 test('publishes authenticated review only after durable write intent',async()=>{
  const f=boundary();expect(await publishResult(f.client,f.config,f.t,1,origin)).toEqual({kind:'review',id:42})
@@ -63,4 +63,21 @@ test('provider transport checks metadata and API SHA256 before JSON acceptance',
  await expect(client.getArtifact(9,{runId:10,name:meta.name,head:task.base})).rejects.toThrow('digest')
  meta.digest=hash;meta.workflow_run.id=11
  await expect(client.getArtifact(9,{runId:10,name:meta.name,head:task.base})).rejects.toThrow('metadata')
+})
+test('publisher independently blocks overwriting a test omitted from content context',async()=>{
+ const f=boundary('repair');const snapshot:any=await f.client.prepareSnapshot()
+ snapshot.existingPaths=['package.json','pnpm-lock.yaml','test/existing.test.ts']
+ const raw=artifact('repair');raw.agent.inputDigest=digest(snapshot);raw.agent.configDigest=f.a.agent.configDigest;raw.result={files:[{path:'test/existing.test.ts',content:'test("fake",()=>{})'}]} as any
+ const a=sealArtifact(raw);f.client.getWorkerArtifact=async()=>a;f.client.getArtifact=async()=>({artifact:a,checks:{inputDigest:a.digest,outputDigest:a.digest,success:true}})
+ await expect(publishResult(f.client,f.config,f.t,1,origin)).rejects.toThrow('Protected')
+ expect(f.client.commitFiles).not.toHaveBeenCalled()
+})
+test('action-only repair publishes without an unchanged lockfile',async()=>{
+ const f=boundary('repair')
+ const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const snapshot={task:f.t,changedFiles:['.github/workflows/ci.yml'],baseFiles:{'.github/workflows/ci.yml':before},headFiles:{'.github/workflows/ci.yml':before},contextFiles:{'package.json':'{}','pnpm-lock.yaml':'unchanged'},existingPaths:['.github/workflows/ci.yml','package.json','pnpm-lock.yaml']}
+ const raw:any=artifact('repair');raw.agent.inputDigest=digest(snapshot);raw.agent.configDigest=f.a.agent.configDigest;raw.result.files=[{path:'.github/workflows/ci.yml',content:after}]
+ const a=sealArtifact(raw);(f.client as any).prepareSnapshot=async()=>snapshot;f.client.getWorkerArtifact=async()=>a;f.client.getArtifact=async()=>({artifact:a,checks:{inputDigest:a.digest,outputDigest:a.digest,success:true}})
+ expect(await publishResult(f.client,f.config,f.t,1,origin)).toEqual({kind:'repair',id:'commit'})
+ expect(f.client.commitFiles).toHaveBeenCalledWith(expect.anything(),raw.result.files)
 })

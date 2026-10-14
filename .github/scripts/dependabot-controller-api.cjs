@@ -180,7 +180,8 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
         const a=JSON.parse(latest.output.text)
         const claim=(await client.getClaims()).find(c=>c.task.nonce===a.task.nonce)
         if(!claim || !claim.published || claim.resultId!==latest.id || claim.task.pr!==pr.number || claim.task.prId!==pr.node_id || a.task.head!==pr.head.sha || a.task.base!==main)return null
-        verifyRun(await client.getRun(a.origin.runId),a.origin,{...config,runId:a.origin.runId,runAttempt:1,workflowSha:main,ref:'refs/heads/main'})
+        const run=await client.getRun(a.origin.runId)
+        verifyRun(run,a.origin,{...config,eventName:run.event,runId:a.origin.runId,runAttempt:1,workflowSha:main,ref:'refs/heads/main'})
         verifyJobs(await client.getJobs(a.origin.runId),a.task,a.origin)
         return validateReviewEvidence(latest,{task:a.task,origin:a.origin,changedFiles,appId:config.appId,claim})
       } catch {return null}
@@ -196,7 +197,10 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
       const contextFiles={};const tree=await request('GET',`${root}/git/trees/${task.head}?recursive=1`)
       if(tree.truncated)throw Error('Incomplete source tree')
-      const entries=tree.tree.filter(f=>f.type==='blob' && /^(app|components|lib)\/.+\.(tsx?|jsx?|css)$/.test(f.path) && !Object.hasOwn(headFiles,f.path))
+      const existingPaths=tree.tree.filter(f=>f.type==='blob').map(f=>f.path).sort()
+      if(existingPaths.length>20000)throw Error('Source inventory capacity')
+      const dependencies=['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','.nvmrc','.node-version']
+      const entries=tree.tree.filter(f=>f.type==='blob' && (dependencies.includes(f.path) || /^(app|components|lib)\/.+\.(tsx?|jsx?|css)$/.test(f.path)) && !Object.hasOwn(headFiles,f.path))
       if(entries.length>128 || entries.some(f=>f.mode!=='100644' || f.size>2*1024*1024))throw Error('Unsupported source context')
       for(const f of entries)contextFiles[f.path]=await content(f.path,task.head)
       const diagnostics=[]
@@ -209,7 +213,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
         }
         if(state.independentReview)diagnostics.push({review:state.independentReview.report})
       }
-      const result={task,changedFiles:files.map(f=>f.filename),baseFiles,headFiles,contextFiles,diagnostics}
+      const result={task,changedFiles:files.map(f=>f.filename),baseFiles,headFiles,contextFiles,diagnostics,existingPaths}
       if(Buffer.byteLength(JSON.stringify(result))>8*1024*1024)throw Error('Snapshot byte limit')
       return result
     },

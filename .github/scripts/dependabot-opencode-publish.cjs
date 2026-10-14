@@ -1,6 +1,6 @@
 'use strict'
 const {inflateRawSync}=require('node:zlib')
-const {validateArtifact,validateReview,digest,same,REVIEW}=require('./dependabot-opencode-contract.cjs')
+const {validateArtifact,validateReview,digest,same,REVIEW,scopeChanges,defaultBranchEvent}=require('./dependabot-opencode-contract.cjs')
 const {evaluateScope,eligiblePr}=require('./dependabot-controller-policy.cjs')
 const {agentConfig}=require('./dependabot-opencode-worker.cjs')
 const MAX_ZIP=24*1024*1024;const MAX_JSON=20*1024*1024
@@ -24,7 +24,7 @@ function parseArtifactZip(zip) {
  return JSON.parse(decoded.toString('utf8'))
 }
 function verifyRun(run,origin,config) {
- if(run.id!==origin.runId || run.repository?.id!==config.repositoryId || run.run_attempt!==1 || run.head_branch!=='main' || run.head_sha!==origin.workflowSha || run.path.split('@')[0]!==origin.workflowPath || origin.workflowSha!==config.workflowSha || origin.ref!=='refs/heads/main' || config.ref!=='refs/heads/main' || config.runAttempt!==1 || config.runId!==origin.runId)throw Error('Untrusted workflow run')
+ if(!defaultBranchEvent(run.event) || (config.eventName && run.event!==config.eventName) || run.id!==origin.runId || run.repository?.id!==config.repositoryId || run.run_attempt!==1 || run.head_branch!=='main' || run.head_sha!==origin.workflowSha || run.path.split('@')[0]!==origin.workflowPath || origin.workflowSha!==config.workflowSha || origin.ref!=='refs/heads/main' || config.ref!=='refs/heads/main' || config.runAttempt!==1 || config.runId!==origin.runId)throw Error('Untrusted workflow run')
 }
 function verifyJobs(jobs,task,origin) {
  for(const [name,id] of [[`OpenCode worker (${task.nonce})`,origin.jobId],[`OpenCode validation (${task.nonce})`,null]]) {
@@ -48,7 +48,7 @@ async function publishResult(client,config,task,artifactId,origin) {
  same(envelope.checks,{inputDigest:worker.digest,outputDigest:a.digest,success:true})
  if(task.kind==='review')same(worker,a)
  else {
-  const changes=a.result.files.map(f=>({filename:f.path,before:snapshot.headFiles[f.path]??snapshot.contextFiles[f.path]??'',after:f.content,status:(f.path in snapshot.headFiles || f.path in snapshot.contextFiles)?'modified':'added'}))
+  const changes=scopeChanges(a.result.files,snapshot)
   const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
   await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
  }

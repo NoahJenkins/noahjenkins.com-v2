@@ -10,7 +10,7 @@ function execute(client: any, output: string) {
     run = require('../../.github/scripts/dependabot-controller-run.cjs').run
   })
   jest.dontMock('../../.github/scripts/dependabot-controller-api.cjs')
-  return run({ GITHUB_REPOSITORY: 'o/r', DEPENDABOT_READ_TOKEN: 'read-token', DEPENDABOT_APP_TOKEN: 'app-token', DEPENDABOT_CONTROLLER_APP_ID: '99', DEPENDABOT_CONTROLLER_APP_SLUG: 'test-app', DEPENDABOT_AUTOMATION_ENABLED: 'true', DEPENDABOT_AGENT_ENABLED: 'true', DEPENDABOT_STATE_ISSUE_NUMBER: '9', GITHUB_WORKFLOW_SHA: 'b'.repeat(40), GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ID: '10', GITHUB_OUTPUT: output }, 'controller')
+  return run({ GITHUB_REPOSITORY: 'o/r', DEPENDABOT_READ_TOKEN: 'read-token', DEPENDABOT_APP_TOKEN: 'app-token', DEPENDABOT_CONTROLLER_APP_ID: '99', DEPENDABOT_CONTROLLER_APP_SLUG: 'test-app', DEPENDABOT_AUTOMATION_ENABLED: 'true', DEPENDABOT_AGENT_ENABLED: 'true', DEPENDABOT_STATE_ISSUE_NUMBER: '9', GITHUB_EVENT_NAME: 'schedule', GITHUB_WORKFLOW_SHA: 'b'.repeat(40), GITHUB_REF: 'refs/heads/main', GITHUB_RUN_ID: '10', GITHUB_OUTPUT: output }, 'controller')
 }
 
 function boundary() {
@@ -19,6 +19,7 @@ function boundary() {
   const names = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
   const client = {
     request: async (method: string, path: string) => path.startsWith('/apps/') ? { id: 99 } : { type: 'Bot', id: 100 },
+    getRun: async()=>({id:10,event:'schedule',run_attempt:1,head_sha:base,head_branch:'main',path:'.github/workflows/dependabot-auto-merge.yml',repository:{id:1}}),
     getRepo: async () => ({ id: 1 }), getMain: async () => base,
     listPrs: async () => [{ number: 1 }, { number: 2 }],
     hasDependabotHead: async () => false,
@@ -65,9 +66,14 @@ describe('batch failure isolation', () => {
 test('original run and UTC bounds are checked immediately before launch',()=>{
  const {assertLaunch}=require('../../.github/scripts/dependabot-controller-run.cjs')
  const task={base:'b'.repeat(40),createdAt:'2026-10-13T23:58:00.000Z'}
- const config={now:'2026-10-13T23:59:00.000Z',workflowSha:task.base,ref:'refs/heads/main',runAttempt:1}
+ const config={eventName:'schedule',now:'2026-10-13T23:59:00.000Z',workflowSha:task.base,ref:'refs/heads/main',runAttempt:1}
  expect(()=>assertLaunch(task,config)).not.toThrow()
  expect(()=>assertLaunch(task,{...config,runAttempt:2})).toThrow()
  expect(()=>assertLaunch(task,{...config,now:'2026-10-14T00:00:00.000Z'})).toThrow()
  expect(()=>assertLaunch(task,{...config,now:'2026-10-14T00:14:00.000Z'})).toThrow()
+})
+test('PR-target job cannot launch a provider session despite main workflow source',()=>{
+ const {assertLaunch}=require('../../.github/scripts/dependabot-controller-run.cjs')
+ const task={base:'b'.repeat(40),createdAt:'2026-10-13T12:00:00.000Z'}
+ expect(()=>assertLaunch(task,{now:'2026-10-13T12:01:00.000Z',workflowSha:task.base,ref:'refs/heads/main',runAttempt:1,eventName:'pull_request_target'})).toThrow()
 })

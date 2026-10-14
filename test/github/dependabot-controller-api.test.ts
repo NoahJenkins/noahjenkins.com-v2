@@ -101,3 +101,22 @@ test('durable claims require the App bot and compare-before-update',async()=>{
  saved.user.id=101
  await expect(client.getClaims()).rejects.toThrow('author')
 })
+test('snapshot records the complete head inventory and unchanged dependency context',async()=>{
+ const {task}=require('./opencode-fixtures');const t={...task,kind:'repair'}
+ const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const files:any={'.github/workflows/ci.yml':after,'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24','test/existing.test.ts':'protected'}
+ const pr={node_id:t.prId,number:t.pr,changed_files:1,head:{sha:t.head},base:{sha:t.base}}
+ const fetcher=async(url:string)=>{
+  const p=new URL(url);let data:any
+  if(p.pathname.endsWith(`/pulls/${t.pr}`))data=pr
+  else if(p.pathname.endsWith('/git/ref/heads/main'))data={object:{sha:t.base}}
+  else if(p.pathname.endsWith('/files'))data=[{filename:'.github/workflows/ci.yml',status:'modified'}]
+  else if(p.pathname.includes('/git/trees/'))data={truncated:false,tree:Object.keys(files).map(path=>({path,type:'blob',mode:'100644',size:files[path].length}))}
+  else {const filename=p.pathname.split('/contents/')[1];const value=filename==='.github/workflows/ci.yml'&&p.searchParams.get('ref')===t.base?before:files[filename];data={type:'file',size:value.length,encoding:'base64',content:Buffer.from(value).toString('base64')}}
+  return {ok:true,status:200,json:async()=>data}
+ }
+ const client=createClient({repo:'o/r'},'read-token',undefined,fetcher);client.verifyActionPins=async()=>{};client.snapshot=async()=>({jobs:[],independentReview:null})
+ const snapshot=await client.prepareSnapshot(t)
+ expect(snapshot.existingPaths).toContain('test/existing.test.ts')
+ expect(snapshot.contextFiles).toMatchObject({'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24'})
+})

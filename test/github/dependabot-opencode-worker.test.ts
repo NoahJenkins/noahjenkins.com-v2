@@ -6,7 +6,7 @@ import { execFileSync, spawn } from 'node:child_process'
 const { prepareWorkspace, runAgent, agentConfig } = require('../../.github/scripts/dependabot-opencode-worker.cjs')
 const { validateRepair, validationArgs } = require('../../.github/scripts/dependabot-opencode-validate.cjs')
 const { sealArtifact } = require('../../.github/scripts/dependabot-opencode-contract.cjs')
-const snapshot = () => ({task,changedFiles:['package.json','pnpm-lock.yaml'],baseFiles:{'package.json':'{}','pnpm-lock.yaml':'old'},headFiles:{'package.json':'{}','pnpm-lock.yaml':'new'},contextFiles:{'app/x.ts':'data','lib/nested/AGENTS.md':'evil','.opencode/tool/evil.ts':'evil','.git/config':'secret'}})
+const snapshot = () => ({existingPaths:['package.json','pnpm-lock.yaml','app/x.ts'],task,changedFiles:['package.json','pnpm-lock.yaml'],baseFiles:{'package.json':'{}','pnpm-lock.yaml':'old'},headFiles:{'package.json':'{}','pnpm-lock.yaml':'new'},contextFiles:{'app/x.ts':'data','lib/nested/AGENTS.md':'evil','.opencode/tool/evil.ts':'evil','.git/config':'secret'}})
 const roots:string[]=[]
 const root = () => {const r=mkdtempSync(join(tmpdir(),'opencode-test-'));roots.push(r);return r}
 afterEach(()=>roots.splice(0).forEach(r=>rmSync(r,{recursive:true,force:true})))
@@ -80,4 +80,24 @@ test('validator destroys its named container after timeout',async()=>{
  await expect(validateRepair(a.task,{...snapshot(),task:a.task},sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{throw Error('timeout')},cleanup})).rejects.toThrow('timeout')
  expect(cleanup).toHaveBeenCalledWith(expect.stringMatching(/^dependabot-validation-/))
  expect(validationArgs(r,'fixture','known-name')).toContain('known-name')
+})
+test('complete head inventory prevents replacing an omitted existing test',async()=>{
+ const r=root();const a:any=artifact('repair');a.result.files=[{path:'test/existing.test.ts',content:'test("fake",()=>{})'}]
+ const execute=jest.fn()
+ await expect(validateRepair(a.task,{...snapshot(),task:a.task,existingPaths:['package.json','pnpm-lock.yaml','test/existing.test.ts']},sealArtifact(a),{origin,root:r,image:'fixture',execute})).rejects.toThrow('Protected')
+ expect(execute).not.toHaveBeenCalled()
+})
+test('validator rejects symlink ancestors created during candidate execution',async()=>{
+ const r=root();const outside=root();const fs=require('node:fs');fs.writeFileSync(join(outside,'x.ts'),'host-only')
+ const a:any=artifact('repair');a.result.files=[{path:'app/x.ts',content:'proposed'}]
+ await expect(validateRepair(a.task,{...snapshot(),task:a.task,existingPaths:['package.json','pnpm-lock.yaml']},sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{fs.rmSync(join(r,'app'),{recursive:true});fs.symlinkSync(outside,join(r,'app'));fs.writeFileSync(join(r,'pnpm-lock.yaml'),'generated')}})).rejects.toThrow('Symlink')
+})
+test('action-only repair omits an unchanged generated lockfile',async()=>{
+ const r=root();const fs=require('node:fs');fs.writeFileSync(join(r,'pnpm-lock.yaml'),'unchanged')
+ const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+ const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const a:any=artifact('repair');a.result.files=[{path:'.github/workflows/ci.yml',content:after}]
+ const s={task:a.task,changedFiles:['.github/workflows/ci.yml'],baseFiles:{'.github/workflows/ci.yml':before},headFiles:{'.github/workflows/ci.yml':before},contextFiles:{'package.json':'{}','pnpm-lock.yaml':'unchanged'},existingPaths:['.github/workflows/ci.yml','package.json','pnpm-lock.yaml']}
+ const result=await validateRepair(a.task,s,sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{}})
+ expect(result.artifact.result.files).toEqual(a.result.files)
 })

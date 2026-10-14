@@ -1,6 +1,6 @@
 'use strict'
 const fs=require('node:fs');const path=require('node:path');const {randomBytes}=require('node:crypto');const {execFileSync}=require('node:child_process')
-const {validateArtifact,validateFiles,sealArtifact,digest}=require('./dependabot-opencode-contract.cjs')
+const {validateArtifact,validateFiles,sealArtifact,scopeChanges}=require('./dependabot-opencode-contract.cjs')
 const {evaluateScope}=require('./dependabot-controller-policy.cjs')
 const COMMAND='pnpm install --lockfile-only --ignore-scripts && pnpm install --frozen-lockfile --ignore-scripts && pnpm audit --audit-level=high && pnpm exec tsc --noEmit && pnpm exec jest --coverage --runInBand && pnpm build'
 function rejectLinks(root) {
@@ -11,7 +11,7 @@ async function validateRepair(task,snapshot,artifact,options) {
  validateArtifact(artifact,{task,origin:options.origin,changedFiles:snapshot.changedFiles})
  if(task.kind==='review')return {artifact,checks:{inputDigest:artifact.digest,outputDigest:artifact.digest,success:true}}
  const files=artifact.result.files
- const changes=files.map(f=>({filename:f.path,before:snapshot.headFiles[f.path]??snapshot.contextFiles?.[f.path]??'',after:f.content,status:(f.path in snapshot.headFiles || f.path in (snapshot.contextFiles || {}))?'modified':'added'}))
+ const changes=scopeChanges(files,snapshot)
  const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
  if(!options.root || !options.image)throw Error('Validation container input is missing')
  rejectLinks(options.root)
@@ -22,7 +22,14 @@ async function validateRepair(task,snapshot,artifact,options) {
  try {await execute(validationArgs(options.root,options.image,name))}finally{cleanup(name)}
  // Read only allowed submitted paths and generated lock; never trust model claims.
  const paths=[...new Set([...files.map(f=>f.path),'pnpm-lock.yaml'])]
- const validated=paths.map(p=>{const target=path.join(options.root,p);const stat=fs.lstatSync(target);if(!stat.isFile() || stat.isSymbolicLink() || stat.mode&0o111)throw Error('Unsupported validation output');return {path:p,content:fs.readFileSync(target,'utf8')}})
+ const candidateRoot=fs.realpathSync(options.root)
+ const validated=paths.map(p=>{
+   let current=candidateRoot
+   for(const component of p.split('/')){current=path.join(current,component);const stat=fs.lstatSync(current);if(stat.isSymbolicLink())throw Error('Symlink validation output')}
+   const resolved=fs.realpathSync(current);const stat=fs.lstatSync(current)
+   if(!resolved.startsWith(`${candidateRoot}${path.sep}`) || !stat.isFile() || stat.mode&0o111)throw Error('Unsupported validation output')
+   return {path:p,content:fs.readFileSync(current,'utf8')}
+ }).filter(f=>f.content!==(snapshot.headFiles[f.path]??snapshot.contextFiles?.[f.path]))
  validateFiles(validated)
  const final=sealArtifact({...artifact,result:{files:validated}})
  return {artifact:final,checks:{inputDigest:artifact.digest,outputDigest:final.digest,success:true}}

@@ -38,7 +38,7 @@ Before activation, verify Go **Use balance** is off, model access is valid, and 
 
 ## Worker flow and limits
 
-The workflow is controller → claim → worker matrix → fresh validation job → publisher → reconciliation. Controller, claim, publisher, and reconciliation use `dependabot-controller`; only the worker job uses `dependabot-dispatch`. Both matrices use `fail-fast: false`. Global concurrency serializes controller runs; schedule is every ten minutes. Original run attempt 1, main ref, and workflow source equal to reserved base are required for work.
+The workflow is controller → claim → worker matrix → fresh validation job → publisher → reconciliation. Controller, claim, publisher, and reconciliation use `dependabot-controller`; only the worker job uses `dependabot-dispatch`. Both matrices use `fail-fast: false`. Global concurrency serializes controller runs; schedule is every ten minutes. Original run attempt 1, main ref, and workflow source equal to reserved base are required for work. PR-target events reevaluate gates without reserving paid work; the next verified default-branch event or scheduled scan can reserve a task. Run metadata is checked before reservation and again before launch.
 
 App-authored ledger reservations allow two repairs/eight reviews per UTC day across the repository and two lifetime repairs per PR. New heads do not reset lifetime limits. Claim once before launch; expired, ambiguous, and failed operations remain charged. Launch only within 15 minutes on the reservation's UTC date, never from a rerun or duplicate head reservation. A stalled task requires operator action after 30 minutes; a ledger over 60,000 bytes fails closed without automatic pruning.
 
@@ -52,6 +52,8 @@ Validation runs in a separate fresh job. The candidate container receives curate
 
 Artifacts contain task/origin/session/config/input digests and bounded UTF-8 data: 64 files, 2 MiB each, 8 MiB total, 240-byte relative paths. No executable modes, symlinks, commands, or arbitrary archives are accepted. GitHub ZIP is transport only: API digest and origin are checked, exactly one bounded `result.json` entry is parsed in memory, and nothing is extracted to execute.
 
+The complete immutable head tree inventory distinguishes new files from existing files even when contents are not in the agent context. Output readers reject symlinks in every ancestor after candidate execution. Unchanged generated lockfiles are omitted.
+
 The publisher verifies the persisted App claim, original run/job success, validator digest chain, current head/base, complete expected coverage, and protected scope. It records publication intent before a possibly ambiguous write. Repair commits use GraphQL `createCommitOnBranch(expectedHeadOid)` with base64 file additions; an altered head blocks publication. Protected instructions/scripts/tests/commands and official upstream Action-tag checks remain enforced.
 
 Review uses a fresh read-only session with complete base/head changed-file contents, including manifests and lockfile. Strict output contains verdict, findings, exact covered files, and security/compatibility assessments. Only `approve`, complete coverage, both assessments `pass`, and no critical/high/medium findings can pass; low/info findings remain visible. Missing, unknown, oversized, or malformed proof blocks acceptance.
@@ -60,9 +62,9 @@ The App publishes `Dependabot Independent Review` on the exact head, bound to ba
 
 ## Current verification evidence
 
-Local verification passed 228 Jest tests, build, post-build TypeScript checks, and actionlint. The secret-free Docker validator also exited successfully with scripts-disabled install, high-threshold audit, TypeScript, 227 tests at its snapshot, and build. Its named container is removed after failed or timed-out execution; a reproduced cleanup regression was fixed and included in the later local count.
+Local verification passed 236 Jest tests, build, post-build TypeScript checks, and actionlint. The secret-free Docker validator also exited successfully with scripts-disabled install, high-threshold audit, TypeScript, 227 tests at its snapshot, and build. Its named container is removed after failed or timed-out execution; a reproduced cleanup regression was fixed and included in the later local count.
 
-The pinned Linux OpenCode runtime passed fake-SSE isolation checks: no real provider key or paid call, no external agent network, and no broker files/socket in the agent. The fake response's cost field is not billing evidence. Audit retains one existing moderate `sprintf-js` finding, with no high/critical findings. Hosted checks/preview and independent whole-branch review remain pending; these results do not establish activation.
+The pinned Linux OpenCode runtime passed fake-SSE isolation checks: no real provider key or paid call, no external agent network, and no broker files/socket in the agent. The fake response's cost field is not billing evidence. Audit retains one existing moderate `sprintf-js` finding, with no high/critical findings. The independent review found four issues; all four were reproduced and fixed with regression tests. Hosted checks/preview remain pending; these results do not establish activation.
 
 ## Activation sequence
 

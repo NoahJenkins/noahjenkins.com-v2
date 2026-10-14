@@ -5,11 +5,11 @@ const {reconcileOne,claimOne}=require('./dependabot-controller.cjs')
 const {evaluateCandidate}=require('./dependabot-controller-policy.cjs')
 const {runAgent}=require('./dependabot-opencode-worker.cjs')
 const {validateRepair,rejectLinks}=require('./dependabot-opencode-validate.cjs')
-const {publishResult}=require('./dependabot-opencode-publish.cjs')
-const {same,validateArtifact}=require('./dependabot-opencode-contract.cjs')
+const {publishResult,verifyRun}=require('./dependabot-opencode-publish.cjs')
+const {same,validateArtifact,defaultBranchEvent}=require('./dependabot-opencode-contract.cjs')
 function configFromEnv(env) {
  const number=(key,fallback=0)=>{const n=env[key]===undefined||env[key]===''?fallback:Number(env[key]);if(!Number.isSafeInteger(n)||n<0)throw Error(`Invalid ${key}`);return n}
- const config={repo:env.GITHUB_REPOSITORY,appId:number('DEPENDABOT_CONTROLLER_APP_ID'),appSlug:env.DEPENDABOT_CONTROLLER_APP_SLUG,stateIssue:number('DEPENDABOT_STATE_ISSUE_NUMBER'),vercelAppId:number('DEPENDABOT_VERCEL_APP_ID',8329),automationEnabled:env.DEPENDABOT_AUTOMATION_ENABLED==='true',agentEnabled:env.DEPENDABOT_AGENT_ENABLED==='true',runAttempt:number('GITHUB_RUN_ATTEMPT',1),runId:number('GITHUB_RUN_ID'),workflowSha:env.GITHUB_WORKFLOW_SHA,ref:env.GITHUB_REF,get now(){return new Date().toISOString()}}
+ const config={repo:env.GITHUB_REPOSITORY,appId:number('DEPENDABOT_CONTROLLER_APP_ID'),appSlug:env.DEPENDABOT_CONTROLLER_APP_SLUG,stateIssue:number('DEPENDABOT_STATE_ISSUE_NUMBER'),vercelAppId:number('DEPENDABOT_VERCEL_APP_ID',8329),automationEnabled:env.DEPENDABOT_AUTOMATION_ENABLED==='true',agentEnabled:env.DEPENDABOT_AGENT_ENABLED==='true',runAttempt:number('GITHUB_RUN_ATTEMPT',1),runId:number('GITHUB_RUN_ID'),workflowSha:env.GITHUB_WORKFLOW_SHA,ref:env.GITHUB_REF,eventName:env.GITHUB_EVENT_NAME,workSourceVerified:false,get now(){return new Date().toISOString()}}
  if(config.automationEnabled && (config.appId<=0 || [15368,8329].includes(config.appId)))throw Error('A dedicated controller App is required')
  if(config.automationEnabled && config.agentEnabled && !config.stateIssue)throw Error('Configure the state issue before enabling agents')
  return config
@@ -17,7 +17,7 @@ function configFromEnv(env) {
 function output(env,fields) {if(env.GITHUB_OUTPUT)fs.appendFileSync(env.GITHUB_OUTPUT,Object.entries(fields).map(([k,v])=>`${k}=${typeof v==='string'?v:JSON.stringify(v)}\n`).join(''))}
 function assertLaunch(task,config) {
  const age=Date.parse(config.now)-Date.parse(task.createdAt)
- if(config.runAttempt!==1 || config.ref!=='refs/heads/main' || config.workflowSha!==task.base || config.now.slice(0,10)!==task.createdAt.slice(0,10) || age<0 || age>900000)throw Error('Task launch expired or workflow origin is invalid; reservation stays consumed')
+ if(!defaultBranchEvent(config.eventName) || config.runAttempt!==1 || config.ref!=='refs/heads/main' || config.workflowSha!==task.base || config.now.slice(0,10)!==task.createdAt.slice(0,10) || age<0 || age>900000)throw Error('Task launch expired or workflow origin is invalid; reservation stays consumed')
 }
 async function run(env=process.env,mode=process.argv[2]) {
  const config=configFromEnv(env)
@@ -53,6 +53,7 @@ async function run(env=process.env,mode=process.argv[2]) {
   const claims=(await client.getClaims()).filter(c=>c.task.nonce===task.nonce);if(claims.length!==1 || claims[0].publishAttempted)throw Error('Missing launch claim')
   same(claims[0].task,task)
   const origin={...claims[0].origin,jobId:0};same({...origin,jobId:0},{repositoryId:config.repositoryId,workflowPath:'.github/workflows/dependabot-auto-merge.yml',workflowSha:config.workflowSha,ref:config.ref,runId:config.runId,runAttempt:1,jobId:0})
+  verifyRun(await client.getRun(config.runId),origin,config)
   const jobs=(await client.getJobs(config.runId)).filter(j=>j.name===`OpenCode worker (${task.nonce})`)
   if(jobs.length!==1 || jobs[0].status!=='in_progress')throw Error('Worker job identity is missing');origin.jobId=jobs[0].id
   const snapshot=await client.prepareSnapshot(task);fs.mkdirSync(root,{recursive:true});fs.writeFileSync(path.join(root,'input.json'),JSON.stringify({snapshot,origin}));return
@@ -82,6 +83,7 @@ async function run(env=process.env,mode=process.argv[2]) {
   if(failed)throw Error('One or more publications failed; consumed claims need operator action');return
  }
  if(mode==='inspect') {for(const pr of await client.listPrs()){const full=await client.getPr(pr.number);console.log(JSON.stringify({pr:full.number,head:full.head.sha,decision:evaluateCandidate(await client.snapshot(full,await client.getMain()))}))}return}
+ if(defaultBranchEvent(config.eventName)){try{verifyRun(await client.getRun(config.runId),{runId:config.runId,workflowSha:config.workflowSha,workflowPath:'.github/workflows/dependabot-auto-merge.yml',ref:config.ref},config);config.workSourceVerified=true}catch{config.workSourceVerified=false}}
  const state={ledger:null,commentId:null};const tasks=[];let failed=false
  for(const pr of await client.listPrs())try{const decision=await reconcileOne(client,config,pr.number,state,tasks);console.log(JSON.stringify({pr:pr.number,decision:decision || {kind:'human'}}))}catch{failed=true;console.error(`PR #${pr.number}: evaluation failed; gate remains pending`)}
  output(env,{tasks,has_tasks:tasks.length>0})

@@ -54,8 +54,8 @@ Last Updated: 2026-10-13
 
 ## Follow-ups
 
-- [x] Verify 228 local Jest tests, build, post-build TypeScript, actionlint, actual pinned Linux worker isolation with a fake provider, and secret-free Docker validator — 2026-10-13
-- [ ] Finish independent whole-branch/security review and hosted verification of OpenCode publication and exact-head merge gate
+- [x] Verify 236 local Jest tests, build, post-build TypeScript, actionlint, actual pinned Linux worker isolation with a fake provider, and secret-free Docker validator — 2026-10-13
+- [ ] Finish hosted verification after independent whole-branch/security review and regression fixes of OpenCode publication and exact-head merge gate
 - [ ] Verify authentic App-published independent review claims and full CI/Vercel validation on repaired heads before live activation
 
 - [x] Align manifests, local pins, all five CI jobs, and the Vercel project to Node.js 24; validate frozen install, build, TypeScript, and Jest locally — 2026-10-13

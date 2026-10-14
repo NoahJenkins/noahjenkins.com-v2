@@ -9,6 +9,7 @@ function fixture() {
   const state = { ledger: { version: 1, reservations: [] }, commentId: 3 }
   const client = {
     hasDependabotHead: async (_sha: string) => false,
+    getRun: async()=>({id:10,event:'schedule',run_attempt:1,head_sha:base,head_branch:'main',path:'.github/workflows/dependabot-auto-merge.yml',repository:{id:1}}),
     getPr: async () => JSON.parse(JSON.stringify(pr)), getMain: async () => base,
     snapshot: async () => ({ pr }),
     setGate: async (_pr: any, status: string) => { gate = status; events.push(`gate:${status}`) },
@@ -24,7 +25,7 @@ function fixture() {
     requestReview: async () => { events.push('review'); },
     requestRepair: async () => { providerComments++; events.push('repair') },
   }
-  const config = { repositoryId: 1, appId: 99, appBotId: 100, runId:10, workflowSha:base, ref:'refs/heads/main', automationEnabled: true, agentEnabled: true, now: '2026-10-13T12:00:00.000Z', runAttempt: 1 }
+  const config = { eventName:'schedule',workSourceVerified:true,repositoryId: 1, appId: 99, appBotId: 100, runId:10, workflowSha:base, ref:'refs/heads/main', automationEnabled: true, agentEnabled: true, now: '2026-10-13T12:00:00.000Z', runAttempt: 1 }
   const evaluate = () => ({ kind: 'ready', reason: 'validated' })
   return { pr, client, config, events, state, tasks, evaluate, result: () => ({ gate, queued, providerComments }) }
 }
@@ -146,4 +147,10 @@ describe('isolated App task claims', () => {
     expect(await claimOne(f.client, f.config, f.task)).toBeUndefined()
     expect(f.events).toEqual(['claim']); expect(f.state.ledger.reservations).toHaveLength(1)
   })
+})
+test('PR-target runs reevaluate but reserve no paid work',async()=>{
+ const f=fixture();(f.config as any).eventName='pull_request_target'
+ await reconcileOne(f.client,f.config,1,f.state,f.tasks,()=>({kind:'repair',reason:'failed'}))
+ expect(f.tasks).toHaveLength(0)
+ expect(f.result().gate).toBe('waiting')
 })
