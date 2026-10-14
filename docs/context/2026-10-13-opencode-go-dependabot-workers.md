@@ -3,7 +3,7 @@
 
 ## Summary
 
-The user approved OpenCode Go workers in GitHub Actions, keeping T3 stable. The implementation replaces the Copilot PAT and reviewer identity path while retaining the dedicated App gate, native auto-merge, exact-head/base validation, scope controls, and bounded ledger. Worker/contract implementation is complete; publication and workflow wiring are present. The independent whole-branch review found four issues, which were fixed with regression tests; hosted verification remains pending. No credentials were changed or paid model calls made for this documentation update.
+The user approved OpenCode Go workers in GitHub Actions, keeping T3 stable. The implementation replaces the Copilot PAT and reviewer identity path while retaining the dedicated App gate, native auto-merge, exact-head/base validation, scope controls, and bounded ledger. Worker/contract implementation is complete; publication and workflow wiring are present. The independent whole-branch review found four issues, which were fixed with regression tests; hosted CI and Vercel deployment status passed on PR #289; direct preview access requires Vercel authentication. No credentials were changed or paid model calls made for this documentation update.
 
 ## Findings/Details
 
@@ -30,13 +30,13 @@ The App private key belongs only in `dependabot-controller`; `OPENCODE_GO_API_KE
 
 Local verification passed 237 Jest tests after a timeout-cleanup regression was reproduced and fixed, the production build, post-build TypeScript checks, and actionlint. The high-threshold audit exited successfully with zero high/critical findings and one existing moderate `sprintf-js` advisory (`GHSA-hp3w-g68c-fv3c`), without a patched version or new dependencies.
 
-The actual pinned Linux OpenCode 1.19.0 container passed a fake-SSE provider smoke test: external networking was denied, broker files/socket were absent from the agent, and no real provider key or paid request was used. The fixture's model cost field is an estimate supplied by the fake response, not billing evidence. The separate secret-free Docker validator exited successfully after scripts-disabled install, the high-threshold audit (the same one moderate finding), TypeScript, 227 Jest tests at that snapshot, and build. The validator uses a named container and removes it after failed or timed-out execution; the later cleanup regression is included in the 237-test local result. Whole-branch/hosted verification and live activation are not established by these local checks.
+The actual pinned Linux OpenCode 1.19.0 container passed a fake-SSE provider smoke test: external networking was denied, broker files/socket were absent from the agent, and no real provider key or paid request was used. The fixture's model cost field is an estimate supplied by the fake response, not billing evidence. The separate secret-free Docker validator exited successfully after scripts-disabled install, the high-threshold audit (the same one moderate finding), TypeScript, 237 Jest tests on the final code snapshot, and build. The validator uses a named container and removes it after failed or timed-out execution; the later cleanup regression is included in the 237-test local result. Hosted CI on commit `b5811c0` passed all five required checks, with 237 Jest and 63 Playwright tests; CodeQL and Dependency Review also passed. The trusted Vercel status and App check identify a successful preview for that commit. Direct preview page access is blocked by Vercel authentication; no live agent activation is established.
 
 ### Activation gaps
 
 Fresh names-only checks found no Go key in homelab configurations `prd`, `prd_admin`, or `prd_dns-pi` under ArkBuilderLabs. Local OpenCode credential metadata is not proof of validity or permission to use it in Actions. Resolve the source through secure input; transfer only the Go key, without exposing values or sending a broad Doppler token to a runner.
 
-Provider **Use balance** off, explicit provider/Actions budgets, valid model access, final workflow security review, hosted checks, and an authorized observed end-to-end flow remain prerequisites. Green tests and local implementation do not establish activation. No secret insertion, paid probe, merge, deployment, or flag enablement is claimed here.
+Provider **Use balance** off, explicit provider/Actions budgets, valid model access, an authenticated preview check and an authorized observed end-to-end flow remain prerequisites. Green tests and local implementation do not establish activation. No secret insertion, paid probe, merge, deployment, or flag enablement is claimed here.
 
 ## Open Questions
 
