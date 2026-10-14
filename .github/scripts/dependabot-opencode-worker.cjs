@@ -1,6 +1,6 @@
 'use strict'
 const fs=require('node:fs');const path=require('node:path');const {spawn,execFileSync}=require('node:child_process');const {randomBytes}=require('node:crypto')
-const {MAX_FILE,MAX_TOTAL,digest,text,validateFiles,validateReview,sealArtifact,validateArtifact,path:validatePath}=require('./dependabot-opencode-contract.cjs')
+const {MAX_FILE,MAX_TOTAL,digest,text,scopeChanges,validateFiles,validateReview,sealArtifact,validateArtifact,path:validatePath}=require('./dependabot-opencode-contract.cjs')
 const IMAGE='node:24-bookworm-slim@sha256:51b1100cc2a83d370c6a60952e3f2989c8a43159d0e38586e090f3b3326efefd'
 const BINARY_SHA='6334d70db3990721ea454357e9cf2573c8685524ad7769af9d52cbffb7008438'
 const excluded=p=>p.split('/').some(x=>['AGENTS.md','CLAUDE.md','CONTEXT.md','.git','.opencode','.claude','opencode.json','opencode.jsonc','mcp.json','tools','tool','node_modules'].includes(x))
@@ -12,6 +12,7 @@ function agentConfig(kind,url,token,prompt=fs.readFileSync(path.join(__dirname,'
  return {enabled_providers:['opencode-go'],model:`opencode-go/${model}`,formatter:false,lsp:false,snapshot:false,share:'disabled',autoupdate:false,compaction:{auto:false},plugin:[],mcp:{},permission,agent:{[kind]:{mode:'primary',model:`opencode-go/${model}`,steps:kind==='repair'?24:16,prompt,permission}},provider:{'opencode-go':{npm:'@ai-sdk/openai-compatible',options:{baseURL:url,apiKey:token},models:{[model]:{name:model,limit:{context:200000,output:32000}}}}}}
 }
 function prepareWorkspace(snapshot,root,kind) {
+ scopeChanges([],snapshot)
  const dataRoot=path.join(root,'data');fs.mkdirSync(dataRoot,{recursive:true})
  if(snapshot.task.kind!==kind || !Array.isArray(snapshot.changedFiles) || !snapshot.changedFiles.length || snapshot.changedFiles.length>64 || new Set(snapshot.changedFiles).size!==snapshot.changedFiles.length)throw Error('Invalid snapshot')
  let total=0;let count=0
@@ -21,7 +22,7 @@ function prepareWorkspace(snapshot,root,kind) {
   if(total>MAX_TOTAL || count>192)throw Error('Snapshot input limit')
   const target=path.join(dataRoot,prefix,name);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,content,{mode:0o644})
  }
- const info={task:snapshot.task,changedFiles:snapshot.changedFiles,diagnostics:snapshot.diagnostics || []};text(JSON.stringify(info),MAX_TOTAL)
+ const info={task:snapshot.task,changedFiles:snapshot.changedFiles,existingPaths:snapshot.existingPaths,diagnostics:snapshot.diagnostics || []};text(JSON.stringify(info),MAX_TOTAL)
  fs.writeFileSync(path.join(dataRoot,'input.json'),JSON.stringify(info))
  const inputDigest=digest(snapshot);return {dataRoot,configPath:path.join(root,'config.json'),inputDigest}
 }

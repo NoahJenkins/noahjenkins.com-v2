@@ -101,3 +101,8 @@ test('action-only repair omits an unchanged generated lockfile',async()=>{
  const result=await validateRepair(a.task,s,sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{}})
  expect(result.artifact.result.files).toEqual(a.result.files)
 })
+test('worker receives the immutable inventory and refuses incomplete inventory before launch',()=>{
+ const r=root();const prepared=prepareWorkspace(snapshot(),r,'review')
+ expect(JSON.parse(readFileSync(join(prepared.dataRoot,'input.json'),'utf8')).existingPaths).toEqual(snapshot().existingPaths)
+ expect(()=>prepareWorkspace({...snapshot(),existingPaths:undefined},root(),'review')).toThrow('inventory')
+})
