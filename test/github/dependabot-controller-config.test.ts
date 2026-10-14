@@ -18,3 +18,17 @@ describe('activation configuration', () => {
     expect(() => configFromEnv({ DEPENDABOT_AUTOMATION_ENABLED: 'true', DEPENDABOT_AGENT_ENABLED: 'true', DEPENDABOT_CONTROLLER_APP_ID: '99' })).toThrow('state issue')
   })
 })
+test('workflow keeps candidate execution outside credential jobs',()=>{
+ const yaml=require('js-yaml');const fs=require('node:fs')
+ const workflow=yaml.load(fs.readFileSync('.github/workflows/dependabot-auto-merge.yml','utf8'))
+ expect(workflow.jobs.worker.environment).toBe('dependabot-dispatch')
+ expect(workflow.jobs.validate).not.toHaveProperty('environment')
+ for(const [name,job] of Object.entries(workflow.jobs) as any) {
+  for(const step of job.steps) {
+   if(step.uses?.startsWith('actions/checkout@') && step.name!=='Checkout candidate data without persistent credentials')expect(step.with.ref).toBe('${{ github.workflow_sha }}')
+   if(step.env?.OPENCODE_GO_API_KEY)expect(name).toBe('worker')
+   if(step.with?.['private-key'])expect(['controller','claim','publish','reconcile']).toContain(name)
+  }
+ }
+ expect(JSON.stringify(workflow)).not.toMatch(/COPILOT_AUTOMATION_TOKEN|DISPATCH_USER_ID|REVIEWER_ID/)
+})

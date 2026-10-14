@@ -21,7 +21,7 @@ function prepareWorkspace(snapshot,root,kind) {
   if(total>MAX_TOTAL || count>192)throw Error('Snapshot input limit')
   const target=path.join(dataRoot,prefix,name);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,content,{mode:0o644})
  }
- const info={task:snapshot.task,changedFiles:snapshot.changedFiles,diagnostics:snapshot.diagnostics || []};text(JSON.stringify(info),128000)
+ const info={task:snapshot.task,changedFiles:snapshot.changedFiles,diagnostics:snapshot.diagnostics || []};text(JSON.stringify(info),MAX_TOTAL)
  fs.writeFileSync(path.join(dataRoot,'input.json'),JSON.stringify(info))
  const inputDigest=digest(snapshot);return {dataRoot,configPath:path.join(root,'config.json'),inputDigest}
 }

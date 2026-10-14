@@ -60,7 +60,8 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
     return decision
   }
   if (['repair', 'review'].includes(decision.kind)) {
-    if (!config.agentEnabled) return stop('blocked', `${decision.reason} Agent dispatch is disabled pending credentials and Copilot settings.`)
+    if (config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a controller run from current main.')
+    if (!config.agentEnabled) return stop('blocked', `${decision.reason} Agent dispatch is disabled pending credentials and OpenCode settings.`)
     // Fail closed before spending credits if the required gate can be forged or omitted.
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) return stop('blocked', 'Configure the App-bound required gate before agent dispatch.')
     if (!state.ledger) {
@@ -77,34 +78,31 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
     await client.saveLedger(next.ledger, state)
     state.ledger = next.ledger
     tasks.push(next.reservation)
-    await client.setGate(pr, 'waiting', `Reserved ${decision.kind} for this head. Await Copilot, then fresh checks and review.`)
+    await client.setGate(pr, 'waiting', `Reserved ${decision.kind} for this head. Await OpenCode, then fresh checks and review.`)
     return decision
   }
   return stop(decision.kind === 'blocked' ? 'blocked' : 'waiting', decision.reason)
 }
 
-async function dispatchOne(client, config, task) {
+async function claimOne(client, config, task) {
   if (!config.automationEnabled || !config.agentEnabled || config.runAttempt !== 1) return
   validateTask(task)
+  if (config.ref !== 'refs/heads/main' || config.workflowSha !== task.base) throw new Error('Untrusted workflow source')
   const ledger = (await client.getLedger()).ledger
   const persisted = ledger.reservations.find((item) => item.nonce === task.nonce)
-  if (!persisted || JSON.stringify(persisted) !== JSON.stringify(task)) throw new Error('Dispatch does not match a durable reservation')
+  if (!persisted || JSON.stringify(persisted) !== JSON.stringify(task)) throw new Error('Claim does not match a durable reservation')
   const age = Date.parse(config.now) - Date.parse(task.createdAt)
-  if (age < 0 || age > 15 * 60 * 1000) throw new Error('Dispatch reservation expired')
-  if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('Dispatch reservation belongs to a different UTC day')
-  const user = await client.getDispatchUser()
-  if (user.type !== 'User' || user.id !== config.dispatchUserId) throw new Error('Copilot credential does not match the configured user')
+  if (age < 0 || age > 15 * 60 * 1000) throw new Error('Claim reservation expired')
+  if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('Claim reservation belongs to a different UTC day')
   const pr = await client.getPr(task.pr)
-  if (!eligiblePr(pr, config.repositoryId) || pr.node_id !== task.prId || pr.head.sha !== task.head || pr.base.sha !== task.base || await client.getMain() !== task.base) throw new Error('PR head or base changed before dispatch')
+  if (!eligiblePr(pr, config.repositoryId) || pr.node_id !== task.prId || pr.head.sha !== task.head || pr.base.sha !== task.base || await client.getMain() !== task.base) throw new Error('PR head or base changed before claim')
   const gate = await client.getGate(pr)
   if (!gate || gate.app?.id !== config.appId || gate.head_sha !== task.head || gate.status !== 'in_progress') throw new Error('The dedicated App gate is not pending for this head')
-  if (await client.hasClaim(task, user.id)) return
-  // Persist the claim BEFORE a potentially ambiguous provider write. Never retry writes.
-  await client.claim(task)
-  await assertFresh(client, pr, task.base)
-  if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('UTC day changed before the provider write; reservation remains consumed')
-  if (task.kind === 'repair') await client.requestRepair(task)
-  else await client.requestReview(task, pr)
+  if ((await client.getClaims()).some(c=>c.task.nonce===task.nonce)) return
+  await assertFresh(client,pr,task.base)
+  if (config.now.slice(0,10)!==task.createdAt.slice(0,10) || Date.parse(config.now)-Date.parse(task.createdAt)>900000) throw new Error('UTC day or claim expiry changed; reservation remains consumed')
+  await client.claimTask(task,{repositoryId:config.repositoryId,workflowPath:'.github/workflows/dependabot-auto-merge.yml',workflowSha:config.workflowSha,ref:config.ref,runId:config.runId,runAttempt:1})
+  return task
 }
 
-module.exports = { reconcileOne, dispatchOne, protectionAllowsMerge, assertFresh }
+module.exports = { reconcileOne, claimOne, protectionAllowsMerge, assertFresh }

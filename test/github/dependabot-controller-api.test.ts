@@ -25,25 +25,15 @@ describe('GitHub provider boundary', () => {
     const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'app-token', fetcher)
     await expect(client.setGate({ head: { sha } }, 'success', 'ready')).rejects.toThrow('publisher')
   })
-  test('uses the exact review API alias and rerequest route for a reviewed head', async () => {
-    const requests: any[] = []
-    const fetcher = async (url: string, init: any) => { requests.push({ url, ...init }); return { ok: true, status: 201, json: async () => [{ user: { id: 175728472 } }] } }
-    const client = createClient({ repo: 'o/r', appId: 99, now: '2026-10-13T12:00:00.000Z' }, 'read-token', 'user-token', fetcher)
-    await client.requestReview({ pr: 1, createdAt: '2026-10-13T12:00:00.000Z' }, { requested_reviewers: [] })
-    expect(requests[1].url).toBe('https://api.github.com/repos/o/r/pulls/1/requested_reviewers/rerequest')
-    expect(JSON.parse(requests[1].body)).toEqual({ reviewers: ['copilot-pull-request-reviewer[bot]'] })
-    expect(requests[1].headers.Authorization).toBe('Bearer user-token')
-    expect(requests[0].headers.Authorization).toBe('Bearer read-token')
-  })
-  test('rechecks the UTC date after the awaited review lookup', async () => {
-    const requests: any[] = []; const config = { repo: 'o/r', appId: 99, now: '2026-10-13T23:59:59.000Z' }
-    const fetcher = async (_url: string, init: any) => {
-      requests.push(init.method); config.now = '2026-10-14T00:00:01.000Z'
-      return { ok: true, status: 200, json: async () => [] }
-    }
-    const client = createClient(config, 'read-token', 'user-token', fetcher)
-    await expect(client.requestReview({ pr: 1, createdAt: '2026-10-13T23:58:00.000Z' }, { requested_reviewers: [] })).rejects.toThrow('UTC day')
-    expect(requests).toEqual(['GET'])
+  test('uses atomic commit file additions with expected head',async()=>{
+    const requests:any[]=[]
+    const fetcher=async(url:string,init:any)=>{requests.push({url,...init});return {ok:true,status:200,json:async()=>({data:{createCommitOnBranch:{commit:{oid:sha}}}})}}
+    const client=createClient({repo:'o/r',appId:99},'read-token','app-token',fetcher)
+    await client.commitFiles({head:{sha,ref:'dependabot/npm_and_yarn/x'}},[{path:'package.json',content:'{}'}])
+    const input=JSON.parse(requests[0].body).variables.input
+    expect(input.expectedHeadOid).toBe(sha)
+    expect(input.fileChanges.additions).toEqual([{path:'package.json',contents:Buffer.from('{}').toString('base64')}])
+    expect(input.fileChanges).not.toHaveProperty('deletions')
   })
   test('requires an official Action tag pointing to the proposed pin', async () => {
     const fetcher = async () => ({ ok: true, status: 200, json: async () => ({ object: { type: 'commit', sha: 'c'.repeat(40) } }) })
@@ -92,4 +82,22 @@ describe('GitHub provider boundary', () => {
     const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     await expect(client.verifyActionPins([{ before, after: before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7') }])).resolves.toBeUndefined()
   })
+})
+test('durable claims require the App bot and compare-before-update',async()=>{
+ const {CLAIM}=require('../../.github/scripts/dependabot-controller-api.cjs')
+ const {task,origin}=require('./opencode-fixtures')
+ let saved:any=null;let writes=0
+ const fetcher=async(_url:string,init:any)=>{
+  if(init.method==='GET')return {ok:true,status:200,json:async()=>saved?[saved]:[]}
+  writes++;saved={id:1,user:{id:100,type:'Bot'},body:JSON.parse(init.body).body}
+  return {ok:true,status:200,json:async()=>saved}
+ }
+ const client=createClient({repo:'o/r',appBotId:100,stateIssue:9},'read-token','app-token',fetcher)
+ await client.claimTask(task,origin)
+ const claim=(await client.getClaims())[0]
+ await client.markClaim(claim,{publishAttempted:true})
+ expect(JSON.parse(saved.body.slice(CLAIM.length)).publishAttempted).toBe(true)
+ expect(writes).toBe(2)
+ saved.user.id=101
+ await expect(client.getClaims()).rejects.toThrow('author')
 })
