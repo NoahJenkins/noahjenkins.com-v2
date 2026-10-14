@@ -1,5 +1,5 @@
 export {}
-const { reconcileOne, dispatchOne, protectionAllowsMerge } = require('../../.github/scripts/dependabot-controller.cjs')
+const { reconcileOne, claimOne, protectionAllowsMerge } = require('../../.github/scripts/dependabot-controller.cjs')
 const { reserve } = require('../../.github/scripts/dependabot-controller-ledger.cjs')
 const sha = 'a'.repeat(40); const base = 'b'.repeat(40)
 function fixture() {
@@ -9,6 +9,7 @@ function fixture() {
   const state = { ledger: { version: 1, reservations: [] }, commentId: 3 }
   const client = {
     hasDependabotHead: async (_sha: string) => false,
+    getRun: async()=>({id:10,event:'schedule',run_attempt:1,head_sha:base,head_branch:'main',path:'.github/workflows/dependabot-auto-merge.yml',repository:{id:1}}),
     getPr: async () => JSON.parse(JSON.stringify(pr)), getMain: async () => base,
     snapshot: async () => ({ pr }),
     setGate: async (_pr: any, status: string) => { gate = status; events.push(`gate:${status}`) },
@@ -19,13 +20,12 @@ function fixture() {
     saveLedger: async (next: any) => { state.ledger = JSON.parse(JSON.stringify(next)); events.push('reserve') },
     getLedger: async () => state,
     getGate: async () => ({ status: 'in_progress', app: { id: 99 }, head_sha: pr.head.sha }),
-    getDispatchUser: async () => ({ id: 7, type: 'User' }),
-    hasClaim: async () => events.includes('claim'),
-    claim: async () => { events.push('claim') },
+    getClaims: async () => events.includes('claim') ? [{task:state.ledger.reservations[0]}] : [],
+    claimTask: async () => { events.push('claim') },
     requestReview: async () => { events.push('review'); },
     requestRepair: async () => { providerComments++; events.push('repair') },
   }
-  const config = { repositoryId: 1, appId: 99, dispatchUserId: 7, automationEnabled: true, agentEnabled: true, now: '2026-10-13T12:00:00.000Z', runAttempt: 1 }
+  const config = { eventName:'schedule',workSourceVerified:true,repositoryId: 1, appId: 99, appBotId: 100, runId:10, workflowSha:base, ref:'refs/heads/main', automationEnabled: true, agentEnabled: true, now: '2026-10-13T12:00:00.000Z', runAttempt: 1 }
   const evaluate = () => ({ kind: 'ready', reason: 'validated' })
   return { pr, client, config, events, state, tasks, evaluate, result: () => ({ gate, queued, providerComments }) }
 }
@@ -73,7 +73,7 @@ describe('trusted controller', () => {
     await reconcileOne(f.client, f.config, 1, state, f.tasks, f.evaluate)
     expect(f.result().gate).toBe('success')
   })
-  test('reserves before handing any task to the PAT job', async () => {
+  test('reserves before handing any task to the worker job', async () => {
     const f = fixture(); await reconcileOne(f.client, f.config, 1, f.state, f.tasks, () => ({ kind: 'repair', reason: 'audit failed' }))
     expect(f.events).toEqual(['gate:pending', 'reserve', 'gate:waiting'])
     expect(f.tasks).toHaveLength(1); expect(f.state.ledger.reservations).toEqual(f.tasks)
@@ -106,45 +106,51 @@ describe('trusted controller', () => {
     expect(f.result().gate).toBe('pending')
   })
 })
-describe('isolated Copilot dispatcher', () => {
+describe('isolated App task claims', () => {
   async function prepared() {
     const f = fixture(); const reserved = reserve(f.state.ledger, { pr: 1, prId: 'PR_1', head: sha, base, kind: 'repair' }, f.config.now)
     f.state.ledger = reserved.ledger
     return { ...f, task: reserved.reservation }
   }
   test('claims a durable reservation before dispatch and prevents duplicate dispatch', async () => {
-    const f = await prepared(); await dispatchOne(f.client, f.config, f.task)
-    await dispatchOne(f.client, f.config, f.task)
-    expect(f.result().providerComments).toBe(1); expect(f.events).toEqual(['claim', 'repair'])
+    const f = await prepared(); await claimOne(f.client, f.config, f.task)
+    await claimOne(f.client, f.config, f.task)
+    expect(f.result().providerComments).toBe(0); expect(f.events).toEqual(['claim'])
   })
   test('does not dispatch an artifact without a persisted reservation', async () => {
     const f = await prepared(); f.state.ledger.reservations = []
-    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('reservation')
+    await expect(claimOne(f.client, f.config, f.task)).rejects.toThrow('reservation')
     expect(f.result().providerComments).toBe(0)
   })
   test('does not dispatch against a refreshed head', async () => {
     const f = await prepared(); f.pr.head.sha = 'c'.repeat(40)
-    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('changed')
+    await expect(claimOne(f.client, f.config, f.task)).rejects.toThrow('changed')
     expect(f.result().providerComments).toBe(0)
   })
   test('does not replay dispatch when GitHub reruns a job', async () => {
     const f = await prepared(); f.config.runAttempt = 2
-    await dispatchOne(f.client, f.config, f.task)
+    await claimOne(f.client, f.config, f.task)
     expect(f.result().providerComments).toBe(0)
   })
   test('does not carry yesterday\'s reservation into today\'s dispatch budget', async () => {
     const f = await prepared(); f.task.createdAt = '2026-10-13T23:59:00.000Z'; f.config.now = '2026-10-14T00:01:00.000Z'
-    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('UTC day')
+    await expect(claimOne(f.client, f.config, f.task)).rejects.toThrow('UTC day')
     expect(f.result().providerComments).toBe(0)
   })
-  test('rejects a wrong user credential', async () => {
-    const f = await prepared(); f.client.getDispatchUser = async () => ({ id: 88, type: 'User' })
-    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('credential')
+  test('rejects a workflow source that differs from reserved base', async () => {
+    const f = await prepared(); f.config.workflowSha = 'c'.repeat(40)
+    await expect(claimOne(f.client, f.config, f.task)).rejects.toThrow('workflow')
   })
-  test('uncertain provider failure consumes the claimed reservation', async () => {
-    const f = await prepared(); f.client.requestRepair = async () => { throw new Error('network uncertainty') }
-    await expect(dispatchOne(f.client, f.config, f.task)).rejects.toThrow('network')
-    await dispatchOne(f.client, f.config, f.task)
+  test('uncertain App claim consumes the reservation without launch', async () => {
+    const f = await prepared(); f.client.claimTask = async () => { f.events.push('claim'); throw new Error('network uncertainty') }
+    await expect(claimOne(f.client, f.config, f.task)).rejects.toThrow('network')
+    expect(await claimOne(f.client, f.config, f.task)).toBeUndefined()
     expect(f.events).toEqual(['claim']); expect(f.state.ledger.reservations).toHaveLength(1)
   })
+})
+test('PR-target runs reevaluate but reserve no paid work',async()=>{
+ const f=fixture();(f.config as any).eventName='pull_request_target'
+ await reconcileOne(f.client,f.config,1,f.state,f.tasks,()=>({kind:'repair',reason:'failed'}))
+ expect(f.tasks).toHaveLength(0)
+ expect(f.result().gate).toBe('waiting')
 })

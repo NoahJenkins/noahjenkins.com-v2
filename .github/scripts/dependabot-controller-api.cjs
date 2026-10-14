@@ -1,6 +1,11 @@
 'use strict'
-const { GATE, REVIEWER_ID, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
+const { GATE, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
 const { readLedger, encodeLedger } = require('./dependabot-controller-ledger.cjs')
+
+const { validateReviewEvidence, validateFiles, text, digest, REVIEW, same } = require('./dependabot-opencode-contract.cjs')
+const { parseArtifactZip, verifyRun, verifyJobs, MAX_ZIP } = require('./dependabot-opencode-publish.cjs')
+const { createHash } = require('node:crypto')
+const CLAIM = '<!-- dependabot-opencode-claim:v1 -->'
 
 function createClient(config, readToken, writeToken, fetcher = fetch) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(config.repo)) throw new Error('Invalid repository')
@@ -32,14 +37,20 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
   async function content(path, sha) {
     const encoded = path.split('/').map(encodeURIComponent).join('/')
     const data = await request('GET', `${root}/contents/${encoded}?ref=${sha}`)
-    if (Array.isArray(data) || data.type !== 'file' || data.size > 2000000) throw new Error('Unsupported file type or size')
+    if (Array.isArray(data) || data.type !== 'file' || data.size > 2 * 1024 * 1024) throw new Error('Unsupported file type or size')
     const blob = data.content ? data : await request('GET', `${root}/git/blobs/${data.sha}`)
     if (blob.encoding !== 'base64') throw new Error('Unsupported file encoding')
-    return Buffer.from(blob.content, 'base64').toString('utf8')
+    const bytes=Buffer.from(blob.content,'base64');const result=bytes.toString('utf8');text(result,2*1024*1024);if(Buffer.from(result).compare(bytes)!==0)throw Error('Invalid UTF-8 GitHub blob');return result
   }
-  const claimMarker = (task) => `<!-- dependabot-dispatch-claim:${task.nonce} -->`
+  async function download(apiPath,max=MAX_ZIP) {
+    let response=await fetcher(`https://api.github.com${apiPath}`,{headers:{Authorization:`Bearer ${readToken}`},redirect:'manual',signal:AbortSignal.timeout(20000)})
+    if(response.status===302){const location=new URL(response.headers.get('location'));if(location.protocol!=='https:' || location.username || location.password || !(/\.blob\.core\.windows\.net$/.test(location.hostname)||/\.actions\.githubusercontent\.com$/.test(location.hostname)))throw Error('Untrusted download host');response=await fetcher(location.toString(),{redirect:'error',signal:AbortSignal.timeout(20000)})}
+    if(!response.ok)throw Error(`GitHub download HTTP ${response.status}`)
+    if(Number(response.headers.get('content-length'))>max)throw Error('Download byte limit')
+    const chunks=[];let size=0;for await(const chunk of response.body){size+=chunk.length;if(size>max)throw Error('Download byte limit');chunks.push(Buffer.from(chunk))}return Buffer.concat(chunks)
+  }
   const client = {
-    request, list,
+    request, list, getFileContent: content,
     getRepo: () => request('GET', root),
     getPr: (number) => request('GET', `${root}/pulls/${number}`),
     getMain: async () => (await request('GET', `${root}/git/ref/heads/main`)).object.sha,
@@ -70,9 +81,9 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const jobs = ci ? await list(`${root}/actions/runs/${ci.id}/jobs?filter=latest`, 'jobs') : []
       const checks = await checksFor(pr.head.sha)
       const statuses = await list(`${root}/commits/${pr.head.sha}/statuses`)
-      const reviews = await list(`${root}/pulls/${pr.number}/reviews`)
+      const independentReview = await client.getIndependentReview(pr,main,files.map(f=>f.filename),checks)
       const compare = await request('GET', `${root}/compare/${main}...${pr.head.sha}`)
-      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain: ['ahead', 'identical'].includes(compare.status), ciWorkflowId: workflow.id, ci, jobs, checks, statuses, reviews, reviewerId: config.reviewerId, vercelAppId: config.vercelAppId, vercelChecks: checks }
+      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain: ['ahead', 'identical'].includes(compare.status), ciWorkflowId: workflow.id, ci, jobs, checks, statuses, independentReview, vercelAppId: config.vercelAppId, vercelChecks: checks }
     },
     async verifyActionPins(changes) {
       for (const change of changes) {
@@ -96,7 +107,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const reviews = await list(`${root}/pulls/${pr.number}/reviews`)
       const own = reviews.filter((review) => review.user?.id === config.appBotId && review.commit_id === pr.head.sha).sort((a, b) => b.id - a.id)[0]
       if (own?.state === 'APPROVED') return
-      await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Independent current-head Copilot approval, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
+      await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Authenticated current-head OpenCode review, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
     },
     updateBranch: (pr) => request('PUT', `${root}/pulls/${pr.number}/update-branch`, { expected_head_sha: pr.head.sha }),
     getLedger: async () => readLedger(await list(`${root}/issues/${config.stateIssue}/comments`), config.appBotId),
@@ -110,19 +121,104 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       if (JSON.stringify(verified.ledger) !== JSON.stringify(ledger)) throw new Error('Ledger persistence mismatch')
       state.commentId = saved.id
     },
-    getDispatchUser: () => request('GET', '/user', undefined, true),
-    hasClaim: async (task, userId) => (await list(`${root}/issues/${config.stateIssue}/comments`)).some((comment) => comment.user?.id === userId && comment.body?.startsWith(claimMarker(task))),
-    claim: (task) => request('POST', `${root}/issues/${config.stateIssue}/comments`, { body: `${claimMarker(task)}\nReserved ${task.kind} for PR #${task.pr}, head ${task.head}. Provider writes are not retried.` }),
-    requestRepair: (task) => request('POST', `${root}/issues/${task.pr}/comments`, { body: `@copilot Investigate and fix the current Dependabot PR failure at commit ${task.head}, against main ${task.base}. Read the failed CI checks and review findings. Preserve validation commands, existing tests, security audit settings, workflow permissions, controller files and review instructions. Change only registry dependencies/overrides, application source, new tests, runtime version files, or upstream SHA-pinned Actions versions. Do not approve or merge. If credentials, workflow approval, platform infrastructure or protected scope prevents a safe fix, report the blocker and stop. Run the repository checks and push the minimal repair to this existing PR branch. This dispatch consumes one of the two total repair attempts for this PR.\n\n${claimMarker(task)}` }),
-    async requestReview(task, pr) {
-      if (pr.requested_reviewers?.some((user) => user.id === REVIEWER_ID)) return
-      const previous = await list(`${root}/pulls/${task.pr}/reviews`)
-      const rerequest = previous.some((review) => review.user?.id === REVIEWER_ID)
-      if (config.now.slice(0, 10) !== task.createdAt.slice(0, 10)) throw new Error('UTC day changed during review lookup; reservation remains consumed')
-      await request('POST', `${root}/pulls/${task.pr}/requested_reviewers${rerequest ? '/rerequest' : ''}`, { reviewers: ['copilot-pull-request-reviewer[bot]'] })
+    getRun: (id) => request('GET',`${root}/actions/runs/${id}`),
+    getJobs: (id) => list(`${root}/actions/runs/${id}/attempts/1/jobs`,'jobs'),
+    async getClaims() {
+      if(!config.stateIssue)return []
+      const claims=[]
+      for(const comment of await list(`${root}/issues/${config.stateIssue}/comments`)){
+        if(!comment.body?.startsWith(CLAIM))continue
+        if(comment.user?.id!==config.appBotId || comment.user.type!=='Bot')throw Error('Untrusted task claim author')
+        const data=JSON.parse(comment.body.slice(CLAIM.length).trim())
+        if(!data.task || !data.origin || typeof data.publishAttempted!=='boolean' || typeof data.published!=='boolean')throw Error('Invalid task claim')
+        claims.push({...data,id:comment.id})
+      }
+      if(new Set(claims.map(c=>c.task.nonce)).size!==claims.length)throw Error('Duplicate task claims')
+      return claims
+    },
+    async claimTask(task,origin) {
+      const data={task,origin,publishAttempted:false,published:false,digest:null,resultId:null}
+      const saved=await request('POST',`${root}/issues/${config.stateIssue}/comments`,{body:`${CLAIM}\n${JSON.stringify(data)}`})
+      if(saved.user?.id!==config.appBotId || saved.user.type!=='Bot' || saved.body!==`${CLAIM}\n${JSON.stringify(data)}`)throw Error('Task claim persistence failed')
+    },
+    async markClaim(claim,fields) {
+      const current=(await client.getClaims()).find(c=>c.id===claim.id);same(current,claim)
+      const {id,...data}={...claim,...fields}
+      const body=`${CLAIM}\n${JSON.stringify(data)}`
+      const saved=await request('PATCH',`${root}/issues/comments/${id}`,{body})
+      if(saved.user?.id!==config.appBotId || saved.body!==body)throw Error('Claim receipt persistence failed')
+      Object.assign(claim,fields)
+    },
+    async getArtifact(id,expected) {
+      const meta=await request('GET',`${root}/actions/artifacts/${id}`)
+      if(meta.id!==id || meta.expired || meta.name!==expected.name || meta.workflow_run?.id!==expected.runId || meta.workflow_run.head_sha!==expected.head || meta.workflow_run.head_branch!=='main' || meta.size_in_bytes>MAX_ZIP || !/^sha256:[0-9a-f]{64}$/.test(meta.digest))throw Error('Untrusted artifact metadata')
+      const zip=await download(`${root}/actions/artifacts/${id}/zip`)
+      if(`sha256:${createHash('sha256').update(zip).digest('hex')}`!==meta.digest)throw Error('Artifact transport digest mismatch')
+      return parseArtifactZip(zip)
+    },
+    async findArtifact(runId,name) {
+      const all=await list(`${root}/actions/runs/${runId}/artifacts`,'artifacts');const found=all.filter(a=>a.name===name && !a.expired)
+      if(found.length!==1)throw Error('Missing or duplicate artifact')
+      return found[0].id
+    },
+    getWorkerArtifact: async(task,runId)=>client.getArtifact(await client.findArtifact(runId,`worker-${task.nonce}`),{runId,name:`worker-${task.nonce}`,head:task.base}),
+    async commitFiles(pr,files) {
+      validateFiles(files)
+      const input={branch:{repositoryNameWithOwner:config.repo,branchName:pr.head.ref},expectedHeadOid:pr.head.sha,message:{headline:'fix: repair Dependabot validation with OpenCode'},fileChanges:{additions:files.map(f=>({path:f.path,contents:Buffer.from(f.content).toString('base64')}))}}
+      const result=await request('POST','/graphql',{query:'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }',variables:{input}})
+      const id=result.data?.createCommitOnBranch?.commit?.oid;if(!/^[0-9a-f]{40}$/.test(id))throw Error('Atomic commit result is missing');return {id}
+    },
+    async publishReview(task,artifact,passed) {
+      const result=await request('POST',`${root}/check-runs`,{name:REVIEW,head_sha:task.head,status:'completed',conclusion:passed?'success':'failure',external_id:task.nonce,output:{title:passed?'Independent review passed':'Independent review requires action',summary:`Task ${task.nonce}; base ${task.base}; findings remain in the complete JSON report.`,text:JSON.stringify(artifact)}})
+      if(result.app?.id!==config.appId || result.head_sha!==task.head || result.external_id!==task.nonce)throw Error('Unexpected review publisher')
+      return {id:result.id}
+    },
+    async getIndependentReview(pr,main,changedFiles,checks) {
+      const latest=checks.filter(c=>c.name===REVIEW && c.app?.id===config.appId).sort((a,b)=>b.id-a.id)[0]
+      if(!latest)return null
+      try {
+        const a=JSON.parse(latest.output.text)
+        const claim=(await client.getClaims()).find(c=>c.task.nonce===a.task.nonce)
+        if(!claim || !claim.published || claim.resultId!==latest.id || claim.task.pr!==pr.number || claim.task.prId!==pr.node_id || a.task.head!==pr.head.sha || a.task.base!==main)return null
+        const run=await client.getRun(a.origin.runId)
+        verifyRun(run,a.origin,{...config,eventName:run.event,runId:a.origin.runId,runAttempt:1,workflowSha:main,ref:'refs/heads/main'})
+        verifyJobs(await client.getJobs(a.origin.runId),a.task,a.origin)
+        return validateReviewEvidence(latest,{task:a.task,origin:a.origin,changedFiles,appId:config.appId,claim})
+      } catch {return null}
+    },
+    async prepareSnapshot(task) {
+      const pr=await client.getPr(task.pr)
+      if(pr.node_id!==task.prId || pr.head.sha!==task.head || pr.base.sha!==task.base || await client.getMain()!==task.base)throw Error('Snapshot head/base changed')
+      const files=await list(`${root}/pulls/${task.pr}/files`)
+      if(files.length!==pr.changed_files || files.length>64 || !files.length)throw Error('Incomplete snapshot file set')
+      const baseFiles={};const headFiles={};const changes=[]
+      for(const f of files){if(['removed','renamed'].includes(f.status))throw Error('Unsupported changed file');baseFiles[f.filename]=f.status==='added'?'':await content(f.filename,task.base);headFiles[f.filename]=await content(f.filename,task.head);changes.push({...f,before:baseFiles[f.filename],after:headFiles[f.filename]})}
+      const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
+      await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
+      const contextFiles={};const tree=await request('GET',`${root}/git/trees/${task.head}?recursive=1`)
+      if(tree.truncated)throw Error('Incomplete source tree')
+      const existingPaths=tree.tree.filter(f=>f.type==='blob').map(f=>f.path).sort()
+      if(existingPaths.length>20000)throw Error('Source inventory capacity')
+      const dependencies=['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','.nvmrc','.node-version']
+      const entries=tree.tree.filter(f=>f.type==='blob' && (dependencies.includes(f.path) || /^(app|components|lib)\/.+\.(tsx?|jsx?|css)$/.test(f.path)) && !Object.hasOwn(headFiles,f.path))
+      if(entries.length>128 || entries.some(f=>f.mode!=='100644' || f.size>2*1024*1024))throw Error('Unsupported source context')
+      for(const f of entries)contextFiles[f.path]=await content(f.path,task.head)
+      const diagnostics=[]
+      if(task.kind==='repair'){
+        const state=await client.snapshot(pr,task.base)
+        for(const job of state.jobs.filter(j=>j.conclusion==='failure')) {
+          const bytes=await download(`${root}/actions/jobs/${job.id}/logs`,1024*1024)
+          const log=bytes.toString('utf8');text(log,1024*1024)
+          diagnostics.push({job:job.name,log})
+        }
+        if(state.independentReview)diagnostics.push({review:state.independentReview.report})
+      }
+      const result={task,changedFiles:files.map(f=>f.filename),baseFiles,headFiles,contextFiles,diagnostics,existingPaths}
+      if(Buffer.byteLength(JSON.stringify(result))>8*1024*1024)throw Error('Snapshot byte limit')
+      return result
     },
   }
   return client
 }
 
-module.exports = { createClient }
+module.exports = { createClient, CLAIM }
