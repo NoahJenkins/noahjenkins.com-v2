@@ -62,7 +62,7 @@ The App publishes `Dependabot Independent Review` on the exact head, bound to ba
 
 ## Current verification evidence
 
-Local verification passed 237 Jest tests, build, post-build TypeScript checks, and actionlint. The secret-free Docker validator also exited successfully with scripts-disabled install, high-threshold audit, TypeScript, 227 tests at its snapshot, and build. Its named container is removed after failed or timed-out execution; a reproduced cleanup regression was fixed and included in the later local count.
+Local verification passed 237 Jest tests, build, post-build TypeScript checks, and actionlint. The secret-free Docker validator also exited successfully with scripts-disabled install, high-threshold audit, TypeScript, 237 tests on the final code snapshot, and build. Its named container is removed after failed or timed-out execution; a reproduced cleanup regression was fixed and included in the later local count.
 
 The pinned Linux OpenCode runtime passed fake-SSE isolation checks: no real provider key or paid call, no external agent network, and no broker files/socket in the agent. The fake response's cost field is not billing evidence. Audit retains one existing moderate `sprintf-js` finding, with no high/critical findings. The independent review found four issues; all four were reproduced and fixed with regression tests. Hosted checks/preview remain pending; these results do not establish activation.
 
