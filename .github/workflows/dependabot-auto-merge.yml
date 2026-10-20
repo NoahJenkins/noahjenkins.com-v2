@@ -33,6 +33,26 @@ env:
   GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
 
 jobs:
+  setup-required:
+    name: Dependabot setup required
+    if: vars.DEPENDABOT_CONTROLLER_APP_ID == ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain inactive automation
+        shell: bash
+        run: |
+          echo '::warning::Dependabot automation is inactive: dedicated controller App configuration is missing.'
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Dependabot automation is inactive
+
+          The controller cannot review, repair, or merge PRs until its dedicated
+          App, state issue, environment credentials, and enable flags are configured.
+          Passing CI alone does not enable auto-merge. The current policy keeps
+          blocked PRs open for review; it does not auto-close major updates.
+
+          Follow docs/dependabot-controller-setup.md before activation.
+          SUMMARY
+
   controller:
     name: Reconcile Dependabot PRs
     if: vars.DEPENDABOT_CONTROLLER_APP_ID != '' && github.ref == 'refs/heads/main'

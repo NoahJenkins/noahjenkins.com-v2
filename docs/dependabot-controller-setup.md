@@ -1,6 +1,6 @@
 # Dependabot Controller Setup
 
-[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps.
+[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps. When the controller App ID is absent, the workflow now publishes a visible setup warning and summary instead of appearing only as skipped jobs.
 
 ## Configuration and credential boundaries
 
