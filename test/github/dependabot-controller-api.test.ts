@@ -118,6 +118,7 @@ test('snapshot records the complete head inventory and unchanged dependency cont
   if(p.pathname.endsWith(`/pulls/${t.pr}`))data=pr
   else if(p.pathname.endsWith('/git/ref/heads/main'))data={object:{sha:t.base}}
   else if(p.pathname.endsWith('/files'))data=[{filename:'.github/workflows/ci.yml',status:'modified'}]
+  else if(p.pathname.includes('/compare/'))data={status:'ahead',merge_base_commit:{sha:t.base}}
   else if(p.pathname.includes('/git/trees/'))data={truncated:false,tree:Object.keys(files).map(path=>({path,type:'blob',mode:'100644',size:files[path].length}))}
   else {const filename=p.pathname.split('/contents/')[1];const value=filename==='.github/workflows/ci.yml'&&p.searchParams.get('ref')===t.base?before:files[filename];data={type:'file',size:value.length,encoding:'base64',content:Buffer.from(value).toString('base64')}}
   return {ok:true,status:200,json:async()=>data}
