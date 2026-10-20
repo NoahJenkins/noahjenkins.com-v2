@@ -35,7 +35,7 @@ env:
 jobs:
   setup-required:
     name: Dependabot setup required
-    if: vars.DEPENDABOT_CONTROLLER_APP_ID == ''
+    if: github.event_name == 'workflow_dispatch' && vars.DEPENDABOT_CONTROLLER_APP_ID == ''
     runs-on: ubuntu-latest
     steps:
       - name: Explain inactive automation

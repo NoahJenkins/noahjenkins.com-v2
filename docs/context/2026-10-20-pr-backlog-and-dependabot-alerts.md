@@ -2,7 +2,7 @@
 
 Inspected all six open PRs on October 20, 2026. The Dependabot controller has no repository configuration variables, and both dedicated credential environments have no secrets. Every recent controller run, including scheduled runs, was skipped by its missing-App condition. CI success therefore did not produce an approval or native auto-merge request.
 
-ADR 0010 superseded the earlier auto-close policy: blocked PRs intentionally stay open for independent review. Reintroducing unconditional close/merge behavior would bypass that policy. The controller now reports missing setup visibly in a secret-free hosted job. Activation still requires the dedicated App, state issue, protected environment credentials, required gate binding, budgets, and explicit enable flags described in the setup guide.
+ADR 0010 superseded the earlier auto-close policy: blocked PRs intentionally stay open for independent review. Reintroducing unconditional close/merge behavior would bypass that policy. Manual controller runs now report missing setup visibly in a secret-free hosted job; recurring and repository events skip the diagnostic without allocating a warning runner. Activation still requires the dedicated App, state issue, protected environment credentials, required gate binding, budgets, and explicit enable flags described in the setup guide.
 
 ## Disposition prepared
 
@@ -40,3 +40,5 @@ Hosted CI and final GitHub alert state must be checked on the published/merged r
 The first hosted Codex review identified that failed/cancelled runner routing could skip every protected job. An initial guard addressed that issue. The next review identified that proposed fork YAML could bypass the runner trust decision itself. Final remediation removes conditional Dell routing entirely and retains direct hosted jobs, eliminating both paths. There are zero registered self-hosted runners. The draft migration is deferred until an external authorization boundary is verified. Branch protection settings remain unchanged.
 
 A subsequent review identified that the existing global PostCSS override still forced 8.5.23 despite the manifest update. Raised that override to 8.5.30 and regenerated the lockfile. Frozen install and direct resolution checks confirm 8.5.30 is the only installed/locked PostCSS version, including Next.js, Tailwind, and sanitize-html consumers.
+
+The inactive-controller diagnostic is restricted to workflow_dispatch. A review confirmed the ten-minute schedule and status/CI events would otherwise allocate a hosted runner for each repeated warning. The manual diagnostic remains executable without credentials; normal inactive events keep all jobs skipped.

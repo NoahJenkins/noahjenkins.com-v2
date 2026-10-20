@@ -42,7 +42,7 @@ test('missing controller setup produces a visible warning without credentials or
  const job = workflow.jobs['setup-required']
  expect(job).toBeDefined()
  expect(job.environment).toBeUndefined()
- expect(job.if).toBe("vars.DEPENDABOT_CONTROLLER_APP_ID == ''")
+ expect(job.if).toBe("github.event_name == 'workflow_dispatch' && vars.DEPENDABOT_CONTROLLER_APP_ID == ''")
  expect(job.steps).toHaveLength(1)
  expect(job.steps[0].uses).toBeUndefined()
  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dependabot-setup-'))
