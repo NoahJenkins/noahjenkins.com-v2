@@ -1,6 +1,6 @@
 export {}
 const { reserve, readLedger, encodeLedger } = require('../../.github/scripts/dependabot-controller-ledger.cjs')
-const task = (pr: number, head: string, kind = 'repair') => ({ pr, prId: `PR_${pr}`, head: head.repeat(40), base: 'b'.repeat(40), kind })
+const task = (pr: number, head: string, kind = 'repair') => ({ pr, prId: `PR_${pr}`, head: head.repeat(40), base: 'b'.repeat(40), kind, ...(kind === 'retry' ? { ciRunId: 55, ciRunAttempt: 1 } : {}) })
 const now = '2026-10-13T12:00:00.000Z'
 describe('durable dispatch limits', () => {
   test('consumes uncertain reservations before any provider write', () => {

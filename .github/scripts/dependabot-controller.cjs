@@ -41,13 +41,15 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   if (!eligiblePr(pr, config.repositoryId)) return stop('blocked', 'Dependabot identity, branch or repository is outside policy.')
   if (await client.hasDependabotHead(pr.head.sha, pr.number)) return stop('blocked', 'Multiple Dependabot PRs share this commit. Resolve duplicate heads before automatic merge.')
   const main = await client.getMain()
+  if (config.workflowSha !== main) return stop('waiting', 'Wait for controller code from current main before automatic merge or recovery.')
   const production = async () => {
     try { return await client.getProduction(main) }
     catch { return { ready: false, reason: 'Production status could not be verified. Automatic merges are paused; inspect GitHub/Vercel access and docs/dependabot-controller-setup.md. Rollback is manual.' } }
   }
   const initialProduction = await production()
   if (!initialProduction.ready) return stop('blocked', initialProduction.reason)
-  const decision = evaluate(await client.snapshot(pr, main))
+  const initialSnapshot = await client.snapshot(pr, main)
+  const decision = evaluate(initialSnapshot)
   if (decision.kind === 'ready') {
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) return stop('blocked', 'Require current-base CI, stale-review dismissal and an App-bound Dependabot Merge Gate in main protection.')
     await assertFresh(client, pr, main)
@@ -73,7 +75,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
       catch { return stop('blocked', 'The recovery ledger is unavailable or invalid. Operator action is required.') }
     }
     await assertFresh(client, pr, main)
-    const next = reserve(state.ledger, { pr: number, prId: pr.node_id, head: pr.head.sha, base: main, kind: decision.kind }, config.now)
+    const next = reserve(state.ledger, { pr: number, prId: pr.node_id, head: pr.head.sha, base: main, kind: decision.kind, ...(decision.kind === 'retry' ? { ciRunId: initialSnapshot.ci?.id, ciRunAttempt: initialSnapshot.ci?.run_attempt } : {}) }, config.now)
     if (!next.reservation) return stop('blocked', next.reason)
     await client.saveLedger(next.ledger, state)
     state.ledger = next.ledger
@@ -81,7 +83,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
     if (decision.kind === 'refresh') await client.updateBranch(pr)
     else {
       const current = await client.snapshot(pr, main)
-      if (evaluate(current).kind !== 'retry') return stop('waiting', 'CI changed after retry reservation. The attempt remains consumed.')
+      if (evaluate(current).kind !== 'retry' || current.ci?.id !== next.reservation.ciRunId || current.ci?.run_attempt !== next.reservation.ciRunAttempt) return stop('waiting', 'CI changed after retry reservation. The attempt remains consumed.')
       await assertFresh(client, pr, main)
       await client.retryCi(current.ci.id)
     }

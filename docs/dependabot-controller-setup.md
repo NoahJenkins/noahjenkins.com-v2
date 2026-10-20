@@ -107,3 +107,16 @@ Activation remains blocked on the dedicated installed App and private key, state
 A verified current-main controller run can refresh a behind branch or rerun interrupted (`cancelled`/`timed_out`) trusted CI. It first saves a durable reservation, then rechecks the PR head and base. Refresh and retry each have a separate limit of two lifetime attempts per PR and two attempts per UTC day. New heads or days do not reset lifetime counts, and these actions do not consume the existing two-repair lifetime budget or eight-review daily budget. An ambiguous write remains consumed. Repeated events for the same head cannot repeat the mutation. Missing state or exhausted limits leave an action-required gate and cancel queued auto-merge. The controller token needs Actions write only for the bounded workflow retry API; worker/validator tokens remain read-only.
 
 Only the authenticated publisher token requests Workflows write. The repair scope permits verified upstream Action reference changes; this permission lets the publisher commit those reviewed files. The worker, validator, controller and claim jobs receive no Workflows write grant.
+
+### Recovery provenance
+
+Automatic merge and recovery require controller code from the current `main`
+commit. A queued run from an older workflow revision leaves the merge gate
+pending and cancels existing automatic merge intent.
+
+CI retry reservations record the authenticated workflow run ID and run attempt.
+A later interrupted attempt on the same PR commit can use the second retry, but
+a duplicate event cannot repeat a write. The run and attempt are checked again
+before dispatch. Old reservations without these fields remain consumed and block
+repeat recovery for that head. The two-attempt lifetime and daily limits still
+apply. GitHub's accepted, bodyless HTTP 201 rerun response is treated as success.

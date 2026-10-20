@@ -182,7 +182,7 @@ describe('bounded refresh and interrupted CI retry', () => {
   test.each(['refresh', 'retry'])('reserves before %s and never repeats an ambiguous write', async kind => {
     const f = fixture(); (f.client as any).updateBranch = async () => { f.events.push('refresh'); throw Error('ambiguous') }
     ;(f.client as any).retryCi = async () => { f.events.push('retry'); throw Error('ambiguous') }
-    f.client.snapshot = async () => ({ pr: f.pr, ci: { id: 55 } } as any)
+    f.client.snapshot = async () => ({ pr: f.pr, ci: { id: 55, run_attempt: 1 } } as any)
     const evaluate = () => ({ kind, reason: 'bounded recovery needed' })
     await expect(reconcileOne(f.client, f.config, 1, f.state, f.tasks, evaluate)).rejects.toThrow('ambiguous')
     expect(f.events).toEqual(['gate:pending','reserve',kind])
