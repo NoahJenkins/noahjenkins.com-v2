@@ -51,7 +51,7 @@ describe('GitHub provider boundary', () => {
   test('validates a full provider snapshot through the actual policy', async () => {
     const { evaluateCandidate } = require('../../.github/scripts/dependabot-controller-policy.cjs')
     const base = 'b'.repeat(40)
-    const pr = { number: 1, changed_files: 1, head: { sha, ref: 'dependabot/npm_and_yarn/x', repo: { id: 1 } }, base: { ref: 'main', sha: base, repo: { id: 1 } }, user: { id: 49699333, type: 'Bot' }, draft: false, state: 'open', mergeable: true, mergeable_state: 'clean' }
+    const pr = { id: 42, node_id: 'PR_1', number: 1, changed_files: 1, head: { sha, ref: 'dependabot/npm_and_yarn/x', repo: { id: 1 } }, base: { ref: 'main', sha: base, repo: { id: 1 } }, user: { id: 49699333, type: 'Bot' }, draft: false, state: 'open', mergeable: true, mergeable_state: 'clean' }
     const names = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
     const checks = names.map((name, i) => ({ id: i+1, name, head_sha: sha, app: { id: 15368 }, status: 'completed', conclusion: 'success' }))
     const responses: any = {
@@ -73,6 +73,13 @@ describe('GitHub provider boundary', () => {
     const client = createClient({ repo: 'o/r', appId: 99, repositoryId: 1, reviewerId: 175728472, vercelAppId: 8329 }, 'read-token', 'app-token', fetcher)
     // Legacy Copilot approval is not authenticated OpenCode evidence.
     expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('review')
+    responses['/actions/workflows/8/runs'].workflow_runs[0].pull_requests = []
+    responses[`/commits/${sha}/pulls`] = [JSON.parse(JSON.stringify(pr))]
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('review')
+    responses[`/commits/${sha}/pulls`][0].base.sha = 'c'.repeat(40)
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('waiting')
+    responses[`/commits/${sha}/pulls`] = []
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('waiting')
     pr.changed_files = 2
     await expect(client.snapshot(pr, base)).rejects.toThrow('Incomplete')
   })
@@ -119,4 +126,43 @@ test('snapshot records the complete head inventory and unchanged dependency cont
  const snapshot=await client.prepareSnapshot(t)
  expect(snapshot.existingPaths).toContain('test/existing.test.ts')
  expect(snapshot.contextFiles).toMatchObject({'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24'})
+})
+
+describe('production deployment interlock', () => {
+ function production(deployments: any[], statuses: any[]) {
+  return createClient({repo:'o/r'},'read-token',undefined,async(url:string) => ({ok:true,status:200,json:async()=>url.includes('/statuses?')?statuses:deployments}))
+ }
+ const deployment = {id:123,sha,environment:'Production',production_environment:false,creator:{id:35613825,type:'Bot'}}
+ const success = {id:9,state:'success',environment:'Production',creator:{id:35613825,type:'Bot'}}
+ test('accepts latest trusted Production success despite Vercel production_environment false',async()=>{
+  expect(await production([deployment],[success]).getProduction(sha)).toMatchObject({ready:true})
+ })
+ test.each([
+  [[],[success]],
+  [[{...deployment,sha:'b'.repeat(40)}],[success]],
+  [[{...deployment,environment:'Preview'}],[success]],
+  [[{...deployment,creator:{id:1,type:'User'}}],[success]],
+  [[deployment],[]],
+  [[deployment],[{...success,creator:{id:1,type:'User'}}]],
+  [[deployment],[{...success,environment:'Preview'}]],
+  ...['failure','error','pending','queued','in_progress','inactive','unknown'].map(state=>[[deployment],[{...success,state}]]),
+ ])('fails closed on absent, stale, foreign or non-success production evidence %#',async(deployments,statuses)=>{
+  expect(await production(deployments,statuses).getProduction(sha)).toMatchObject({ready:false})
+ })
+ test('requests only the newest production deployment and newest status',async()=>{
+  const requests:string[]=[]
+  const client=createClient({repo:'o/r'},'read-token',undefined,async(url:string)=>{requests.push(url);return {ok:true,status:200,json:async()=>url.includes('/statuses?')?[{...success,state:'failure'}]:[deployment]}})
+  expect(await client.getProduction(sha)).toMatchObject({ready:false})
+  expect(requests).toEqual(['https://api.github.com/repos/o/r/deployments?environment=Production&per_page=1','https://api.github.com/repos/o/r/deployments/123/statuses?per_page=1'])
+ })
+})
+
+test('interrupted CI retries the full authenticated run once without retrying the POST', async () => {
+ const calls:any[]=[]
+ const client=createClient({repo:'o/r',appId:99},'read','write',async(url:string,init:any)=>{calls.push({url,init});return {ok:true,status:201,json:async()=>({})}})
+ await client.retryCi(55)
+ expect(calls).toHaveLength(1)
+ expect(calls[0].url).toBe('https://api.github.com/repos/o/r/actions/runs/55/rerun')
+ expect(calls[0].init.method).toBe('POST')
+ expect(()=>client.retryCi(-1)).toThrow('Invalid retry')
 })

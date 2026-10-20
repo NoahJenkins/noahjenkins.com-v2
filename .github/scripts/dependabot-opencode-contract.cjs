@@ -66,6 +66,7 @@ function validateArtifact(raw, expected) {
   object(raw,['version','task','origin','agent','result','digest'])
   if (raw.version !== 1) throw new Error('Unknown artifact version')
   object(raw.task,['pr','prId','head','base','kind','nonce','createdAt']); validateTask(raw.task)
+  if (!['repair','review'].includes(raw.task.kind)) throw Error('Recovery reservations cannot produce agent artifacts')
   if (!/^[0-9a-f-]{36}$/.test(raw.task.nonce) || new Date(raw.task.createdAt).toISOString() !== raw.task.createdAt) throw new Error('Invalid reservation')
   object(raw.origin,['repositoryId','workflowPath','workflowSha','ref','runId','runAttempt','jobId'])
   for (const key of ['repositoryId','runId','jobId']) if (!Number.isSafeInteger(raw.origin[key]) || raw.origin[key] <= 0) throw new Error('Invalid origin ID')

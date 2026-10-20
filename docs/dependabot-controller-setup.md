@@ -1,6 +1,6 @@
 # Dependabot Controller Setup
 
-[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps. When the controller App ID is absent, a manual workflow_dispatch run publishes a visible setup warning and summary. Scheduled, PR, CI-completion, and status events leave that diagnostic skipped and allocate no warning runner.
+[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps. Missing App ID, state issue, or enable flags produce a setup warning and summary on manual runs, a daily 12:17 UTC diagnostic, and Dependabot opened/reopened events. The ten-minute recovery scan and high-volume status/CI events do not allocate a separate warning runner. Environment credential checks fail with the setup path and never print values. No setup diagnostic creates issues, comments, or paid requests.
 
 ## Configuration and credential boundaries
 
@@ -22,7 +22,7 @@ The merge scope guard cannot prevent pre-merge workflow secret access. Environme
 
 ## App and branch protection
 
-Install a dedicated App for this repository with Actions/Administration read, Checks/Issues/Pull requests/Contents write, and Metadata read. Store its key only in `dependabot-controller`. Create a state issue without secrets and configure its issue number.
+Install a dedicated App for this repository with Actions write, Administration/Deployments read, Checks/Issues/Pull requests/Contents/Workflows write, and Metadata read. Store its key only in `dependabot-controller`. Create a state issue without secrets and configure its issue number.
 
 With both enable flags off, publish `Dependabot Merge Gate` before making it required. Bind the required check to the App ID. Require all five CI checks with strict up-to-date branches, at least one approval, and stale-review dismissal. Read branch protection back. App installation, gate ownership, and live publication remain unverified; no configuration is inferred from source code.
 
@@ -40,7 +40,7 @@ Before activation, verify Go **Use balance** is off, model access is valid, and 
 
 The workflow is controller → claim → worker matrix → fresh validation job → publisher → reconciliation. Controller, claim, publisher, and reconciliation use `dependabot-controller`; only the worker job uses `dependabot-dispatch`. Both matrices use `fail-fast: false`. Global concurrency serializes controller runs; schedule is every ten minutes. Original run attempt 1, main ref, and workflow source equal to reserved base are required for work. PR-target events reevaluate gates without reserving paid work; the next verified default-branch event or scheduled scan can reserve a task. Run metadata is checked before reservation and again before launch.
 
-App-authored ledger reservations allow two repairs/eight reviews per UTC day across the repository and two lifetime repairs per PR. New heads do not reset lifetime limits. Claim once before launch; expired, ambiguous, and failed operations remain charged. Launch only within 15 minutes on the reservation's UTC date, never from a rerun or duplicate head reservation. A stalled task requires operator action after 30 minutes; a ledger over 60,000 bytes fails closed without automatic pruning.
+App-authored ledger reservations allow two repairs/eight reviews per UTC day across the repository and two lifetime repairs per PR. New heads do not reset lifetime limits. Claim once before launch; expired, ambiguous, and failed operations remain charged. Launch only within 15 minutes on the reservation's UTC date, never from a rerun or duplicate head reservation. A stalled task requires operator action after 30 minutes; exhausted/stalled decisions appear in the existing merge gate and workflow summary, with no new issue or comment; a ledger over 60,000 bytes fails closed without automatic pruning.
 
 The isolated broker holds the real Go key. The OpenCode container receives only a local broker URL and ephemeral token, with no real Go/GitHub/App/Doppler credentials. Its internal network reaches the broker only. The broker permits one fixed Go chat endpoint and model, rejects redirects, counts retries before upstream requests, and caps repair/review at 24/16 generation calls. Request and response streams are bounded at 20 MiB; per-request time is at most 120 seconds. No keys or raw bodies are logged.
 
@@ -59,6 +59,20 @@ The publisher verifies the persisted App claim, original run/job success, valida
 Review uses a fresh read-only session with complete base/head changed-file contents, including manifests and lockfile. Strict output contains verdict, findings, exact covered files, and security/compatibility assessments. Only `approve`, complete coverage, both assessments `pass`, and no critical/high/medium findings can pass; low/info findings remain visible. Missing, unknown, oversized, or malformed proof blocks acceptance.
 
 The App publishes `Dependabot Independent Review` on the exact head, bound to base, task nonce, original run, and digests. The controller accepts only the latest authentic check matching a published durable claim. Model prose, requested review, same-named foreign checks, and stale evidence do not suffice. After independent evidence plus CI/Vercel/scope pass, it queues native auto-merge while the required gate is pending, then revalidates before App approval and gate success.
+
+## Empty CI association recovery
+
+GitHub can return an empty `workflow_run.pull_requests` array for a real Dependabot CI run. Only for an explicitly empty array, the controller reads the authenticated `commits/<exact-head>/pulls` endpoint. Exactly one association must match the open PR's numeric and node identity, head SHA/branch/repository, and current main SHA/branch/repository. Missing or contradictory nonempty run evidence still blocks.
+
+This fallback retains the CI workflow ID, event, head SHA, branch, repository, latest-run and job/check publisher tests. The exact tested head must contain current main as an ancestor; a newer unrelated base forces a refresh. Commit timestamps do not replace graph ancestry. Required strict native branch protection and final head/base checks remain in force. Observe this fallback on an open bot PR before activation; historical merged/deleted-head association lists can be empty.
+
+## Production deployment interlock
+
+Before bot work and immediately before merge-gate success, read the latest GitHub deployment in the exact `Production` environment and its latest status. Both records must come from Vercel bot ID `35613825`, and the deployment must match current main. Only `success` permits progress. Missing, foreign, stale, pending, failed, or unreadable evidence blocks the gate and cancels native merge intent. A newer failed deployment cannot fall back to an older success. Existing default-branch Vercel `status` and CI-completion events recheck gates; the ten-minute scan recovers missed events. A raw deployment-status event is not used: Vercel records this repository deployment ref as a commit SHA, which does not satisfy the main-only credential environment policy. [GitHub event ref rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#deployment_status) document this boundary.
+
+Live read-only evidence on 2026-10-20 confirmed that Vercel sets `production_environment: false` and omits App metadata even for this repository's `Production` records. Therefore, the exact environment and bot identity identify production. Preview checks keep their existing App ID verification. The App now needs Deployments read permission; reapprove the installation permission before activation. GitHub documents the [deployment](https://docs.github.com/en/rest/deployments/deployments) and [status](https://docs.github.com/en/rest/deployments/statuses) APIs.
+
+Recovery requires a successful trusted deployment for current main. Rollback and production repair remain manual. A rollback to an older SHA keeps automated merges blocked until current main and the verified production deployment agree. This is a deployment-status interlock, not a runtime availability monitor. GitHub event delivery and schedules can be delayed; strict current-base protection remains required to serialize successive merges.
 
 ## Current verification evidence
 
@@ -81,3 +95,15 @@ Missing prerequisites keep flags off. Green local tests or artifact metadata alo
 Unset both enable flags. On reconciliation, native auto-merge intent is cancelled and Dependabot gates are blocked; verify those effects. Already launched workers are not automatically cancelled. Inspect reservations, claims, run/job state, artifact IDs/digests, and publication intent before acting.
 
 Never reset lifetime limits or rerun an ambiguous publication automatically. Head/base movement, expired tasks, incomplete review, invalid provenance, unclassified Vercel failures, and infrastructure failures need operator investigation. Keep branch protection and the gate intact until in-flight state is understood.
+
+## 2026-10-20 local recovery validation
+
+The local recovery change passed 282 Jest tests with coverage, the Next.js build, post-build TypeScript, and actionlint on the changed controller workflow. Full actionlint reports five existing SC2086 warnings in `ci.yml` at lines 43, 82, 131, 192, and 232. Those unrelated lines were not changed. No hosted run, paid call, credential write, activation, commit, push, or deployment was performed. Existing provider/isolation validation above is historical evidence, not a fresh live worker run.
+
+Activation remains blocked on the dedicated installed App and private key, state issue variable, App-bound strict branch protection, main-only environment policies, verified Go key/billing controls, and both exact `true` flags. The 2026-10-20 audit found the controller variables and environment secret names absent. Recheck live configuration before activation; do not weaken checks to bypass missing setup.
+
+### Bounded branch refresh and CI retry
+
+A verified current-main controller run can refresh a behind branch or rerun interrupted (`cancelled`/`timed_out`) trusted CI. It first saves a durable reservation, then rechecks the PR head and base. Refresh and retry each have a separate limit of two lifetime attempts per PR and two attempts per UTC day. New heads or days do not reset lifetime counts, and these actions do not consume the existing two-repair lifetime budget or eight-review daily budget. An ambiguous write remains consumed. Repeated events for the same head cannot repeat the mutation. Missing state or exhausted limits leave an action-required gate and cancel queued auto-merge. The controller token needs Actions write only for the bounded workflow retry API; worker/validator tokens remain read-only.
+
+Only the authenticated publisher token requests Workflows write. The repair scope permits verified upstream Action reference changes; this permission lets the publisher commit those reviewed files. The worker, validator, controller and claim jobs receive no Workflows write grant.

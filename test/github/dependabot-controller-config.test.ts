@@ -42,7 +42,10 @@ test('missing controller setup produces a visible warning without credentials or
  const job = workflow.jobs['setup-required']
  expect(job).toBeDefined()
  expect(job.environment).toBeUndefined()
- expect(job.if).toBe("github.event_name == 'workflow_dispatch' && vars.DEPENDABOT_CONTROLLER_APP_ID == ''")
+ expect(job.if).toContain("github.event.schedule == '17 12 * * *'")
+ expect(job.if).toContain("github.event.action == 'opened'")
+ expect(workflow.on.schedule).toContainEqual({cron: '17 12 * * *'})
+ expect(workflow.on).toHaveProperty('status')
  expect(job.steps).toHaveLength(1)
  expect(job.steps[0].uses).toBeUndefined()
  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dependabot-setup-'))
@@ -57,4 +60,29 @@ test('missing controller setup produces a visible warning without credentials or
  } finally {
   fs.rmSync(directory, { recursive: true, force: true })
  }
+})
+
+test('credential preflight fails visibly without exposing a supplied key',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process')
+ const workflow=require('js-yaml').load(fs.readFileSync('.github/workflows/dependabot-auto-merge.yml','utf8'))
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'dependabot-key-'))
+ try {
+  for(const [jobName,stepName,keyName] of [['controller','Check controller credential setup','CONTROLLER_KEY'],['worker','Check provider credential setup','PROVIDER_KEY']]) {
+   const step=workflow.jobs[jobName].steps.find((s:any)=>s.name===stepName)
+   expect(step).toBeDefined()
+   for(const key of ['', 'test-secret-must-not-print']) {
+    const result=spawnSync('bash',['-e','-o','pipefail','-c',step.run],{encoding:'utf8',env:{PATH:process.env.PATH,GITHUB_STEP_SUMMARY:path.join(directory,'summary'),[keyName]:key}})
+    expect(result.status).toBe(key?0:1)
+    expect(result.stdout+result.stderr).not.toContain('test-secret-must-not-print')
+    if(!key)expect(result.stdout).toContain('docs/dependabot-controller-setup.md')
+   }
+  }
+ } finally {fs.rmSync(directory,{recursive:true,force:true})}
+})
+
+test('only the authenticated publisher can write workflow reference repairs',()=>{
+ const fs=require('node:fs'),yaml=require('js-yaml')
+ const workflow=yaml.load(fs.readFileSync('.github/workflows/dependabot-auto-merge.yml','utf8'))
+ const grants=Object.entries(workflow.jobs).flatMap(([name,job]:any)=>job.steps.filter((step:any)=>step.with?.['permission-workflows']==='write').map(()=>name))
+ expect(grants).toEqual(['publish'])
 })

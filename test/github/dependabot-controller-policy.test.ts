@@ -3,7 +3,7 @@ const { evaluateScope, evaluateCandidate } = require('../../.github/scripts/depe
 
 const sha = 'a'.repeat(40)
 const base = 'b'.repeat(40)
-const pr = { id: 42, number: 281, state: 'open', draft: false, user: { id: 49699333, type: 'Bot' }, base: { ref: 'main', sha: base, repo: { id: 1 } }, head: { ref: 'dependabot/github_actions/actions/setup-node-7.1.0', sha, repo: { id: 1 } }, mergeable: true, mergeable_state: 'clean' }
+const pr = { id: 42, node_id: 'PR_281', number: 281, state: 'open', draft: false, user: { id: 49699333, type: 'Bot' }, base: { ref: 'main', sha: base, repo: { id: 1 } }, head: { ref: 'dependabot/github_actions/actions/setup-node-7.1.0', sha, repo: { id: 1 } }, mergeable: true, mergeable_state: 'clean' }
 const names = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
 const good = () => ({ pr, repositoryId: 1, mainSha: base, containsMain: true, scope: { allowed: true }, ci: { head_sha: sha, workflow_id: 8, head_branch: pr.head.ref, head_repository: { id: 1 }, event: 'pull_request', status: 'completed', conclusion: 'success', pull_requests: [{ number: 281, base: { sha: base } }] }, ciWorkflowId: 8, jobs: names.map((name, i) => ({ name, conclusion: 'success', status: 'completed', check_run_url: `https://api.github.com/repos/o/r/check-runs/${i+1}` })), checks: names.map((name, i) => ({ id: i+1, name, head_sha: sha, app: { id: 15368 }, status: 'completed', conclusion: 'success' })), statuses: [{ context: 'Vercel', state: 'success', creator: { id: 35613825 }, target_url: 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/abc' }], vercelAppId: 8329, vercelChecks: [{ app: { id: 8329 }, head_sha: sha }], independentReview: { task: {head:sha,base}, passed:true, report:{verdict:'approve'} } })
 
@@ -99,4 +99,39 @@ describe('repair scope', () => {
   test.each(['.github/workflows/dependabot-auto-merge.yml', '.github/scripts/dependabot-controller.cjs', '.github/copilot-instructions.md', 'jest.config.js', 'tsconfig.json', 'lib/AGENTS.md', '.github/scripts/dependabot-opencode-worker.cjs', '.github/scripts/dependabot-opencode-proxy.cjs', '.github/scripts/dependabot-opencode-publish.cjs', '.github/scripts/dependabot-opencode-validate.cjs', '.github/opencode/repair.md', '.github/opencode/review.md', '.github/opencode/validator.Dockerfile', 'app/nested/CLAUDE.md', 'test/existing.test.ts'])('blocks protected file %s', (filename) => {
     expect(evaluateScope([change(filename, 'old', 'new')]).allowed).toBe(false)
   })
+})
+
+describe('empty workflow PR association recovery', () => {
+ const fallback = () => ({...good(), ci:{...good().ci,pull_requests:[]},commitPullRequests:[JSON.parse(JSON.stringify(pr))]})
+ test('accepts exact authenticated commit association when main is an ancestor of the tested head',()=>{
+  expect(evaluateCandidate(fallback()).kind).toBe('ready')
+ })
+ test.each([
+  {id:43},{node_id:'OTHER'},{number:282},{state:'closed'},
+  {head:{...pr.head,sha:'c'.repeat(40)}},{head:{...pr.head,ref:'other'}},{head:{...pr.head,repo:{id:2}}},
+  {base:{...pr.base,sha:'c'.repeat(40)}},{base:{...pr.base,ref:'other'}},{base:{...pr.base,repo:{id:2}}},
+ ])('rejects an unrelated or stale commit association %#',change=>{
+  const input=fallback();input.commitPullRequests=[{...pr,...change}]
+  expect(evaluateCandidate(input).kind).toBe('waiting')
+ })
+ test('does not recover from absent associations or contradictory run evidence',()=>{
+  const input=fallback()
+  expect(evaluateCandidate({...input,commitPullRequests:[]}).kind).toBe('waiting')
+  expect(evaluateCandidate({...input,ci:{...input.ci,pull_requests:undefined}}).kind).toBe('waiting')
+  expect(evaluateCandidate({...input,ci:{...input.ci,pull_requests:[{number:281,base:{sha:'c'.repeat(40)}}]}}).kind).toBe('waiting')
+ })
+ test('never substitutes association for exact CI origin or tested current-main ancestry',()=>{
+  const input=fallback()
+  for(const change of [{workflow_id:9},{head_sha:'c'.repeat(40)},{head_branch:'other'},{event:'push'},{head_repository:{id:2}}]) {
+   expect(evaluateCandidate({...input,ci:{...input.ci,...change}}).kind).toBe('waiting')
+  }
+  expect(evaluateCandidate({...input,containsMain:false}).kind).toBe('refresh')
+ })
+})
+
+test.each(['cancelled','timed_out'])('authenticated %s CI is eligible only for bounded retry', conclusion => {
+ const input=good();input.ci.conclusion=conclusion;input.jobs[0].conclusion=conclusion;input.checks[0].conclusion=conclusion
+ expect(evaluateCandidate(input).kind).toBe('retry')
+ input.checks[0].app.id=99
+ expect(evaluateCandidate(input).kind).toBe('waiting')
 })

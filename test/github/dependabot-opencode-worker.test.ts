@@ -36,6 +36,7 @@ test('enforces_agent_step_and_time_bounds', async () => {
 test.each([24,16])('proxy_caps_hostile_generation_retries at %i', limit => {
  const result=JSON.parse(execFileSync(process.execPath,['test/fixtures/opencode-fake-provider.cjs','proxy',String(limit)],{encoding:'utf8'}))
  expect(result.calls).toBe(limit)
+ expect([...new Set(result.upstreamUrls)]).toEqual(['https://opencode.ai/inference/go/openai/v1/chat/completions'])
  expect(result.statuses.slice(0,limit)).toEqual(Array(limit).fill(200))
  expect(result.statuses[limit]).toBe(429)
  expect(result.wrong).toBe(400)

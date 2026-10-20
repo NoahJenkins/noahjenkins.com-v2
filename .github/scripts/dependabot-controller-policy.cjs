@@ -86,6 +86,17 @@ function eligiblePr(pr, repositoryId) {
   return pr.user?.id === DEPENDABOT_ID && pr.user.type === 'Bot' && pr.base?.ref === 'main' && pr.head?.repo?.id === repositoryId && pr.base.repo?.id === repositoryId && /^dependabot\/(npm_and_yarn|github_actions)\//.test(pr.head.ref) && pr.state === 'open' && !pr.draft
 }
 
+function ciMatchesPr(input) {
+  const { ci, pr, repositoryId, mainSha, commitPullRequests } = input
+  if (!Array.isArray(ci?.pull_requests)) return false
+  if (ci.pull_requests.length) return ci.pull_requests.some(item => item.number === pr.number && item.base?.sha === mainSha)
+  // GitHub may omit run associations. Resolve only through the authenticated
+  // exact-head commit endpoint, never through branch names or event payloads.
+  // The caller also requires current main ancestry in this immutable tested head.
+  if (!input.containsMain || !Number.isSafeInteger(pr.id) || pr.id < 1 || !pr.node_id || !Array.isArray(commitPullRequests)) return false
+  return commitPullRequests.filter(item => item.id === pr.id && item.node_id === pr.node_id && item.number === pr.number && item.state === 'open' && item.head?.sha === pr.head.sha && item.head.ref === pr.head.ref && item.head.repo?.id === repositoryId && item.base?.ref === 'main' && item.base.sha === mainSha && item.base.repo?.id === repositoryId).length === 1
+}
+
 function evaluateCandidate(input) {
   const result = (kind, reason) => ({ kind, reason })
   const { pr, repositoryId, mainSha, ci, jobs = [], checks = [] } = input
@@ -95,7 +106,7 @@ function evaluateCandidate(input) {
   if (pr.mergeable_state === 'dirty') return result('repair', 'The current head has a merge conflict.')
   if (!input.containsMain) return result('refresh', 'Refresh the branch against current main.')
   if (pr.mergeable !== true) return result('waiting', 'GitHub has not resolved mergeability.')
-  if (!ci || ci.head_sha !== pr.head.sha || ci.workflow_id !== input.ciWorkflowId || ci.event !== 'pull_request' || ci.head_repository?.id !== repositoryId || ci.head_branch !== pr.head.ref || !ci.pull_requests?.some((item) => item.number === pr.number && item.base.sha === mainSha) || ci.status !== 'completed') return result('waiting', 'Current-head, current-base CI is missing or waiting for approval.')
+  if (!ci || ci.head_sha !== pr.head.sha || ci.workflow_id !== input.ciWorkflowId || ci.event !== 'pull_request' || ci.head_repository?.id !== repositoryId || ci.head_branch !== pr.head.ref || !ciMatchesPr(input) || ci.status !== 'completed') return result('waiting', 'Current-head, current-base CI is missing or waiting for approval.')
   const validated = REQUIRED_CHECKS.map((name) => {
     const job = jobs.find((item) => item.name === name)
     const id = Number(job?.check_run_url?.match(/\/check-runs\/(\d+)$/)?.[1])
@@ -104,6 +115,7 @@ function evaluateCandidate(input) {
   })
   if (validated.some((value) => value === null)) return result('waiting', 'Required CI job provenance or completion is missing.')
   if (validated.some((value) => value === 'failure') && ci.conclusion === 'failure') return result('repair', 'Current-head CI has a failed required check.')
+  if (['cancelled', 'timed_out'].includes(ci.conclusion)) return result('retry', 'Authenticated interrupted CI is eligible for a bounded retry.')
   if (ci.conclusion !== 'success' || validated.some((value) => value !== 'success')) return result('waiting', 'Cancelled, skipped or timed-out CI needs operator action.')
   const vercel = input.statuses?.find((item) => item.context === 'Vercel')
   if (!vercel || vercel.creator?.id !== VERCEL_BOT_ID || !vercel.target_url?.startsWith(VERCEL_PREFIX) || !input.vercelChecks?.some((item) => item.head_sha === pr.head.sha && item.app?.id === input.vercelAppId) || input.vercelAppId !== 8329) return result('waiting', 'Trusted Vercel deployment status is missing.')

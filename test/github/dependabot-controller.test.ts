@@ -12,6 +12,7 @@ function fixture() {
     getRun: async()=>({id:10,event:'schedule',run_attempt:1,head_sha:base,head_branch:'main',path:'.github/workflows/dependabot-auto-merge.yml',repository:{id:1}}),
     getPr: async () => JSON.parse(JSON.stringify(pr)), getMain: async () => base,
     snapshot: async () => ({ pr }),
+    getProduction: async (_main: string) => ({ ready: true, reason: 'Production is healthy.' }),
     setGate: async (_pr: any, status: string) => { gate = status; events.push(`gate:${status}`) },
     disableMerge: async () => { queued = false; events.push('disable') },
     queueMerge: async (current: any) => { if (current.head.sha !== pr.head.sha) throw new Error('expectedHeadOid mismatch'); queued = true; events.push('queue') },
@@ -153,4 +154,49 @@ test('PR-target runs reevaluate but reserve no paid work',async()=>{
  await reconcileOne(f.client,f.config,1,f.state,f.tasks,()=>({kind:'repair',reason:'failed'}))
  expect(f.tasks).toHaveLength(0)
  expect(f.result().gate).toBe('waiting')
+})
+
+test('failed production cancels bot merge intent without reserving paid work', async () => {
+ const f = fixture(); f.pr.auto_merge = {} as any
+ f.client.getProduction = async () => ({ ready: false, reason: 'Production failed; manual recovery required.' })
+ const result = await reconcileOne(f.client,f.config,1,f.state,f.tasks,f.evaluate)
+ expect(result.kind).toBe('blocked'); expect(result.reason).toContain('Production failed')
+ expect(f.events).toEqual(['gate:pending','disable','gate:blocked']); expect(f.tasks).toHaveLength(0)
+})
+test('production failure after queueing cancels the new queue and never releases the gate', async () => {
+ const f = fixture(); let reads = 0
+ f.client.getProduction = async () => ({ ready: ++reads === 1, reason: 'Production failed.' })
+ await reconcileOne(f.client,f.config,1,f.state,f.tasks,f.evaluate)
+ expect(f.result()).toMatchObject({gate:'blocked',queued:false})
+ expect(f.events).not.toContain('gate:success')
+})
+test('unavailable production evidence cancels a previously queued merge', async () => {
+ const f = fixture(); f.pr.auto_merge = {} as any
+ f.client.getProduction = async () => { throw Error('API unavailable') }
+ await reconcileOne(f.client,f.config,1,f.state,f.tasks,f.evaluate)
+ expect(f.result()).toMatchObject({gate:'blocked',queued:false})
+ expect(f.events).toContain('disable')
+})
+
+describe('bounded refresh and interrupted CI retry', () => {
+  test.each(['refresh', 'retry'])('reserves before %s and never repeats an ambiguous write', async kind => {
+    const f = fixture(); (f.client as any).updateBranch = async () => { f.events.push('refresh'); throw Error('ambiguous') }
+    ;(f.client as any).retryCi = async () => { f.events.push('retry'); throw Error('ambiguous') }
+    f.client.snapshot = async () => ({ pr: f.pr, ci: { id: 55 } } as any)
+    const evaluate = () => ({ kind, reason: 'bounded recovery needed' })
+    await expect(reconcileOne(f.client, f.config, 1, f.state, f.tasks, evaluate)).rejects.toThrow('ambiguous')
+    expect(f.events).toEqual(['gate:pending','reserve',kind])
+    await reconcileOne(f.client, f.config, 1, f.state, f.tasks, evaluate)
+    expect(f.state.ledger.reservations).toHaveLength(1)
+    expect(f.events.filter(e=>e===kind)).toHaveLength(1)
+    expect(f.tasks).toHaveLength(0)
+    expect(f.result().gate).toBe('blocked')
+  })
+  test('PR-target events cannot start a recovery mutation', async () => {
+    const f=fixture();f.config.eventName='pull_request_target'
+    ;(f.client as any).updateBranch=async()=>{throw Error('must not run')}
+    await reconcileOne(f.client,f.config,1,f.state,f.tasks,()=>({kind:'refresh',reason:'behind'}))
+    expect(f.state.ledger.reservations).toHaveLength(0)
+    expect(f.result().gate).toBe('waiting')
+  })
 })

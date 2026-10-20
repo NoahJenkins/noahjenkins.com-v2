@@ -57,6 +57,20 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
     listPrs: () => list(`${root}/pulls?state=open&base=main`),
     hasDependabotHead: async (sha, excludeNumber) => (await client.listPrs()).some((pr) => pr.user?.id === DEPENDABOT_ID && pr.head.sha === sha && pr.number !== excludeNumber),
     getProtection: () => request('GET', `${root}/branches/main/protection`),
+    async getProduction(main) {
+      const blocked = (reason) => ({ ready: false, reason: `${reason} Automatic merges are paused. Inspect Vercel production; rollback is manual. See docs/dependabot-controller-setup.md.` })
+      // Vercel reports production_environment=false for this repository. The exact
+      // Production environment and authenticated publisher identify production.
+      const deployments = await request('GET', `${root}/deployments?environment=Production&per_page=1`)
+      if (!Array.isArray(deployments) || deployments.length !== 1) return blocked('Current production deployment evidence is missing.')
+      const deployment = deployments[0]
+      const trusted = (item) => item?.creator?.id === 35613825 && item.creator.type === 'Bot' && item.environment === 'Production'
+      if (!trusted(deployment) || !Number.isSafeInteger(deployment.id) || deployment.id < 1 || deployment.sha !== main) return blocked('Latest production deployment is untrusted or does not match current main.')
+      const statuses = await request('GET', `${root}/deployments/${deployment.id}/statuses?per_page=1`)
+      if (!Array.isArray(statuses) || statuses.length !== 1 || !trusted(statuses[0])) return blocked('Latest production status is missing or untrusted.')
+      if (statuses[0].state !== 'success') return blocked('Latest production deployment is not successful.')
+      return { ready: true, reason: 'Latest trusted production deployment succeeded for current main.' }
+    },
     getGate: async (pr) => (await checksFor(pr.head.sha)).filter((check) => check.name === GATE && check.app?.id === config.appId).sort((a, b) => b.id - a.id)[0],
     async setGate(pr, kind, reason) {
       const existing = await client.getGate(pr)
@@ -78,12 +92,13 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const workflow = await request('GET', `${root}/actions/workflows/ci.yml`)
       const runs = await list(`${root}/actions/workflows/${workflow.id}/runs?head_sha=${pr.head.sha}&event=pull_request`, 'workflow_runs')
       const ci = runs.filter((run) => run.head_sha === pr.head.sha && run.head_branch === pr.head.ref).sort((a, b) => b.id - a.id)[0]
+      const commitPullRequests = Array.isArray(ci?.pull_requests) && ci.pull_requests.length === 0 ? await list(`${root}/commits/${pr.head.sha}/pulls`) : []
       const jobs = ci ? await list(`${root}/actions/runs/${ci.id}/jobs?filter=latest`, 'jobs') : []
       const checks = await checksFor(pr.head.sha)
       const statuses = await list(`${root}/commits/${pr.head.sha}/statuses`)
       const independentReview = await client.getIndependentReview(pr,main,files.map(f=>f.filename),checks)
       const compare = await request('GET', `${root}/compare/${main}...${pr.head.sha}`)
-      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain: ['ahead', 'identical'].includes(compare.status), ciWorkflowId: workflow.id, ci, jobs, checks, statuses, independentReview, vercelAppId: config.vercelAppId, vercelChecks: checks }
+      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain: ['ahead', 'identical'].includes(compare.status), ciWorkflowId: workflow.id, ci, commitPullRequests, jobs, checks, statuses, independentReview, vercelAppId: config.vercelAppId, vercelChecks: checks }
     },
     async verifyActionPins(changes) {
       for (const change of changes) {
@@ -108,6 +123,10 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const own = reviews.filter((review) => review.user?.id === config.appBotId && review.commit_id === pr.head.sha).sort((a, b) => b.id - a.id)[0]
       if (own?.state === 'APPROVED') return
       await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Authenticated current-head OpenCode review, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
+    },
+    retryCi: (id) => {
+      if (!Number.isSafeInteger(id) || id <= 0) throw Error('Invalid retry workflow run')
+      return request('POST', `${root}/actions/runs/${id}/rerun`)
     },
     updateBranch: (pr) => request('PUT', `${root}/pulls/${pr.number}/update-branch`, { expected_head_sha: pr.head.sha }),
     getLedger: async () => readLedger(await list(`${root}/issues/${config.stateIssue}/comments`), config.appBotId),

@@ -40,6 +40,8 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 
 ## 2026-10
 
+- [2026-10-20 Dependabot Recovery](./2026-10-20-dependabot-recovery.md)
+
 - [2026-10-13 Vercel Dependabot Preview Failures](./2026-10-13-vercel-dependabot-preview-failures.md)
 - [2026-10-13 Dependabot Automation Gap Investigation](./2026-10-13-dependabot-automation-gap-investigation.md)
 - [2026-10-13 OpenCode Go Dependabot Workers](./2026-10-13-opencode-go-dependabot-workers.md)

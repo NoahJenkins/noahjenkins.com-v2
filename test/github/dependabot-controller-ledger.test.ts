@@ -39,3 +39,12 @@ describe('durable dispatch limits', () => {
     expect(() => encodeLedger({ version: 1, reservations: [{ ...task(1, 'a'), nonce: 'bad', createdAt: now }] })).toThrow()
   })
 })
+
+describe('bounded routine recovery', () => {
+  test.each(['refresh', 'retry'])('%s has a separate two-attempt lifetime budget', kind => {
+    let ledger = reserve({ version: 1, reservations: [] }, task(1, 'a', kind), now).ledger
+    ledger = reserve(ledger, task(1, 'c', kind), '2026-10-14T12:00:00.000Z').ledger
+    expect(reserve(ledger, task(1, 'd', kind), '2026-10-15T12:00:00.000Z').reason).toContain('lifetime')
+    expect(reserve(ledger, task(1, 'd', 'repair'), '2026-10-15T12:00:00.000Z').reservation).toBeDefined()
+  })
+})

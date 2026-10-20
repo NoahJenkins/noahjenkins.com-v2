@@ -4,7 +4,7 @@ const MARKER = '<!-- dependabot-controller-state:v1 -->'
 const SHA = /^[0-9a-f]{40}$/
 
 function validateTask(task) {
-  if (!Number.isSafeInteger(task.pr) || task.pr < 1 || !/^[A-Za-z0-9_=-]+$/.test(task.prId) || !SHA.test(task.head) || !SHA.test(task.base) || !['repair', 'review'].includes(task.kind)) throw new Error('Invalid dispatch task')
+  if (!Number.isSafeInteger(task.pr) || task.pr < 1 || !/^[A-Za-z0-9_=-]+$/.test(task.prId) || !SHA.test(task.head) || !SHA.test(task.base) || !['repair', 'review', 'refresh', 'retry'].includes(task.kind)) throw new Error('Invalid dispatch task')
 }
 
 function validateLedger(ledger) {
@@ -41,11 +41,11 @@ function reserve(ledger, task, now) {
   if (new Date(now).toISOString() !== now) throw new Error('Invalid reservation time')
   const deny = (reason) => ({ ledger, reason })
   if (ledger.reservations.some((item) => item.pr === task.pr && item.kind === task.kind && item.head === task.head)) return deny('This head already has a reservation; operator action is required if the agent stalled.')
-  if (task.kind === 'repair' && ledger.reservations.filter((item) => item.pr === task.pr && item.kind === 'repair').length >= 2) return deny('The lifetime repair limit of two attempts was reached.')
-  const limit = task.kind === 'repair' ? 2 : 8
+  if (task.kind !== 'review' && ledger.reservations.filter((item) => item.pr === task.pr && item.kind === task.kind).length >= 2) return deny(`The lifetime ${task.kind} limit of two attempts was reached.`)
+  const limit = task.kind !== 'review' ? 2 : 8
   if (ledger.reservations.filter((item) => item.kind === task.kind && item.createdAt.slice(0, 10) === now.slice(0, 10)).length >= limit) return deny(`The daily ${task.kind} limit of ${limit} was reached.`)
   const reservation = { ...task, nonce: randomUUID(), createdAt: now }
-  const next = { version: 1, reservations: [...ledger.reservations, reservation] }
+  const next = { ...ledger, version: 1, reservations: [...ledger.reservations, reservation] }
   encodeLedger(next)
   return { ledger: next, reservation }
 }
