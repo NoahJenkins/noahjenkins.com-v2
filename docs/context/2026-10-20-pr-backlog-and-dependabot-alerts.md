@@ -9,7 +9,7 @@ ADR 0010 superseded the earlier auto-close policy: blocked PRs intentionally sta
 - #281: Framer Motion 14.0.0 included; original branch was behind main and lacked review.
 - #283: setup-node 7.1.0 included; official release tag verified against its pinned commit.
 - #284: upload-artifact 7.0.2 included; official release tag verified against its pinned commit.
-- #288: draft human PR, outside Dependabot policy, with a documentation conflict against the newer OpenCode implementation. Its opt-in Dell routing, architecture contract, and 29 policy tests are preserved. The conflict and obsolete Copilot references are reconciled. No runner activation is performed.
+- #288: draft human PR, outside Dependabot policy, with a documentation conflict and an unenforced fork trust boundary. Deferred and closed with its source branch retained. All CI remains hosted; a future runner migration must enforce trusted workflow/ref access outside PR-controlled YAML. Ten policy tests protect hosted execution and independent required checks.
 - #290: all 12 routine dependency updates included with its existing resolved versions.
 - #291: superseded by #290's newer sanitize-html 2.18.1.
 
@@ -27,7 +27,7 @@ Using isolated Node 24.21.0 and pnpm 10.17.1:
 
 - Frozen scripts-disabled install passed.
 - pnpm audit --audit-level=low: no known vulnerabilities.
-- All 267 Jest tests in 17 suites passed with coverage.
+- All 248 Jest tests in 17 suites passed with coverage.
 - TypeScript check and Next.js production build passed.
 - actionlint 1.7.12 and git diff --check passed.
 - Direct sanitizer payload/control checks passed; sprintf-js is absent from the lockfile.
@@ -37,4 +37,4 @@ Hosted CI and final GitHub alert state must be checked on the published/merged r
 
 ## Review follow-up
 
-The hosted Codex review identified that failed/cancelled runner routing could skip every protected job. Each protected job now uses always(), a hosted runner fallback, and a first-step assertion of successful routing. Regression tests execute the real guard for success, failure, cancellation, skip, and missing results across all five protected contexts. Branch protection settings remain unchanged.
+The first hosted Codex review identified that failed/cancelled runner routing could skip every protected job. An initial guard addressed that issue. The next review identified that proposed fork YAML could bypass the runner trust decision itself. Final remediation removes conditional Dell routing entirely and retains direct hosted jobs, eliminating both paths. There are zero registered self-hosted runners. The draft migration is deferred until an external authorization boundary is verified. Branch protection settings remain unchanged.

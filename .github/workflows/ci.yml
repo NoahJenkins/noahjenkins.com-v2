@@ -22,47 +22,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  runner-routing:
-    name: CI Runner Routing
-    # Keep routing on GitHub-hosted infrastructure, including for fork PRs.
-    # Actions string equality ignores case; Bash enforces the literal opt-in.
-    runs-on: ubuntu-latest
-    outputs:
-      runner: ${{ steps.select.outputs.runner }}
-    steps:
-      - name: Select CI runner
-        id: select
-        env:
-          OPTIPLEX_CI_ENABLED: ${{ vars.OPTIPLEX_CI_ENABLED }}
-          EVENT_NAME: ${{ github.event_name }}
-          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          CURRENT_REPOSITORY: ${{ github.repository }}
-        shell: bash
-        run: |
-          runner=ubuntu-latest
-          if [[ "$OPTIPLEX_CI_ENABLED" == "true" ]] &&
-             { [[ "$EVENT_NAME" == "push" ]] ||
-               { [[ "$EVENT_NAME" == "pull_request" ]] &&
-                 [[ "$HEAD_REPOSITORY" == "$CURRENT_REPOSITORY" ]]; }; }; then
-            runner=optiplex-ci-ubuntu24
-          fi
-          echo "runner=$runner" >> "$GITHUB_OUTPUT"
-
   security-audit:
     name: Security Audit
-    needs: runner-routing
-    # Required checks must fail rather than skip when routing fails or is cancelled.
-    if: ${{ always() }}
-    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Require successful runner routing
-        if: ${{ always() }}
-        shell: bash
-        env:
-          ROUTING_RESULT: ${{ needs.runner-routing.result }}
-        run: test "$ROUTING_RESULT" = success
-
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -99,19 +63,9 @@ jobs:
 
   jest-tests:
     name: Jest Tests
-    needs: runner-routing
-    # Required checks must fail rather than skip when routing fails or is cancelled.
-    if: ${{ always() }}
-    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     
     steps:
-      - name: Require successful runner routing
-        if: ${{ always() }}
-        shell: bash
-        env:
-          ROUTING_RESULT: ${{ needs.runner-routing.result }}
-        run: test "$ROUTING_RESULT" = success
-
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -158,19 +112,9 @@ jobs:
 
   playwright-tests:
     name: Playwright Tests
-    needs: runner-routing
-    # Required checks must fail rather than skip when routing fails or is cancelled.
-    if: ${{ always() }}
-    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     
     steps:
-      - name: Require successful runner routing
-        if: ${{ always() }}
-        shell: bash
-        env:
-          ROUTING_RESULT: ${{ needs.runner-routing.result }}
-        run: test "$ROUTING_RESULT" = success
-
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -229,19 +173,9 @@ jobs:
   # Type checking (quick validation)
   typecheck:
     name: TypeScript Check
-    needs: runner-routing
-    # Required checks must fail rather than skip when routing fails or is cancelled.
-    if: ${{ always() }}
-    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     
     steps:
-      - name: Require successful runner routing
-        if: ${{ always() }}
-        shell: bash
-        env:
-          ROUTING_RESULT: ${{ needs.runner-routing.result }}
-        run: test "$ROUTING_RESULT" = success
-
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -279,19 +213,9 @@ jobs:
   # Build verification
   build:
     name: Build Check
-    needs: runner-routing
-    # Required checks must fail rather than skip when routing fails or is cancelled.
-    if: ${{ always() }}
-    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     
     steps:
-      - name: Require successful runner routing
-        if: ${{ always() }}
-        shell: bash
-        env:
-          ROUTING_RESULT: ${{ needs.runner-routing.result }}
-        run: test "$ROUTING_RESULT" = success
-
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
