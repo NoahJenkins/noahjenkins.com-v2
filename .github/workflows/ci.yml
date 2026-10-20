@@ -51,9 +51,18 @@ jobs:
   security-audit:
     name: Security Audit
     needs: runner-routing
-    runs-on: ${{ needs.runner-routing.outputs.runner }}
+    # Required checks must fail rather than skip when routing fails or is cancelled.
+    if: ${{ always() }}
+    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
 
     steps:
+      - name: Require successful runner routing
+        if: ${{ always() }}
+        shell: bash
+        env:
+          ROUTING_RESULT: ${{ needs.runner-routing.result }}
+        run: test "$ROUTING_RESULT" = success
+
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -91,9 +100,18 @@ jobs:
   jest-tests:
     name: Jest Tests
     needs: runner-routing
-    runs-on: ${{ needs.runner-routing.outputs.runner }}
+    # Required checks must fail rather than skip when routing fails or is cancelled.
+    if: ${{ always() }}
+    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
     
     steps:
+      - name: Require successful runner routing
+        if: ${{ always() }}
+        shell: bash
+        env:
+          ROUTING_RESULT: ${{ needs.runner-routing.result }}
+        run: test "$ROUTING_RESULT" = success
+
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -141,9 +159,18 @@ jobs:
   playwright-tests:
     name: Playwright Tests
     needs: runner-routing
-    runs-on: ${{ needs.runner-routing.outputs.runner }}
+    # Required checks must fail rather than skip when routing fails or is cancelled.
+    if: ${{ always() }}
+    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
     
     steps:
+      - name: Require successful runner routing
+        if: ${{ always() }}
+        shell: bash
+        env:
+          ROUTING_RESULT: ${{ needs.runner-routing.result }}
+        run: test "$ROUTING_RESULT" = success
+
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -203,9 +230,18 @@ jobs:
   typecheck:
     name: TypeScript Check
     needs: runner-routing
-    runs-on: ${{ needs.runner-routing.outputs.runner }}
+    # Required checks must fail rather than skip when routing fails or is cancelled.
+    if: ${{ always() }}
+    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
     
     steps:
+      - name: Require successful runner routing
+        if: ${{ always() }}
+        shell: bash
+        env:
+          ROUTING_RESULT: ${{ needs.runner-routing.result }}
+        run: test "$ROUTING_RESULT" = success
+
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
@@ -244,9 +280,18 @@ jobs:
   build:
     name: Build Check
     needs: runner-routing
-    runs-on: ${{ needs.runner-routing.outputs.runner }}
+    # Required checks must fail rather than skip when routing fails or is cancelled.
+    if: ${{ always() }}
+    runs-on: ${{ needs.runner-routing.outputs.runner || 'ubuntu-latest' }}
     
     steps:
+      - name: Require successful runner routing
+        if: ${{ always() }}
+        shell: bash
+        env:
+          ROUTING_RESULT: ${{ needs.runner-routing.result }}
+        run: test "$ROUTING_RESULT" = success
+
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         

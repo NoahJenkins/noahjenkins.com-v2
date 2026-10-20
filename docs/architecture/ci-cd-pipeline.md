@@ -38,6 +38,10 @@ the variable and repository names without case folding, and exposes the runner a
 a job output. It checks out no code and receives no secrets. This routing
 compatibility adjustment adds `needs: runner-routing` to each existing CI job;
 it does not skip fork checks or introduce dependencies between application jobs.
+Each protected job uses `always()`, falls back to `ubuntu-latest` when the runner
+output is missing, and first checks that routing succeeded before checkout. A
+failed, cancelled, or skipped router therefore produces failed protected checks
+instead of skipped checks that GitHub can accept for branch protection.
 The existing PR activities, permissions, action pins, cancellation group, default
 job timeouts, installs, audit gate, caches, browser configuration, and artifacts
 are unchanged. No application manifest or lockfile changes are required.

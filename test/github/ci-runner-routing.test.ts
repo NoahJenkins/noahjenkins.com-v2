@@ -38,14 +38,14 @@ function selectRunner(flag: string | undefined, event: string, head = repository
 
 // Resolve the actual job's output reference, rather than comparing copied YAML.
 function jobRunner(job: { 'runs-on': string; needs: string | string[] }, outputs: Record<string, string>) {
-  const reference = /^\$\{\{\s*needs\.([\w-]+)\.outputs\.([\w-]+)\s*\}\}$/.exec(job['runs-on'])
+  const reference = /^\$\{\{\s*needs\.([\w-]+)\.outputs\.([\w-]+)\s*\|\|\s*'([^']+)'\s*\}\}$/.exec(job['runs-on'])
   expect(reference).not.toBeNull()
-  const [, dependency, key] = reference!
+  const [, dependency, key, fallback] = reference!
   expect([job.needs].flat()).toContain(dependency)
   expect(workflow.jobs[dependency]).toBe(routingJob)
   expect(routingJob.outputs[key]).toMatch(/^\$\{\{\s*steps\.select\.outputs\.runner\s*\}\}$/)
-  expect(outputs[key]).toBeDefined()
-  return outputs[key]
+  expect(fallback).toBe('ubuntu-latest')
+  return outputs[key] || fallback
 }
 
 describe('CI runner routing from the executable workflow policy', () => {
@@ -78,8 +78,26 @@ describe('CI runner routing from the executable workflow policy', () => {
     const jobs = Object.values(workflow.jobs).filter((job: any) => job.name !== routingJob.name) as any[]
     expect(jobs.map(job => job.name).sort()).toEqual([...requiredChecks].sort())
     for (const job of jobs) {
-      expect(job.if).toBeUndefined()
+      expect(job.if).toBe('${{ always() }}')
       expect(jobRunner(job, outputs)).toBe(expected)
+    }
+  })
+
+  test.each(['success', 'failure', 'cancelled', 'skipped', ''])('routing result %j cannot skip a protected check', result => {
+    for (const job of Object.values(workflow.jobs).filter((job: any) => requiredChecks.includes(job.name)) as any[]) {
+      expect(job.if).toBe('${{ always() }}')
+      expect(jobRunner(job, {})).toBe('ubuntu-latest')
+      const guard = job.steps[0]
+      expect(guard.name).toBe('Require successful runner routing')
+      expect(guard.uses).toBeUndefined()
+      expect(guard.if).toBe('${{ always() }}')
+      expect(guard['continue-on-error']).toBeUndefined()
+      expect(guard.env).toEqual({ ROUTING_RESULT: '${{ needs.runner-routing.result }}' })
+      const execution = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', guard.run], {
+        encoding: 'utf8', env: { PATH: process.env.PATH, ROUTING_RESULT: result },
+      })
+      expect(execution.error).toBeUndefined()
+      expect(execution.status).toBe(result === 'success' ? 0 : 1)
     }
   })
 
