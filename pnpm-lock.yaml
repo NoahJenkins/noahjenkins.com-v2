@@ -11,7 +11,7 @@ overrides:
   minimatch: '>=10.2.1'
   nanoid: 3.3.18
   picomatch: '>=4.0.4'
-  postcss: 8.5.23
+  postcss: 8.5.30
   sharp: 0.35.5
   source-map-js: 1.2.2
   test-exclude: '>=7.0.1'
@@ -64,8 +64,8 @@ importers:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       postcss:
-        specifier: 8.5.23
-        version: 8.5.23
+        specifier: 8.5.30
+        version: 8.5.30
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -2325,8 +2325,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  postcss@8.5.23:
-    resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
+  postcss@8.5.30:
+    resolution: {integrity: sha512-zkd+e9S1AQHhmaBKye9zlFHWjOwVgqXl1q3ECYy8561K7qxR2cREf/STLskulBFd78k6AOFeA+ff1TtEzk9bAA==}
     engines: {node: ^10 || ^12 || >=14}
 
   pretty-format@27.5.1:
@@ -3462,7 +3462,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
-      postcss: 8.5.23
+      postcss: 8.5.30
       tailwindcss: 4.3.3
 
   '@testing-library/dom@10.4.1':
@@ -5031,7 +5031,7 @@ snapshots:
       '@swc/helpers': 0.5.23
       baseline-browser-mapping: 2.11.29
       caniuse-lite: 1.0.30001816
-      postcss: 8.5.23
+      postcss: 8.5.30
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
       styled-jsx: 5.1.6(@babel/core@7.29.6)(react@19.3.1)
@@ -5131,7 +5131,7 @@ snapshots:
     dependencies:
       playwright-core: 1.64.1
 
-  postcss@8.5.23:
+  postcss@8.5.30:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
@@ -5251,7 +5251,7 @@ snapshots:
       is-plain-object: 5.1.0
       launder: 1.7.2
       parse-srcset: 1.0.2
-      postcss: 8.5.23
+      postcss: 8.5.30
 
   saxes@6.0.0:
     dependencies:

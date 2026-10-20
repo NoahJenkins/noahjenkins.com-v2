@@ -38,3 +38,5 @@ Hosted CI and final GitHub alert state must be checked on the published/merged r
 ## Review follow-up
 
 The first hosted Codex review identified that failed/cancelled runner routing could skip every protected job. An initial guard addressed that issue. The next review identified that proposed fork YAML could bypass the runner trust decision itself. Final remediation removes conditional Dell routing entirely and retains direct hosted jobs, eliminating both paths. There are zero registered self-hosted runners. The draft migration is deferred until an external authorization boundary is verified. Branch protection settings remain unchanged.
+
+A subsequent review identified that the existing global PostCSS override still forced 8.5.23 despite the manifest update. Raised that override to 8.5.30 and regenerated the lockfile. Frozen install and direct resolution checks confirm 8.5.30 is the only installed/locked PostCSS version, including Next.js, Tailwind, and sanitize-html consumers.
