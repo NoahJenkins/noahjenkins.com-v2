@@ -120,3 +120,8 @@ a duplicate event cannot repeat a write. The run and attempt are checked again
 before dispatch. Old reservations without these fields remain consumed and block
 repeat recovery for that head. The two-attempt lifetime and daily limits still
 apply. GitHub's accepted, bodyless HTTP 201 rerun response is treated as success.
+
+Interrupted CI is classified after authenticating the run, PR commit, repository,
+workflow, and tested base, before requiring job/check completion. This permits
+bounded recovery when cancellation occurs before jobs start. Successful CI still
+requires every expected job and matching check before merge.

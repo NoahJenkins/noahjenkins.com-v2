@@ -133,5 +133,21 @@ test.each(['cancelled','timed_out'])('authenticated %s CI is eligible only for b
  const input=good();input.ci.conclusion=conclusion;input.jobs[0].conclusion=conclusion;input.checks[0].conclusion=conclusion
  expect(evaluateCandidate(input).kind).toBe('retry')
  input.checks[0].app.id=99
+ // Run authentication permits retry; an unrelated check cannot authorize merge.
+ expect(evaluateCandidate(input).kind).toBe('retry')
+ input.ci.conclusion='success';input.jobs[0].conclusion='success';input.checks[0].conclusion='success'
  expect(evaluateCandidate(input).kind).toBe('waiting')
+})
+
+test.each(['cancelled', 'timed_out'])('early %s CI can retry without completed jobs but still requires authenticated run provenance', conclusion => {
+ const input = good();input.ci.conclusion=conclusion;input.jobs=[];input.checks=[]
+ expect(evaluateCandidate(input).kind).toBe('retry')
+ const mutations: Array<(value: any) => void> = [
+  x=>x.ci.head_sha='c'.repeat(40),x=>x.ci.workflow_id=999,x=>x.ci.event='push',
+  x=>x.ci.head_repository.id=2,x=>x.ci.pull_requests[0].base.sha='c'.repeat(40),x=>x.ci.status='queued',
+ ]
+ for(const mutate of mutations){const invalid=JSON.parse(JSON.stringify(input));mutate(invalid);expect(evaluateCandidate(invalid).kind).not.toBe('retry')}
+ const partial=good();partial.ci.conclusion=conclusion;partial.jobs[0].status='queued';partial.checks=[]
+ expect(evaluateCandidate(partial).kind).toBe('retry')
+ const success=good();success.jobs=[];success.checks=[];expect(evaluateCandidate(success).kind).toBe('waiting')
 })

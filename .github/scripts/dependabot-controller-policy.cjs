@@ -107,6 +107,7 @@ function evaluateCandidate(input) {
   if (!input.containsMain) return result('refresh', 'Refresh the branch against current main.')
   if (pr.mergeable !== true) return result('waiting', 'GitHub has not resolved mergeability.')
   if (!ci || ci.head_sha !== pr.head.sha || ci.workflow_id !== input.ciWorkflowId || ci.event !== 'pull_request' || ci.head_repository?.id !== repositoryId || ci.head_branch !== pr.head.ref || !ciMatchesPr(input) || ci.status !== 'completed') return result('waiting', 'Current-head, current-base CI is missing or waiting for approval.')
+  if (['cancelled', 'timed_out'].includes(ci.conclusion)) return result('retry', 'Authenticated interrupted CI is eligible for a bounded retry.')
   const validated = REQUIRED_CHECKS.map((name) => {
     const job = jobs.find((item) => item.name === name)
     const id = Number(job?.check_run_url?.match(/\/check-runs\/(\d+)$/)?.[1])
@@ -115,7 +116,6 @@ function evaluateCandidate(input) {
   })
   if (validated.some((value) => value === null)) return result('waiting', 'Required CI job provenance or completion is missing.')
   if (validated.some((value) => value === 'failure') && ci.conclusion === 'failure') return result('repair', 'Current-head CI has a failed required check.')
-  if (['cancelled', 'timed_out'].includes(ci.conclusion)) return result('retry', 'Authenticated interrupted CI is eligible for a bounded retry.')
   if (ci.conclusion !== 'success' || validated.some((value) => value !== 'success')) return result('waiting', 'Cancelled, skipped or timed-out CI needs operator action.')
   const vercel = input.statuses?.find((item) => item.context === 'Vercel')
   if (!vercel || vercel.creator?.id !== VERCEL_BOT_ID || !vercel.target_url?.startsWith(VERCEL_PREFIX) || !input.vercelChecks?.some((item) => item.head_sha === pr.head.sha && item.app?.id === input.vercelAppId) || input.vercelAppId !== 8329) return result('waiting', 'Trusted Vercel deployment status is missing.')
