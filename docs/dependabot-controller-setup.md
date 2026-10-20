@@ -125,3 +125,5 @@ Interrupted CI is classified after authenticating the run, PR commit, repository
 workflow, and tested base, before requiring job/check completion. This permits
 bounded recovery when cancellation occurs before jobs start. Successful CI still
 requires every expected job and matching check before merge.
+
+Workspace override updates accept quoted or plain version values, package/version selectors, parent-to-child selectors, and comments. The scope check preserves all other workspace sections, including patch paths and build permissions. Unsupported YAML forms and duplicate override keys fail closed.

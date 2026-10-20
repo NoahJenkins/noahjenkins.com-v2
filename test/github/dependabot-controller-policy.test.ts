@@ -151,3 +151,18 @@ test.each(['cancelled', 'timed_out'])('early %s CI can retry without completed j
  expect(evaluateCandidate(partial).kind).toBe('retry')
  const success=good();success.jobs=[];success.checks=[];expect(evaluateCandidate(success).kind).toBe('waiting')
 })
+
+test('workspace overrides preserve surrounding policy and accept repository syntax', () => {
+ const fs = require('node:fs');
+ const assert = require('node:assert/strict');
+ const before = fs.readFileSync('pnpm-workspace.yaml', 'utf8');
+ const allowed = (oldText: string, newText: string) => evaluateScope([{filename:'pnpm-workspace.yaml',status:'modified',before:oldText,after:newText}]).allowed;
+ const updated = before.replace(/(postcss[^\n]*: ["']?)\d+\.\d+\.\d+/, '$19.9.9');
+ assert.notEqual(updated, before);
+ assert.equal(allowed(before, updated), true);
+ const fixture = "packages: []\noverrides:\n  # Keep this comment.\n  '@scope/pkg@>=1.0.0 <2.0.0': 2.0.1\n  'js-yaml@^3>argparse': '2.0.1' # CLI fix\npatchedDependencies:\n  pkg@1.0.0: patches/pkg.patch\nallowBuilds:\n  esbuild: false\n";
+ assert.equal(allowed(fixture, fixture.replace(': 2.0.1', ': 2.0.2')), true);
+ for (const after of [fixture.replace('patches/pkg.patch','patches/evil.patch'), fixture.replace('esbuild: false','esbuild: true'), fixture.replace('packages: []','packages: [evil]'), fixture + 'onlyBuiltDependencies: [evil]\n', fixture.replace(': 2.0.1', ': 2.0.1#invalid'), fixture.replace(': 2.0.1', ': file:./evil'), fixture.replace(': 2.0.1', ': https://evil.test/pkg'), fixture.replace(': 2.0.1', ': &version 2.0.1'), fixture + 'overrides:\n  x: 1.0.0\n', fixture.replace("  # Keep this comment.", "  nested:\n    value: 1.0.0"), fixture.replace("  # Keep this comment.", "  '@scope/pkg@>=1.0.0 <2.0.0': 2.0.2")]) {
+  assert.equal(allowed(fixture, after), false, after);
+ }
+});

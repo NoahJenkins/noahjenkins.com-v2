@@ -49,15 +49,25 @@ function packageScope(before, after) {
 }
 
 function workspacePrefix(text) {
-  const parts = text.split(/^overrides:[ \t]*\r?$/m)
-  if (parts.length > 2) throw new Error('Multiple overrides maps')
-  if (parts[1] !== undefined) {
-    for (const line of parts[1].split(/\r?\n/).filter((line) => line.trim())) {
-      const match = line.match(/^  ["']?((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)["']?:[ \t]*["']([^"']+)["'][ \t]*$/)
-      if (!match || !range.test(match[2])) throw new Error('Unsupported workspace policy change')
+  const retained = []; const keys = new Set(); let inside = false; let seen = false
+  for (const line of text.split(/\r?\n/)) {
+    if (/^overrides:[ \t]*(?:#.*)?$/.test(line)) {
+      if (seen) throw new Error('Multiple overrides maps')
+      inside = true; seen = true; continue
     }
+    if (inside && (!line.trim() || /^[ \t]*#/.test(line))) continue
+    // Keep every other top-level section in the policy comparison.
+    if (inside && /^\S/.test(line)) inside = false
+    if (!inside) { retained.push(line); continue }
+    const match = line.match(/^  (?:'([^']+)'|"([^"\\]+)"|([^\s:'"]+)):[ \t]*(?:'([^']+)'|"([^"\\]+)"|([^\s#]+))(?:[ \t]+#.*|[ \t]*)$/)
+    const key = match && (match[1] || match[2] || match[3])
+    const version = match && (match[4] || match[5] || match[6])
+    // Accept pnpm package/version selectors and parent>child selectors, but no
+    // YAML aliases, tags, nested objects, URLs, or local dependency targets.
+    if (!match || !/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+[a-zA-Z0-9@._/<>~=^|* -]*$/.test(key) || !range.test(version) || keys.has(key)) throw new Error('Unsupported workspace policy change')
+    keys.add(key)
   }
-  return parts[0].trimEnd()
+  return retained.join('\n').trimEnd()
 }
 
 function evaluateScope(files) {
