@@ -20,6 +20,32 @@ This repository uses two GitHub Actions workflows for validation:
     - `actions: read`
   - Workflow action references are pinned to full commit SHAs
 
+## Deferred Dell CI migration
+
+All five application jobs remain directly on `ubuntu-latest` for both PRs and
+main pushes. No runner-selection job, self-hosted label, or activation variable
+is used. The runner policy tests verify hosted execution and independent required
+checks in the executable workflow.
+
+PR #288 proposed opt-in disposable Dell runners. The proposal is deferred:
+`pull_request` executes proposed workflow YAML, so a fork can replace a routing
+condition or name a self-hosted runner directly. An in-workflow repository check
+or a false activation flag is not a runner authorization boundary. At review on
+October 20, 2026, the repository had zero registered self-hosted runners.
+
+Before a future migration, enforce trusted workflow/ref access outside
+PR-controlled YAML and demonstrate that a fork proposing a direct self-hosted
+`runs-on` cannot obtain a runner. Review runner-group restrictions or another
+infrastructure-enforced boundary before registration; workflow conditions alone
+are insufficient. Keep PR checks hosted. Disposable workers, isolated networks,
+no host credentials/mounts, bounded resources, disk disposal, and verified
+artifacts remain additional prerequisites, not substitutes for authorization.
+See [GitHub's secure-use guidance](https://docs.github.com/en/actions/reference/security/secure-use).
+
+The original draft design and branch `ci/portfolio-dell-routing` remain retained
+for a separately reviewed migration. This change registers no runner and alters
+no infrastructure or runner access policy.
+
 ## Pipeline Stages
 
 ### 1) Test Stage

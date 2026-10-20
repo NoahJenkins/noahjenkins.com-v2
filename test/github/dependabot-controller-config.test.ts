@@ -32,3 +32,29 @@ test('workflow keeps candidate execution outside credential jobs',()=>{
  }
  expect(JSON.stringify(workflow)).not.toMatch(/COPILOT_AUTOMATION_TOKEN|DISPATCH_USER_ID|REVIEWER_ID/)
 })
+
+test('missing controller setup produces a visible warning without credentials or candidate code', () => {
+ const fs = require('node:fs')
+ const os = require('node:os')
+ const path = require('node:path')
+ const { spawnSync } = require('node:child_process')
+ const workflow = require('js-yaml').load(fs.readFileSync('.github/workflows/dependabot-auto-merge.yml', 'utf8'))
+ const job = workflow.jobs['setup-required']
+ expect(job).toBeDefined()
+ expect(job.environment).toBeUndefined()
+ expect(job.if).toBe("github.event_name == 'workflow_dispatch' && vars.DEPENDABOT_CONTROLLER_APP_ID == ''")
+ expect(job.steps).toHaveLength(1)
+ expect(job.steps[0].uses).toBeUndefined()
+ const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dependabot-setup-'))
+ try {
+  const summary = path.join(directory, 'summary')
+  const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', job.steps[0].run], {
+   encoding: 'utf8', env: { PATH: process.env.PATH, GITHUB_STEP_SUMMARY: summary },
+  })
+  expect(result.status).toBe(0)
+  expect(result.stdout).toContain('::warning::Dependabot automation is inactive')
+  expect(fs.readFileSync(summary, 'utf8')).toContain('docs/dependabot-controller-setup.md')
+ } finally {
+  fs.rmSync(directory, { recursive: true, force: true })
+ }
+})
