@@ -127,3 +127,5 @@ bounded recovery when cancellation occurs before jobs start. Successful CI still
 requires every expected job and matching check before merge.
 
 Workspace override updates accept quoted or plain version values, package/version selectors, parent-to-child selectors, and comments. The scope check preserves all other workspace sections, including patch paths and build permissions. Unsupported YAML forms and duplicate override keys fail closed.
+
+The scope check compares PR file changes against the authenticated common ancestor of current main and the PR head. This permits bounded refresh when main changed unrelated protected settings. After refresh, the common ancestor must equal current main before merge can proceed. Missing or contradictory comparison evidence blocks the controller.
