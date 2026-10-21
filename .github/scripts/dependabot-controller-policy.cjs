@@ -1,4 +1,5 @@
 'use strict'
+const { expandWorkflowFlow } = require('./dependabot-workflow-shape.cjs')
 
 const REQUIRED_CHECKS = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
 const GATE = 'Dependabot Merge Gate'
@@ -14,6 +15,7 @@ function actionPins(text) {
 }
 
 function normalizeWorkflow(text, allowNode = true) {
+  text=expandWorkflowFlow(text)
   const lines = text.split('\n')
   for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN`
   const normalized = lines.join('\n')
