@@ -9,7 +9,7 @@ const VERCEL_PREFIX = 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-co
 const range = /^(?:[~^]|>=?)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/
 const nodeVersion = /^(?:2[4-9]|[3-9]\d)(?:\.\d+\.\d+|\.x)?$/
 
-const { workflowActionReferences } = require('./dependabot-opencode-contract.cjs')
+const { workflowActionReferences, workflowNodeReferences } = require('./dependabot-opencode-contract.cjs')
 function actionPins(text) {
   return workflowActionReferences(text).filter(pin=>pin.sha && pin.tag)
 }
@@ -18,8 +18,8 @@ function normalizeWorkflow(text, allowNode = true) {
   text=expandWorkflowFlow(text)
   const lines = text.split('\n')
   for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN`
-  const normalized = lines.join('\n')
-  return allowNode ? normalized.replace(/^([ \t]*node-version:[ \t]*)['"]?(2[4-9]|[3-9]\d)(?:\.\d+\.\d+)?['"]?[ \t]*$/gm, '$1NODE') : normalized
+  if(allowNode)for(const input of workflowNodeReferences(text))if(nodeVersion.test(input.version))lines[input.index]=`${input.prefix}NODE`
+  return lines.join('\n')
 }
 
 function packageScope(before, after) {
