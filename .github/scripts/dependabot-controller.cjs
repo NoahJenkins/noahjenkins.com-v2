@@ -39,6 +39,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   }
   if (!config.automationEnabled) return stop('blocked', 'Dependabot automation is disabled pending setup.')
   if (!eligiblePr(pr, config.repositoryId)) return stop('blocked', 'Dependabot identity, branch or repository is outside policy.')
+  if (pr.changed_files > 64) return stop('blocked', 'PR exceeds the 64-file review capacity. Split the dependency update before automatic repair or review.')
   if (await client.hasDependabotHead(pr.head.sha, pr.number)) return stop('blocked', 'Multiple Dependabot PRs share this commit. Resolve duplicate heads before automatic merge.')
   const main = await client.getMain()
   if (config.workflowSha !== main) return stop('waiting', 'Wait for controller code from current main before automatic merge or recovery.')
