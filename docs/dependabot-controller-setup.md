@@ -152,7 +152,7 @@ The 64-file review limit applies to the entire resulting PR. Validation and publ
 
 Direct repairs retain requested dependency targets relative to the authenticated merge base, including partial grouped updates. Main-baseline adoption also retains targets added only on main, including inserted repeated actions. Both validation and publication enforce these checks. PRs with more than 64 changed files receive a blocked capacity decision before agent reservations; split such updates before retrying.
 
-Workflow Node-version occurrences use the same unique ancestor-to-main alignment as action references after inserted setup steps. Missing or ambiguous ancestor evidence blocks adoption; both requested Node updates and main-only Node targets must be retained.
+Workflow Node-version occurrences are grouped by job and use the same unique ancestor-to-main alignment as action references after inserted setup steps. Reordering jobs does not change their target identity. Flow mappings use the same parsed representation as block mappings. Missing or ambiguous ancestor evidence blocks adoption; both requested Node updates and main-only Node targets must be retained.
 
 Equal-sized repeated target sets also require ordered ancestor alignment. Duplicate ancestor targets cannot distinguish a deletion followed by insertion, so those conflict repairs require manual resolution instead of positional reassignment.
 
