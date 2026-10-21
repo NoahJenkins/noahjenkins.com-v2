@@ -90,6 +90,7 @@ function mainAdoptionFixture(){
  const f=fixture();
  const main=SOURCE==='package.json'?JSON.stringify({...JSON.parse(SOURCE_BEFORE),scripts:{test:'trusted-main-test'}}):SOURCE_BEFORE+'\n// trusted main assertion\n';
  const after=SOURCE==='package.json'?JSON.stringify({...JSON.parse(SOURCE_AFTER),scripts:{test:'trusted-main-test'}}):SOURCE_AFTER+'\n// trusted main assertion\n';
+ f.snapshot.headFiles[SOURCE]=SOURCE_AFTER;
  f.snapshot.baseFiles={[SOURCE]:main};f.snapshot.task=task;
  f.artifact=sealArtifact({...f.artifact,result:{files:[{path:SOURCE,content:after}]}});
  return {...f,main,after};
@@ -99,6 +100,14 @@ runTest('validator accepts approved dependency changes while preserving authenti
  try{
   const result=await validateRepair(task,f.snapshot,f.artifact,{origin,root:f.root,image:'fixture',cleanup:()=>{},execute:()=>{}});
   assert.equal(result.artifact.result.files.find(file=>file.path===SOURCE).content,f.after);
+ }finally{fs.rmSync(f.root,{recursive:true,force:true});}
+});
+runTest('main-side fallback rejects erasing the dependency target before running validation',async()=>{
+ const f=mainAdoptionFixture();let calls=0;
+ try{
+  const artifact=sealArtifact({...f.artifact,result:{files:[{path:SOURCE,content:f.main}]}});
+  await assert.rejects(()=>validateRepair(task,f.snapshot,artifact,{origin,root:f.root,image:'fixture',cleanup:()=>{},execute:()=>{calls++;}}),/Protected|unsupported/i);
+  assert.equal(calls,0);
  }finally{fs.rmSync(f.root,{recursive:true,force:true});}
 });
 runTest('main-side fallback cannot authorize new protected edits or unrelated base content',async()=>{
@@ -131,6 +140,9 @@ runTest('publisher independently authorizes main-side adoption and rejects polic
   assert.equal(writes,1);
   const bad=SOURCE==='package.json'?f.after.replace('trusted-main-test','evil-command'):f.after.replace('trusted main assertion','removed assertion');
   artifact=sealArtifact({...artifact,result:{files:[{path:SOURCE,content:bad}]}});
+  await assert.rejects(()=>publishResult(client,config,task,1,origin),/Protected|unsupported/i);
+  assert.equal(writes,1);
+  artifact=sealArtifact({...artifact,result:{files:[{path:SOURCE,content:f.main}]}});
   await assert.rejects(()=>publishResult(client,config,task,1,origin),/Protected|unsupported/i);
   assert.equal(writes,1);
  }finally{fs.rmSync(f.root,{recursive:true,force:true});}
@@ -171,4 +183,61 @@ runTest('64 submitted files remain valid when the generated lockfile is unchange
   await assert.rejects(()=>validateRepair(task,snapshot,artifact,{origin,root:f.root,image:'fixture',cleanup:()=>{},execute:()=>fs.writeFileSync(path.join(f.root,LOCK),'changed lock')}),/file count/i);
   await assert.rejects(()=>validateRepair(task,snapshot,sealArtifact({...artifact,result:{files:[...files,{path:'packages/extra/package.json',content:SOURCE_AFTER}]}}),{origin,root:f.root,image:'fixture',cleanup:()=>{},execute:()=>{}}),/file count/i);
  }finally{fs.rmSync(f.root,{recursive:true,force:true});}
+});
+
+runTest('main adoption preserves every grouped dependency target and rejects partial rollback',()=>{
+ const {scopeChanges}=require(PREFIX+'dependabot-opencode-contract.cjs');
+ const filename='package.json';
+ const current={dependencies:{example:'1.1.0',second:'2.1.0'},engines:{node:'24.1.0'}};
+ const main={dependencies:{example:'1.0.0',second:'2.0.0'},engines:{node:'24.0.0'},scripts:{test:'trusted-main'}};
+ const candidate={...main,...current};
+ const snapshot={changedFiles:[filename],existingPaths:[filename],headFiles:{[filename]:JSON.stringify(current)},baseFiles:{[filename]:JSON.stringify(main)}};
+ const allowed=value=>evaluateScope(scopeChanges([{path:filename,content:JSON.stringify(value)}],snapshot,evaluateScope)).allowed;
+ assert.equal(allowed(candidate),true);
+ assert.equal(allowed({...candidate,dependencies:{...candidate.dependencies,example:'1.0.0'}}),false);
+ assert.equal(allowed({...candidate,dependencies:{second:'2.1.0'}}),false);
+ assert.equal(allowed({...candidate,engines:main.engines}),false);
+});
+runTest('main adoption cannot replace an action update with the old main version',()=>{
+ const {scopeChanges}=require(PREFIX+'dependabot-opencode-contract.cjs');
+ const filename='.github/workflows/ci.yml';
+ const current=workflow(head).replace('v4.1.0','v4.2.0');
+ const main=workflow(base,'echo trusted main');
+ const snapshot={changedFiles:[filename],existingPaths:[filename],headFiles:{[filename]:current},baseFiles:{[filename]:main}};
+ const allowed=value=>evaluateScope(scopeChanges([{path:filename,content:value}],snapshot,evaluateScope)).allowed;
+ assert.equal(allowed(main),false);
+ assert.equal(allowed(current.replace('echo old','echo trusted main')),true);
+});
+
+runTest('main policy adoption keeps override targets and independent main additions',()=>{
+ const {scopeChanges}=require(PREFIX+'dependabot-opencode-contract.cjs');
+ const filename='pnpm-workspace.yaml';
+ const current="packages:\n  - 'apps/*'\noverrides:\n  example: '1.1.0'\n  second: '2.1.0'\n";
+ const main="packages:\n  - 'apps/*'\n  - 'packages/*'\noverrides:\n  example: '1.0.0'\n  second: '2.0.0'\n  extra: '3.0.0'\n";
+ const snapshot={changedFiles:[filename],existingPaths:[filename],headFiles:{[filename]:current},baseFiles:{[filename]:main}};
+ const allowed=value=>evaluateScope(scopeChanges([{path:filename,content:value}],snapshot,evaluateScope)).allowed;
+ assert.equal(allowed(main),false);
+ assert.equal(allowed(main.replace('1.0.0','1.1.0')),false);
+ assert.equal(allowed(main.replace('1.0.0','1.1.0').replace('2.0.0','2.1.0')),true);
+});
+runTest('main adoption preserves same-tag SHA changes and workflow Node targets',()=>{
+ const {scopeChanges}=require(PREFIX+'dependabot-opencode-contract.cjs');
+ const filename='.github/workflows/ci.yml';
+ const current=workflow(head)+'      - uses: actions/setup-node@'+head+' # v4.1.0\n        with:\n          node-version: 24.1.0\n';
+ const main=current.replaceAll(head,base).replace('echo old','echo trusted main').replace('24.1.0','24.0.0');
+ const candidate=current.replace('echo old','echo trusted main');
+ const snapshot={changedFiles:[filename],existingPaths:[filename],headFiles:{[filename]:current},baseFiles:{[filename]:main}};
+ const allowed=value=>evaluateScope(scopeChanges([{path:filename,content:value}],snapshot,evaluateScope)).allowed;
+ assert.equal(allowed(main),false);
+ assert.equal(allowed(candidate),true);
+ assert.equal(allowed(candidate.replace('24.1.0','24.0.0')),false);
+});
+
+runTest('main baseline adoption cannot move immutable pins between repeated action steps',()=>{
+ const {adoptMainBaseline}=require(PREFIX+'dependabot-opencode-contract.cjs');
+ const filename='.github/workflows/ci.yml';
+ const current=workflow(head)+'      - uses: actions/checkout@v4.1.0\n';
+ const main=workflow(head).replace(head,'v4.1.0')+'      - uses: actions/checkout@'+head+' # v4.1.0\n';
+ const change={filename,status:'modified',before:current,after:main};
+ assert.equal(evaluateScope([adoptMainBaseline(change,main,evaluateScope)]).allowed,false);
 });
