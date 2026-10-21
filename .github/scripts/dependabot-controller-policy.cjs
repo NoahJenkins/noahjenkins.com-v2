@@ -17,7 +17,7 @@ function actionPins(text) {
 function normalizeWorkflow(text, allowNode = true) {
   text=expandWorkflowFlow(text)
   const lines = text.split('\n')
-  for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN`
+  for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN${pin.suffix}`
   if(allowNode)for(const input of workflowNodeReferences(text))if(nodeVersion.test(input.version))lines[input.index]=`${input.prefix}NODE${input.suffix}`
   return lines.join('\n')
 }
