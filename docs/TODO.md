@@ -82,3 +82,11 @@ Last Updated: 2026-10-13
 - [x] Relevant docs are updated (`README`, ADRs, context notes, or architecture docs as applicable)
 - [x] Security/quality checks for the change are completed
 - [x] Any follow-up work is captured as new TODO items
+
+
+## 2026-10-20 Dependabot recovery
+
+- [x] Implement and test production deployment interlock, bounded automatic setup diagnostics, and exhausted-task summaries locally.
+- [ ] Review and ship the recovery branch through the authorized path; hosted validation remains pending.
+- [ ] Configure the dedicated App (including Deployments read), state issue, strict App-bound gate, isolated environment keys, and verified Go billing controls before activation.
+- [ ] Observe one authorized bounded repair/review/merge/production flow; confirm that failed production blocks later merges. Keep rollback manual.

@@ -2,7 +2,7 @@
 const { GATE, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
 const { readLedger, encodeLedger } = require('./dependabot-controller-ledger.cjs')
 
-const { validateReviewEvidence, validateFiles, text, digest, REVIEW, same } = require('./dependabot-opencode-contract.cjs')
+const { retainsRepairTargets, adoptMainBaseline, validateReviewEvidence, validateFiles, text, digest, REVIEW, same } = require('./dependabot-opencode-contract.cjs')
 const { parseArtifactZip, verifyRun, verifyJobs, MAX_ZIP } = require('./dependabot-opencode-publish.cjs')
 const { createHash } = require('node:crypto')
 const CLAIM = '<!-- dependabot-opencode-claim:v1 -->'
@@ -10,14 +10,14 @@ const CLAIM = '<!-- dependabot-opencode-claim:v1 -->'
 function createClient(config, readToken, writeToken, fetcher = fetch) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(config.repo)) throw new Error('Invalid repository')
   const root = `/repos/${config.repo}`
-  async function request(method, path, body, useWrite = method !== 'GET') {
+  async function request(method, path, body, useWrite = method !== 'GET', emptyCreated = false) {
     if (!path.startsWith('/') || path.startsWith('//') || /[\r\n]/.test(path)) throw new Error('Invalid API path')
     const response = await fetcher(`https://api.github.com${path}`, {
       method, headers: { Authorization: `Bearer ${useWrite ? writeToken : readToken}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2026-03-10', 'Content-Type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(20000), redirect: 'error',
     })
     if (!response.ok) throw new Error(`GitHub HTTP ${response.status}: ${method} ${path.split('?')[0]}`)
-    if (response.status === 204) return null
+    if (response.status === 204 || (emptyCreated && response.status === 201)) return null
     const data = await response.json()
     if (data.errors) throw new Error('GitHub GraphQL request rejected; no automatic retry')
     return data
@@ -57,6 +57,20 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
     listPrs: () => list(`${root}/pulls?state=open&base=main`),
     hasDependabotHead: async (sha, excludeNumber) => (await client.listPrs()).some((pr) => pr.user?.id === DEPENDABOT_ID && pr.head.sha === sha && pr.number !== excludeNumber),
     getProtection: () => request('GET', `${root}/branches/main/protection`),
+    async getProduction(main) {
+      const blocked = (reason) => ({ ready: false, reason: `${reason} Automatic merges are paused. Inspect Vercel production; rollback is manual. See docs/dependabot-controller-setup.md.` })
+      // Vercel reports production_environment=false for this repository. The exact
+      // Production environment and authenticated publisher identify production.
+      const deployments = await request('GET', `${root}/deployments?environment=Production&per_page=1`)
+      if (!Array.isArray(deployments) || deployments.length !== 1) return blocked('Current production deployment evidence is missing.')
+      const deployment = deployments[0]
+      const trusted = (item) => item?.creator?.id === 35613825 && item.creator.type === 'Bot' && item.environment === 'Production'
+      if (!trusted(deployment) || !Number.isSafeInteger(deployment.id) || deployment.id < 1 || deployment.sha !== main) return blocked('Latest production deployment is untrusted or does not match current main.')
+      const statuses = await request('GET', `${root}/deployments/${deployment.id}/statuses?per_page=1`)
+      if (!Array.isArray(statuses) || statuses.length !== 1 || !trusted(statuses[0])) return blocked('Latest production status is missing or untrusted.')
+      if (statuses[0].state !== 'success') return blocked('Latest production deployment is not successful.')
+      return { ready: true, reason: 'Latest trusted production deployment succeeded for current main.' }
+    },
     getGate: async (pr) => (await checksFor(pr.head.sha)).filter((check) => check.name === GATE && check.app?.id === config.appId).sort((a, b) => b.id - a.id)[0],
     async setGate(pr, kind, reason) {
       const existing = await client.getGate(pr)
@@ -65,25 +79,48 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const result = await request(existing ? 'PATCH' : 'POST', existing ? `${root}/check-runs/${existing.id}` : `${root}/check-runs`, body)
       if (result.app?.id !== config.appId || result.head_sha !== pr.head.sha) throw new Error('Unexpected merge-gate publisher or head')
     },
+    async adoptPublishedBaseline(change,pr,main,mainContent) {
+      const adopted=adoptMainBaseline(change,mainContent,evaluateScope,change.before)
+      if(adopted===change)return change
+      // Ancestor contents alone cannot recover a target already removed from
+      // the current head. Bind fallback to the App's published repair receipt
+      // and compare with that repair's immutable, pre-publication parent.
+      const claims=(await client.getClaims()).filter(claim=>claim.published===true && claim.publishAttempted===true && claim.resultId===pr.head.sha && claim.task?.kind==='repair' && claim.task.pr===pr.number && claim.task.prId===pr.node_id && claim.task.base===main && claim.task.head!==pr.head.sha && /^[0-9a-f]{40}$/.test(claim.task.head || '') && claim.origin?.repositoryId===config.repositoryId && claim.origin.workflowSha===main && claim.origin.workflowPath==='.github/workflows/dependabot-auto-merge.yml' && claim.origin.ref==='refs/heads/main')
+      if(claims.length!==1)return change
+      const before=await content(change.filename,claims[0].task.head)
+      return retainsRepairTargets({...change,before},mainContent,change.before)?adopted:change
+    },
     async snapshot(pr, main) {
       const files = await list(`${root}/pulls/${pr.number}/files`)
-      if (files.length !== pr.changed_files || files.length > 100) throw new Error('Incomplete or excessive PR file list')
+      if (files.length !== pr.changed_files || files.length > 64) throw new Error('Incomplete PR file list or 64-file review capacity exceeded')
+      const compare = await request('GET', `${root}/compare/${main}...${pr.head.sha}`)
+      const containsMain = ['ahead', 'identical'].includes(compare.status)
+      const scopeBase = compare.merge_base_commit?.sha
+      if (!['ahead', 'identical', 'behind', 'diverged'].includes(compare.status) || !/^[0-9a-f]{40}$/.test(scopeBase || '') || (containsMain && scopeBase !== main)) throw new Error('Invalid PR merge base evidence')
+      // PR file lists describe the delta from this common ancestor. Current main
+      // may contain unrelated policy edits until a bounded branch refresh lands.
       const changes = []
       for (const file of files) {
         const needText = ['package.json', 'pnpm-workspace.yaml', '.nvmrc', '.node-version', '.github/workflows/ci.yml', '.github/workflows/dependency-review.yml', '.github/workflows/dependabot-auto-merge.yml'].includes(file.filename)
-        changes.push({ ...file, before: needText && file.status === 'modified' ? await content(file.filename, main) : '', after: needText && !['removed', 'renamed'].includes(file.status) ? await content(file.filename, pr.head.sha) : '' })
+        changes.push({ ...file, before: needText && file.status === 'modified' ? await content(file.filename, scopeBase) : '', after: needText && !['removed', 'renamed'].includes(file.status) ? await content(file.filename, pr.head.sha) : '' })
+      }
+      // A published conflict repair can already contain authenticated main-side
+      // policy edits while ancestry still needs the bounded branch refresh.
+      if(scopeBase!==main)for(let i=0;i<changes.length;i++) {
+        const change=changes[i]
+        if(change.status==='modified' && !evaluateScope([change]).allowed)changes[i]=await client.adoptPublishedBaseline(change,pr,main,await content(change.filename,main))
       }
       const scope = evaluateScope(changes)
       if (scope.allowed) await client.verifyActionPins(changes.filter((file) => file.filename.startsWith('.github/workflows/')))
       const workflow = await request('GET', `${root}/actions/workflows/ci.yml`)
       const runs = await list(`${root}/actions/workflows/${workflow.id}/runs?head_sha=${pr.head.sha}&event=pull_request`, 'workflow_runs')
       const ci = runs.filter((run) => run.head_sha === pr.head.sha && run.head_branch === pr.head.ref).sort((a, b) => b.id - a.id)[0]
+      const commitPullRequests = Array.isArray(ci?.pull_requests) && ci.pull_requests.length === 0 ? await list(`${root}/commits/${pr.head.sha}/pulls`) : []
       const jobs = ci ? await list(`${root}/actions/runs/${ci.id}/jobs?filter=latest`, 'jobs') : []
       const checks = await checksFor(pr.head.sha)
       const statuses = await list(`${root}/commits/${pr.head.sha}/statuses`)
       const independentReview = await client.getIndependentReview(pr,main,files.map(f=>f.filename),checks)
-      const compare = await request('GET', `${root}/compare/${main}...${pr.head.sha}`)
-      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain: ['ahead', 'identical'].includes(compare.status), ciWorkflowId: workflow.id, ci, jobs, checks, statuses, independentReview, vercelAppId: config.vercelAppId, vercelChecks: checks }
+      return { pr, mainSha: main, repositoryId: config.repositoryId, scope, containsMain, ciWorkflowId: workflow.id, ci, commitPullRequests, jobs, checks, statuses, independentReview, vercelAppId: config.vercelAppId, vercelChecks: checks }
     },
     async verifyActionPins(changes) {
       for (const change of changes) {
@@ -108,6 +145,10 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const own = reviews.filter((review) => review.user?.id === config.appBotId && review.commit_id === pr.head.sha).sort((a, b) => b.id - a.id)[0]
       if (own?.state === 'APPROVED') return
       await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Authenticated current-head OpenCode review, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
+    },
+    retryCi: (id) => {
+      if (!Number.isSafeInteger(id) || id <= 0) throw Error('Invalid retry workflow run')
+      return request('POST', `${root}/actions/runs/${id}/rerun`, undefined, true, true)
     },
     updateBranch: (pr) => request('PUT', `${root}/pulls/${pr.number}/update-branch`, { expected_head_sha: pr.head.sha }),
     getLedger: async () => readLedger(await list(`${root}/issues/${config.stateIssue}/comments`), config.appBotId),
@@ -191,8 +232,15 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       if(pr.node_id!==task.prId || pr.head.sha!==task.head || pr.base.sha!==task.base || await client.getMain()!==task.base)throw Error('Snapshot head/base changed')
       const files=await list(`${root}/pulls/${task.pr}/files`)
       if(files.length!==pr.changed_files || files.length>64 || !files.length)throw Error('Incomplete snapshot file set')
+      const compare=await request('GET',`${root}/compare/${task.base}...${task.head}`)
+      const scopeBase=compare.merge_base_commit?.sha
+      if(!['ahead','identical','behind','diverged'].includes(compare.status) || !/^[0-9a-f]{40}$/.test(scopeBase || '') || (['ahead','identical'].includes(compare.status) && scopeBase!==task.base))throw Error('Invalid repair merge base evidence')
+      // Keep current main available for conflict repair; authorize the PR delta
+      // against its common ancestor, matching GitHub's pull-file list.
       const baseFiles={};const headFiles={};const changes=[]
-      for(const f of files){if(['removed','renamed'].includes(f.status))throw Error('Unsupported changed file');baseFiles[f.filename]=f.status==='added'?'':await content(f.filename,task.base);headFiles[f.filename]=await content(f.filename,task.head);changes.push({...f,before:baseFiles[f.filename],after:headFiles[f.filename]})}
+      for(const f of files){if(['removed','renamed'].includes(f.status))throw Error('Unsupported changed file');baseFiles[f.filename]=f.status==='added'?'':await content(f.filename,task.base);headFiles[f.filename]=await content(f.filename,task.head);changes.push({...f,before:f.status==='added'?'':scopeBase===task.base?baseFiles[f.filename]:await content(f.filename,scopeBase),after:headFiles[f.filename]})}
+      const ancestorFiles=Object.fromEntries(changes.map(change=>[change.filename,change.before]))
+      for(let i=0;i<changes.length;i++)changes[i]=await client.adoptPublishedBaseline(changes[i],pr,task.base,baseFiles[changes[i].filename])
       const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
       await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
       const contextFiles={};const tree=await request('GET',`${root}/git/trees/${task.head}?recursive=1`)
@@ -213,7 +261,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
         }
         if(state.independentReview)diagnostics.push({review:state.independentReview.report})
       }
-      const result={task,changedFiles:files.map(f=>f.filename),baseFiles,headFiles,contextFiles,diagnostics,existingPaths}
+      const result={task,changedFiles:files.map(f=>f.filename),baseFiles,headFiles,ancestorFiles,contextFiles,diagnostics,existingPaths}
       if(Buffer.byteLength(JSON.stringify(result))>8*1024*1024)throw Error('Snapshot byte limit')
       return result
     },

@@ -1,6 +1,6 @@
 export {}
 const { reserve, readLedger, encodeLedger } = require('../../.github/scripts/dependabot-controller-ledger.cjs')
-const task = (pr: number, head: string, kind = 'repair') => ({ pr, prId: `PR_${pr}`, head: head.repeat(40), base: 'b'.repeat(40), kind })
+const task = (pr: number, head: string, kind = 'repair') => ({ pr, prId: `PR_${pr}`, head: head.repeat(40), base: 'b'.repeat(40), kind, ...(kind === 'retry' ? { ciRunId: 55, ciRunAttempt: 1 } : {}) })
 const now = '2026-10-13T12:00:00.000Z'
 describe('durable dispatch limits', () => {
   test('consumes uncertain reservations before any provider write', () => {
@@ -37,5 +37,14 @@ describe('durable dispatch limits', () => {
   test('rejects forged tasks and invalid persisted counters', () => {
     expect(() => reserve({ version: 1, reservations: [] }, task(1, 'z'), now)).toThrow()
     expect(() => encodeLedger({ version: 1, reservations: [{ ...task(1, 'a'), nonce: 'bad', createdAt: now }] })).toThrow()
+  })
+})
+
+describe('bounded routine recovery', () => {
+  test.each(['refresh', 'retry'])('%s has a separate two-attempt lifetime budget', kind => {
+    let ledger = reserve({ version: 1, reservations: [] }, task(1, 'a', kind), now).ledger
+    ledger = reserve(ledger, task(1, 'c', kind), '2026-10-14T12:00:00.000Z').ledger
+    expect(reserve(ledger, task(1, 'd', kind), '2026-10-15T12:00:00.000Z').reason).toContain('lifetime')
+    expect(reserve(ledger, task(1, 'd', 'repair'), '2026-10-15T12:00:00.000Z').reservation).toBeDefined()
   })
 })

@@ -38,7 +38,7 @@ describe('GitHub provider boundary', () => {
   test('requires an official Action tag pointing to the proposed pin', async () => {
     const fetcher = async () => ({ ok: true, status: 200, json: async () => ({ object: { type: 'commit', sha: 'c'.repeat(40) } }) })
     const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'app-token', fetcher)
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     await expect(client.verifyActionPins([{ before, after: before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7') }])).rejects.toThrow('official')
   })
   test('an existing native squash queue can recover after an interrupted evaluation', async () => {
@@ -51,7 +51,7 @@ describe('GitHub provider boundary', () => {
   test('validates a full provider snapshot through the actual policy', async () => {
     const { evaluateCandidate } = require('../../.github/scripts/dependabot-controller-policy.cjs')
     const base = 'b'.repeat(40)
-    const pr = { number: 1, changed_files: 1, head: { sha, ref: 'dependabot/npm_and_yarn/x', repo: { id: 1 } }, base: { ref: 'main', sha: base, repo: { id: 1 } }, user: { id: 49699333, type: 'Bot' }, draft: false, state: 'open', mergeable: true, mergeable_state: 'clean' }
+    const pr = { id: 42, node_id: 'PR_1', number: 1, changed_files: 1, head: { sha, ref: 'dependabot/npm_and_yarn/x', repo: { id: 1 } }, base: { ref: 'main', sha: base, repo: { id: 1 } }, user: { id: 49699333, type: 'Bot' }, draft: false, state: 'open', mergeable: true, mergeable_state: 'clean' }
     const names = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
     const checks = names.map((name, i) => ({ id: i+1, name, head_sha: sha, app: { id: 15368 }, status: 'completed', conclusion: 'success' }))
     const responses: any = {
@@ -62,7 +62,7 @@ describe('GitHub provider boundary', () => {
       [`/commits/${sha}/check-runs`]: { check_runs: [...checks, { head_sha: sha, app: { id: 8329 } }] },
       [`/commits/${sha}/statuses`]: [{ context: 'Vercel', state: 'success', creator: { id: 35613825 }, target_url: 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-com/abc' }],
       '/pulls/1/reviews': [{ id: 1, user: { id: 175728472, type: 'Bot' }, commit_id: sha, state: 'APPROVED' }],
-      [`/compare/${base}...${sha}`]: { status: 'ahead' },
+      [`/compare/${base}...${sha}`]: { status: 'ahead', merge_base_commit: {sha:base} },
     }
     const fetcher = async (url: string) => {
       const parsed = new URL(url); const path = parsed.pathname.replace('/repos/o/r', '')
@@ -73,13 +73,20 @@ describe('GitHub provider boundary', () => {
     const client = createClient({ repo: 'o/r', appId: 99, repositoryId: 1, reviewerId: 175728472, vercelAppId: 8329 }, 'read-token', 'app-token', fetcher)
     // Legacy Copilot approval is not authenticated OpenCode evidence.
     expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('review')
+    responses['/actions/workflows/8/runs'].workflow_runs[0].pull_requests = []
+    responses[`/commits/${sha}/pulls`] = [JSON.parse(JSON.stringify(pr))]
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('review')
+    responses[`/commits/${sha}/pulls`][0].base.sha = 'c'.repeat(40)
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('waiting')
+    responses[`/commits/${sha}/pulls`] = []
+    expect(evaluateCandidate(await client.snapshot(pr, base)).kind).toBe('waiting')
     pr.changed_files = 2
     await expect(client.snapshot(pr, base)).rejects.toThrow('Incomplete')
   })
   test('dereferences an annotated official Action tag', async () => {
     const fetcher = async (url: string) => ({ ok: true, status: 200, json: async () => ({ object: url.includes('/git/tags/') ? { type: 'commit', sha: 'd'.repeat(40) } : { type: 'tag', sha: 'e'.repeat(40) } }) })
     const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'app-token', fetcher)
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     await expect(client.verifyActionPins([{ before, after: before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7') }])).resolves.toBeUndefined()
   })
 })
@@ -103,7 +110,7 @@ test('durable claims require the App bot and compare-before-update',async()=>{
 })
 test('snapshot records the complete head inventory and unchanged dependency context',async()=>{
  const {task}=require('./opencode-fixtures');const t={...task,kind:'repair'}
- const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
  const files:any={'.github/workflows/ci.yml':after,'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24','test/existing.test.ts':'protected'}
  const pr={node_id:t.prId,number:t.pr,changed_files:1,head:{sha:t.head},base:{sha:t.base}}
  const fetcher=async(url:string)=>{
@@ -111,6 +118,7 @@ test('snapshot records the complete head inventory and unchanged dependency cont
   if(p.pathname.endsWith(`/pulls/${t.pr}`))data=pr
   else if(p.pathname.endsWith('/git/ref/heads/main'))data={object:{sha:t.base}}
   else if(p.pathname.endsWith('/files'))data=[{filename:'.github/workflows/ci.yml',status:'modified'}]
+  else if(p.pathname.includes('/compare/'))data={status:'ahead',merge_base_commit:{sha:t.base}}
   else if(p.pathname.includes('/git/trees/'))data={truncated:false,tree:Object.keys(files).map(path=>({path,type:'blob',mode:'100644',size:files[path].length}))}
   else {const filename=p.pathname.split('/contents/')[1];const value=filename==='.github/workflows/ci.yml'&&p.searchParams.get('ref')===t.base?before:files[filename];data={type:'file',size:value.length,encoding:'base64',content:Buffer.from(value).toString('base64')}}
   return {ok:true,status:200,json:async()=>data}
@@ -120,3 +128,92 @@ test('snapshot records the complete head inventory and unchanged dependency cont
  expect(snapshot.existingPaths).toContain('test/existing.test.ts')
  expect(snapshot.contextFiles).toMatchObject({'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24'})
 })
+
+describe('production deployment interlock', () => {
+ function production(deployments: any[], statuses: any[]) {
+  return createClient({repo:'o/r'},'read-token',undefined,async(url:string) => ({ok:true,status:200,json:async()=>url.includes('/statuses?')?statuses:deployments}))
+ }
+ const deployment = {id:123,sha,environment:'Production',production_environment:false,creator:{id:35613825,type:'Bot'}}
+ const success = {id:9,state:'success',environment:'Production',creator:{id:35613825,type:'Bot'}}
+ test('accepts latest trusted Production success despite Vercel production_environment false',async()=>{
+  expect(await production([deployment],[success]).getProduction(sha)).toMatchObject({ready:true})
+ })
+ test.each([
+  [[],[success]],
+  [[{...deployment,sha:'b'.repeat(40)}],[success]],
+  [[{...deployment,environment:'Preview'}],[success]],
+  [[{...deployment,creator:{id:1,type:'User'}}],[success]],
+  [[deployment],[]],
+  [[deployment],[{...success,creator:{id:1,type:'User'}}]],
+  [[deployment],[{...success,environment:'Preview'}]],
+  ...['failure','error','pending','queued','in_progress','inactive','unknown'].map(state=>[[deployment],[{...success,state}]]),
+ ])('fails closed on absent, stale, foreign or non-success production evidence %#',async(deployments,statuses)=>{
+  expect(await production(deployments,statuses).getProduction(sha)).toMatchObject({ready:false})
+ })
+ test('requests only the newest production deployment and newest status',async()=>{
+  const requests:string[]=[]
+  const client=createClient({repo:'o/r'},'read-token',undefined,async(url:string)=>{requests.push(url);return {ok:true,status:200,json:async()=>url.includes('/statuses?')?[{...success,state:'failure'}]:[deployment]}})
+  expect(await client.getProduction(sha)).toMatchObject({ready:false})
+  expect(requests).toEqual(['https://api.github.com/repos/o/r/deployments?environment=Production&per_page=1','https://api.github.com/repos/o/r/deployments/123/statuses?per_page=1'])
+ })
+})
+
+test('interrupted CI retries the full authenticated run once without retrying the POST', async () => {
+ const calls:any[]=[]
+ const client=createClient({repo:'o/r',appId:99},'read','write',async(url:string,init:any)=>{calls.push({url,init});return {ok:true,status:201,json:async()=>({})}})
+ await client.retryCi(55)
+ expect(calls).toHaveLength(1)
+ expect(calls[0].url).toBe('https://api.github.com/repos/o/r/actions/runs/55/rerun')
+ expect(calls[0].init.method).toBe('POST')
+ expect(()=>client.retryCi(-1)).toThrow('Invalid retry')
+})
+
+const assert = require('node:assert/strict');
+
+test('snapshot scopes the PR delta at its merge base before bounded refresh', async () => {
+ const {createClient} = require('../../.github/scripts/dependabot-controller-api.cjs');
+ const {evaluateCandidate} = require('../../.github/scripts/dependabot-controller-policy.cjs');
+ const head='a'.repeat(40), main='b'.repeat(40), ancestor='c'.repeat(40);
+ const filename='package.json';
+ const original=JSON.stringify({scripts:{test:'jest'},dependencies:{next:'16.0.0'}});
+ const updated=original.replace('16.0.0','16.0.1');
+ const mainText=JSON.stringify({scripts:{test:'jest',build:'next build'},dependencies:{next:'16.0.0'}});
+ const pr={id:1,node_id:'PR_one',number:1,changed_files:1,head:{sha:head,ref:'dependabot/npm_and_yarn/next',repo:{id:1}},base:{sha:main,ref:'main',repo:{id:1}},user:{id:49699333,type:'Bot',login:'dependabot[bot]'},body:'Bumps next from 16.0.0 to 16.0.1',title:'Bump next from 16.0.0 to 16.0.1',state:'open',draft:false,mergeable:true,mergeable_state:'behind'};
+ let comparison:any={status:'diverged',merge_base_commit:{sha:ancestor}};
+ let headText=updated;let ancestorText=original;
+ const reads:any[]=[];
+ const client=createClient({repo:'o/r',repositoryId:1},'read',undefined,async(url:string)=>{
+  const parsed=new URL(url), path=parsed.pathname.replace('/repos/o/r','');let data;
+  if(path==='/pulls/1/files')data=[{filename,status:'modified'}];
+  else if(path.startsWith('/compare/'))data=comparison;
+  else if(path==='/contents/'+filename){const ref=parsed.searchParams.get('ref');reads.push(ref);const value=ref===main?mainText:ref===ancestor?ancestorText:ref===head?headText:ref==='e'.repeat(40)?updated:null;assert.notEqual(value,null);data={sha:'d'.repeat(40),type:'file',size:value!.length,encoding:'base64',content:Buffer.from(value!).toString('base64')};}
+  else if(path==='/git/blobs/'+'d'.repeat(40))data={encoding:'base64',content:''};
+  else if(path==='/actions/workflows/ci.yml')data={id:10};
+  else if(path==='/actions/workflows/10/runs')data={workflow_runs:[]};
+  else if(path.endsWith('/check-runs'))data={check_runs:[]};
+  else if(path.endsWith('/statuses')||path.endsWith('/pulls'))data=[];
+  else throw Error('Unexpected provider route '+path);
+  return {ok:true,status:200,json:async()=>data};
+ });
+ client.getClaims=async()=>[{published:true,publishAttempted:true,resultId:head,task:{kind:'repair',pr:pr.number,prId:pr.node_id,head:'e'.repeat(40),base:main},origin:{repositoryId:1,workflowSha:main,workflowPath:'.github/workflows/dependabot-auto-merge.yml',ref:'refs/heads/main'}}];
+ client.getIndependentReview=async()=>null;
+ client.productionState=async()=>({healthy:true,block:null});
+ client.getReleaseHealth=async()=>({kind:'ready'});
+ const state=await client.snapshot(pr,main);
+ assert.equal(state.scope.allowed,true);
+ assert.equal(evaluateCandidate(state).kind,'refresh');
+ assert.ok(reads.includes(ancestor));assert.ok(!reads.includes(main));
+ headText=mainText.replace('16.0.0','16.0.1');
+ const repaired=await client.snapshot(pr,main);assert.equal(repaired.scope.allowed,true);assert.equal(evaluateCandidate(repaired).kind,'refresh');
+ ancestorText='';
+ // Empty target data cannot prove which prior-parent updates were requested.
+ const emptyAncestor=await client.snapshot(pr,main);assert.equal(emptyAncestor.scope.allowed,false);
+ ancestorText=original;
+ headText+='\n# untrusted new policy';
+ assert.equal((await client.snapshot(pr,main)).scope.allowed,false);
+ headText=updated;comparison={status:'ahead',merge_base_commit:{sha:main}};
+ assert.equal((await client.snapshot(pr,main)).scope.allowed,false);
+ for(const invalid of [{status:'ahead'}, {status:'ahead',merge_base_commit:{sha:ancestor}}, {status:'unknown',merge_base_commit:{sha:ancestor}}]) {
+  comparison=invalid;await assert.rejects(()=>client.snapshot(pr,main),/merge base/i);
+ }
+});

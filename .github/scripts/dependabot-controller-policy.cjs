@@ -1,4 +1,5 @@
 'use strict'
+const { expandWorkflowFlow } = require('./dependabot-workflow-shape.cjs')
 
 const REQUIRED_CHECKS = ['Security Audit', 'Jest Tests', 'Playwright Tests', 'TypeScript Check', 'Build Check']
 const GATE = 'Dependabot Merge Gate'
@@ -8,29 +9,17 @@ const VERCEL_PREFIX = 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-co
 const range = /^(?:[~^]|>=?)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/
 const nodeVersion = /^(?:2[4-9]|[3-9]\d)(?:\.\d+\.\d+|\.x)?$/
 
+const { workflowActionReferences, workflowNodeReferences } = require('./dependabot-opencode-contract.cjs')
 function actionPins(text) {
-  const pins = []; let stepsIndent = null; let scalarIndent = null
-  const lines = text.split('\n')
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index]; const indent = line.match(/^[ ]*/)[0].length
-    if (scalarIndent !== null && (!line.trim() || indent > scalarIndent)) continue
-    scalarIndent = null
-    if (/^[ ]*(?:- )?[^#]+:[ \t]*[|>][+-]?[0-9]?[ \t]*(?:#.*)?$/.test(line)) scalarIndent = indent
-    if (/^[ ]*steps:[ \t]*$/.test(line)) { stepsIndent = indent; continue }
-    if (stepsIndent !== null && line.trim() && indent <= stepsIndent) stepsIndent = null
-    const isStep = stepsIndent !== null && ((indent === stepsIndent + 2 && line.trimStart().startsWith('- uses:')) || (indent === stepsIndent + 4 && line.trimStart().startsWith('uses:')))
-    if (!isStep) continue
-    const match = line.match(/^([ ]*-?[ \t]*uses:[ \t]*)([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+)@([0-9a-f]{40})[ \t]+#[ \t]*(v\d+(?:\.\d+){0,2})[ \t]*\r?$/)
-    if (match) pins.push({ index, prefix: match[1], action: match[2], sha: match[3], tag: match[4] })
-  }
-  return pins
+  return workflowActionReferences(text).filter(pin=>pin.sha && pin.tag)
 }
 
 function normalizeWorkflow(text, allowNode = true) {
+  text=expandWorkflowFlow(text)
   const lines = text.split('\n')
-  for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN`
-  const normalized = lines.join('\n')
-  return allowNode ? normalized.replace(/^([ \t]*node-version:[ \t]*)['"]?(2[4-9]|[3-9]\d)(?:\.\d+\.\d+)?['"]?[ \t]*$/gm, '$1NODE') : normalized
+  for (const pin of actionPins(text)) lines[pin.index] = `${pin.prefix}${pin.action}@PIN${pin.suffix}`
+  if(allowNode)for(const input of workflowNodeReferences(text))if(nodeVersion.test(input.version))lines[input.index]=`${input.prefix}NODE${input.suffix}`
+  return lines.join('\n')
 }
 
 function packageScope(before, after) {
@@ -49,15 +38,25 @@ function packageScope(before, after) {
 }
 
 function workspacePrefix(text) {
-  const parts = text.split(/^overrides:[ \t]*\r?$/m)
-  if (parts.length > 2) throw new Error('Multiple overrides maps')
-  if (parts[1] !== undefined) {
-    for (const line of parts[1].split(/\r?\n/).filter((line) => line.trim())) {
-      const match = line.match(/^  ["']?((?:@[a-z0-9._-]+\/)?[a-z0-9._-]+)["']?:[ \t]*["']([^"']+)["'][ \t]*$/)
-      if (!match || !range.test(match[2])) throw new Error('Unsupported workspace policy change')
+  const retained = []; const keys = new Set(); let inside = false; let seen = false
+  for (const line of text.split(/\r?\n/)) {
+    if (/^overrides:[ \t]*(?:#.*)?$/.test(line)) {
+      if (seen) throw new Error('Multiple overrides maps')
+      inside = true; seen = true; continue
     }
+    if (inside && (!line.trim() || /^[ \t]*#/.test(line))) continue
+    // Keep every other top-level section in the policy comparison.
+    if (inside && /^\S/.test(line)) inside = false
+    if (!inside) { retained.push(line); continue }
+    const match = line.match(/^  (?:'([^']+)'|"([^"\\]+)"|([^\s:'"]+)):[ \t]*(?:'([^']+)'|"([^"\\]+)"|([^\s#]+))(?:[ \t]+#.*|[ \t]*)$/)
+    const key = match && (match[1] || match[2] || match[3])
+    const version = match && (match[4] || match[5] || match[6])
+    // Accept pnpm package/version selectors and parent>child selectors, but no
+    // YAML aliases, tags, nested objects, URLs, or local dependency targets.
+    if (!match || !/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+[a-zA-Z0-9@._/<>~=^|* -]*$/.test(key) || !range.test(version) || keys.has(key)) throw new Error('Unsupported workspace policy change')
+    keys.add(key)
   }
-  return parts[0].trimEnd()
+  return retained.join('\n').trimEnd()
 }
 
 function evaluateScope(files) {
@@ -86,6 +85,17 @@ function eligiblePr(pr, repositoryId) {
   return pr.user?.id === DEPENDABOT_ID && pr.user.type === 'Bot' && pr.base?.ref === 'main' && pr.head?.repo?.id === repositoryId && pr.base.repo?.id === repositoryId && /^dependabot\/(npm_and_yarn|github_actions)\//.test(pr.head.ref) && pr.state === 'open' && !pr.draft
 }
 
+function ciMatchesPr(input) {
+  const { ci, pr, repositoryId, mainSha, commitPullRequests } = input
+  if (!Array.isArray(ci?.pull_requests)) return false
+  if (ci.pull_requests.length) return ci.pull_requests.some(item => item.number === pr.number && item.base?.sha === mainSha)
+  // GitHub may omit run associations. Resolve only through the authenticated
+  // exact-head commit endpoint, never through branch names or event payloads.
+  // The caller also requires current main ancestry in this immutable tested head.
+  if (!input.containsMain || !Number.isSafeInteger(pr.id) || pr.id < 1 || !pr.node_id || !Array.isArray(commitPullRequests)) return false
+  return commitPullRequests.filter(item => item.id === pr.id && item.node_id === pr.node_id && item.number === pr.number && item.state === 'open' && item.head?.sha === pr.head.sha && item.head.ref === pr.head.ref && item.head.repo?.id === repositoryId && item.base?.ref === 'main' && item.base.sha === mainSha && item.base.repo?.id === repositoryId).length === 1
+}
+
 function evaluateCandidate(input) {
   const result = (kind, reason) => ({ kind, reason })
   const { pr, repositoryId, mainSha, ci, jobs = [], checks = [] } = input
@@ -95,7 +105,8 @@ function evaluateCandidate(input) {
   if (pr.mergeable_state === 'dirty') return result('repair', 'The current head has a merge conflict.')
   if (!input.containsMain) return result('refresh', 'Refresh the branch against current main.')
   if (pr.mergeable !== true) return result('waiting', 'GitHub has not resolved mergeability.')
-  if (!ci || ci.head_sha !== pr.head.sha || ci.workflow_id !== input.ciWorkflowId || ci.event !== 'pull_request' || ci.head_repository?.id !== repositoryId || ci.head_branch !== pr.head.ref || !ci.pull_requests?.some((item) => item.number === pr.number && item.base.sha === mainSha) || ci.status !== 'completed') return result('waiting', 'Current-head, current-base CI is missing or waiting for approval.')
+  if (!ci || ci.head_sha !== pr.head.sha || ci.workflow_id !== input.ciWorkflowId || ci.event !== 'pull_request' || ci.head_repository?.id !== repositoryId || ci.head_branch !== pr.head.ref || !ciMatchesPr(input) || ci.status !== 'completed') return result('waiting', 'Current-head, current-base CI is missing or waiting for approval.')
+  if (['cancelled', 'timed_out'].includes(ci.conclusion)) return result('retry', 'Authenticated interrupted CI is eligible for a bounded retry.')
   const validated = REQUIRED_CHECKS.map((name) => {
     const job = jobs.find((item) => item.name === name)
     const id = Number(job?.check_run_url?.match(/\/check-runs\/(\d+)$/)?.[1])

@@ -2,7 +2,7 @@
 const { REQUIRED_CHECKS, GATE, DEPENDABOT_ID, eligiblePr, evaluateCandidate } = require('./dependabot-controller-policy.cjs')
 const { verifyRun } = require('./dependabot-opencode-publish.cjs')
 const { defaultBranchEvent } = require('./dependabot-opencode-contract.cjs')
-const { reserve, validateTask } = require('./dependabot-controller-ledger.cjs')
+const { reserve, validateTask, MAX_TASKS } = require('./dependabot-controller-ledger.cjs')
 
 function protectionAllowsMerge(protection, appId) {
   const checks = protection.required_status_checks?.checks || []
@@ -28,8 +28,9 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   }
   await client.setGate(pr, 'pending', 'Evaluating current head.')
   let cancelled = false
+  let queued = Boolean(pr.auto_merge)
   const cancelQueue = async () => {
-    if (pr.auto_merge && !cancelled) { await client.disableMerge(pr); cancelled = true }
+    if (queued && !cancelled) { await client.disableMerge(pr); cancelled = true }
   }
   const stop = async (kind, reason) => {
     await cancelQueue()
@@ -38,30 +39,59 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   }
   if (!config.automationEnabled) return stop('blocked', 'Dependabot automation is disabled pending setup.')
   if (!eligiblePr(pr, config.repositoryId)) return stop('blocked', 'Dependabot identity, branch or repository is outside policy.')
+  if (pr.changed_files > 64) return stop('blocked', 'PR exceeds the 64-file review capacity. Split the dependency update before automatic repair or review.')
   if (await client.hasDependabotHead(pr.head.sha, pr.number)) return stop('blocked', 'Multiple Dependabot PRs share this commit. Resolve duplicate heads before automatic merge.')
   const main = await client.getMain()
-  const decision = evaluate(await client.snapshot(pr, main))
+  if (config.workflowSha !== main) return stop('waiting', 'Wait for controller code from current main before automatic merge or recovery.')
+  const production = async () => {
+    try { return await client.getProduction(main) }
+    catch { return { ready: false, reason: 'Production status could not be verified. Automatic merges are paused; inspect GitHub/Vercel access and docs/dependabot-controller-setup.md. Rollback is manual.' } }
+  }
+  const initialProduction = await production()
+  if (!initialProduction.ready) return stop('blocked', initialProduction.reason)
+  const initialSnapshot = await client.snapshot(pr, main)
+  const decision = evaluate(initialSnapshot)
   if (decision.kind === 'ready') {
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) return stop('blocked', 'Require current-base CI, stale-review dismissal and an App-bound Dependabot Merge Gate in main protection.')
     await assertFresh(client, pr, main)
     await client.queueMerge(pr) // Native auto-merge, with expectedHeadOid, while Gate is pending.
+    queued = true
     await assertFresh(client, pr, main)
     await client.approve(pr) // This is based on the separate authenticated review, never on agent prose.
     await assertFresh(client, pr, main)
     if (evaluate(await client.snapshot(pr, main)).kind !== 'ready') throw new Error('Current-head validation changed; leave the gate pending')
     if (!protectionAllowsMerge(await client.getProtection(), config.appId)) throw new Error('Branch protection changed; leave the gate pending')
     await assertFresh(client, pr, main)
+    const finalProduction = await production()
+    if (!finalProduction.ready) return stop('blocked', finalProduction.reason)
+    await assertFresh(client, pr, main)
     await client.setGate(pr, 'success', decision.reason)
     return decision
   }
   await cancelQueue()
-  if (decision.kind === 'refresh') {
+  if (['refresh', 'retry'].includes(decision.kind)) {
+    if (!defaultBranchEvent(config.eventName) || config.workSourceVerified !== true || config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a verified current-main recovery run.')
+    if (!state.ledger) {
+      try { Object.assign(state, await client.getLedger()) }
+      catch { return stop('blocked', 'The recovery ledger is unavailable or invalid. Operator action is required.') }
+    }
     await assertFresh(client, pr, main)
-    await client.updateBranch(pr)
-    await client.setGate(pr, 'waiting', 'Requested a branch refresh. New-head checks and review are required.')
-    return decision
+    const next = reserve(state.ledger, { pr: number, prId: pr.node_id, head: pr.head.sha, base: main, kind: decision.kind, ...(decision.kind === 'retry' ? { ciRunId: initialSnapshot.ci?.id, ciRunAttempt: initialSnapshot.ci?.run_attempt } : {}) }, config.now)
+    if (!next.reservation) return stop('blocked', next.reason)
+    await client.saveLedger(next.ledger, state)
+    state.ledger = next.ledger
+    await assertFresh(client, pr, main)
+    if (decision.kind === 'refresh') await client.updateBranch(pr)
+    else {
+      const current = await client.snapshot(pr, main)
+      if (evaluate(current).kind !== 'retry' || current.ci?.id !== next.reservation.ciRunId || current.ci?.run_attempt !== next.reservation.ciRunAttempt) return stop('waiting', 'CI changed after retry reservation. The attempt remains consumed.')
+      await assertFresh(client, pr, main)
+      await client.retryCi(current.ci.id)
+    }
+    return stop('waiting', `Requested ${decision.kind}. Await current-head CI and independent review; the recovery attempt is consumed.`)
   }
   if (['repair', 'review'].includes(decision.kind)) {
+    if (tasks.length >= MAX_TASKS) return stop('waiting', 'Task batch is full. Defer to the next reconciliation without consuming a reservation.')
     if (!defaultBranchEvent(config.eventName) || config.workSourceVerified !== true || config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a controller run from current main.')
     if (!config.agentEnabled) return stop('blocked', `${decision.reason} Agent dispatch is disabled pending credentials and OpenCode settings.`)
     // Fail closed before spending credits if the required gate can be forged or omitted.
@@ -89,6 +119,7 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
 async function claimOne(client, config, task) {
   if (!config.automationEnabled || !config.agentEnabled || config.runAttempt !== 1) return
   validateTask(task)
+  if (!['repair', 'review'].includes(task.kind)) throw Error('Only agent reservations can be claimed by workers')
   if (!defaultBranchEvent(config.eventName) || config.ref !== 'refs/heads/main' || config.workflowSha !== task.base) throw new Error('Untrusted workflow source')
   verifyRun(await client.getRun(config.runId),{runId:config.runId,workflowSha:task.base,workflowPath:'.github/workflows/dependabot-auto-merge.yml',ref:config.ref},config)
   const ledger = (await client.getLedger()).ledger

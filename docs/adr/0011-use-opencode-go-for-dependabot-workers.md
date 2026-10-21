@@ -1,6 +1,6 @@
 # ADR 0011: Use OpenCode Go for Dependabot Workers
 
-**Status:** accepted; implementation and external activation pending
+**Status:** accepted; external activation pending
 
 **Date:** 2026-10-13
 
@@ -52,3 +52,12 @@ Store the Go key only in the existing main-only `dependabot-dispatch` environmen
 ## Implemented broker boundary
 
 The trusted broker holds the real Go key and calls only the fixed Go chat endpoint/model. The isolated OpenCode child receives only an ephemeral proxy token on an internal network. Retries consume the 24/16 generation-call budget before upstream writes; wall/event bounds remain independent. Candidate execution and validation never receive the provider key. Publication trusts the App claim and original successful run/job/digest chain, not model metadata or prose. External provider credentials, billing controls, App gate configuration, and live activation remain unverified.
+
+## 2026-10-20 approved recovery extension
+
+Retain the selected models, isolation, two lifetime repairs, daily limits, claims, and exact-head/base review. Before automated work and merge-gate success, require the latest trusted Production deployment and status to succeed on current main. Failed, missing, stale, or unknown production evidence blocks the gate and cancels native merge intent. Use existing default-branch status/CI events with scheduled production recovery. Production rollback remains manual; no runtime probing or deployment write is added. Setup and exhausted repair decisions use bounded workflow diagnostics and the existing gate, not new issues or repeated paid tasks.
+
+See the [recovery plan](../plans/2026-10-20-dependabot-recovery.md) and [context evidence](../context/2026-10-20-dependabot-recovery.md). Local implementation does not authorize activation.
+
+
+For an explicitly empty CI run PR-association array, allow authenticated exact-head commit-to-PR association with full identity/head/base/repository matching. Retain current-main ancestry in the tested head and every existing CI origin/job/check gate. Contradictory nonempty run evidence cannot use this fallback.

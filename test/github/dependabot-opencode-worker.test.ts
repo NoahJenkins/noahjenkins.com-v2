@@ -36,6 +36,7 @@ test('enforces_agent_step_and_time_bounds', async () => {
 test.each([24,16])('proxy_caps_hostile_generation_retries at %i', limit => {
  const result=JSON.parse(execFileSync(process.execPath,['test/fixtures/opencode-fake-provider.cjs','proxy',String(limit)],{encoding:'utf8'}))
  expect(result.calls).toBe(limit)
+ expect([...new Set(result.upstreamUrls)]).toEqual(['https://opencode.ai/inference/go/openai/v1/chat/completions'])
  expect(result.statuses.slice(0,limit)).toEqual(Array(limit).fill(200))
  expect(result.statuses[limit]).toBe(429)
  expect(result.wrong).toBe(400)
@@ -64,7 +65,9 @@ test('repair validator rejects protected changes before executing',async()=>{
 test('repair validator binds observed generated lock to output',async()=>{
  const r=root();const a:any=artifact('repair');a.result.files=[{path:'package.json',content:'{"dependencies":{"x":"1.2.3"}}'}]
  const {writeFileSync}=require('node:fs')
- const output=await validateRepair(a.task,{...snapshot(),task:a.task},sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>writeFileSync(join(r,'pnpm-lock.yaml'),'generated')})
+ // The dependency target belongs to the PR, not to the repair worker.
+ const s={...snapshot(),task:a.task};s.headFiles['package.json']=a.result.files[0].content
+ const output=await validateRepair(a.task,s,sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>writeFileSync(join(r,'pnpm-lock.yaml'),'generated')})
  expect(output.artifact.result.files).toContainEqual({path:'pnpm-lock.yaml',content:'generated'})
  expect(output.checks.inputDigest).toBe(sealArtifact(a).digest)
  expect(output.checks.outputDigest).toBe(output.artifact.digest)
@@ -94,8 +97,8 @@ test('validator rejects symlink ancestors created during candidate execution',as
 })
 test('action-only repair omits an unchanged generated lockfile',async()=>{
  const r=root();const fs=require('node:fs');fs.writeFileSync(join(r,'pnpm-lock.yaml'),'unchanged')
- const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
- const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+ const after=before.replace('uses: actions/setup-node@','uses: "actions/setup-node@').replace(' # v4','" # v4')
  const a:any=artifact('repair');a.result.files=[{path:'.github/workflows/ci.yml',content:after}]
  const s={task:a.task,changedFiles:['.github/workflows/ci.yml'],baseFiles:{'.github/workflows/ci.yml':before},headFiles:{'.github/workflows/ci.yml':before},contextFiles:{'package.json':'{}','pnpm-lock.yaml':'unchanged'},existingPaths:['.github/workflows/ci.yml','package.json','pnpm-lock.yaml']}
  const result=await validateRepair(a.task,s,sealArtifact(a),{origin,root:r,image:'fixture',execute:()=>{}})

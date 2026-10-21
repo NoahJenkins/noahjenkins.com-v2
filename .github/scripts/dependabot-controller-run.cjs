@@ -2,6 +2,7 @@
 const fs=require('node:fs');const path=require('node:path');const {randomBytes}=require('node:crypto')
 const {createClient}=require('./dependabot-controller-api.cjs')
 const {reconcileOne,claimOne}=require('./dependabot-controller.cjs')
+const {MAX_TASKS}=require('./dependabot-controller-ledger.cjs')
 const {evaluateCandidate}=require('./dependabot-controller-policy.cjs')
 const {runAgent}=require('./dependabot-opencode-worker.cjs')
 const {validateRepair,rejectLinks}=require('./dependabot-opencode-validate.cjs')
@@ -42,7 +43,7 @@ async function run(env=process.env,mode=process.argv[2]) {
  }
  if(privileged && !env.DEPENDABOT_APP_TOKEN)throw Error('Controller App credential is missing')
  if(mode==='claim') {
-  const tasks=JSON.parse(env.DEPENDABOT_TASKS || '[]');if(!Array.isArray(tasks)||tasks.length>10)throw Error('Invalid claim batch')
+  const tasks=JSON.parse(env.DEPENDABOT_TASKS || '[]');if(!Array.isArray(tasks)||tasks.length>MAX_TASKS)throw Error('Invalid claim batch')
   const claimed=[];let failed=false
   for(const t of tasks){try{const result=await claimOne(client,config,t);if(result)claimed.push(result)}catch{failed=true}}
   output(env,{tasks:claimed,has_tasks:claimed.length>0,app_slug:config.appSlug})
@@ -85,7 +86,18 @@ async function run(env=process.env,mode=process.argv[2]) {
  if(mode==='inspect') {for(const pr of await client.listPrs()){const full=await client.getPr(pr.number);console.log(JSON.stringify({pr:full.number,head:full.head.sha,decision:evaluateCandidate(await client.snapshot(full,await client.getMain()))}))}return}
  if(defaultBranchEvent(config.eventName)){try{verifyRun(await client.getRun(config.runId),{runId:config.runId,workflowSha:config.workflowSha,workflowPath:'.github/workflows/dependabot-auto-merge.yml',ref:config.ref},config);config.workSourceVerified=true}catch{config.workSourceVerified=false}}
  const state={ledger:null,commentId:null};const tasks=[];let failed=false
- for(const pr of await client.listPrs())try{const decision=await reconcileOne(client,config,pr.number,state,tasks);console.log(JSON.stringify({pr:pr.number,decision:decision || {kind:'human'}}))}catch{failed=true;console.error(`PR #${pr.number}: evaluation failed; gate remains pending`)}
+ const summary = (number, decision) => {
+  if (!env.GITHUB_STEP_SUMMARY) return
+  const escape = value => String(value).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+  fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `<p>PR #${Number(number)}: ${escape(decision.kind)} — ${escape(decision.reason || 'No bot task required.')}</p>\n`)
+ }
+ for(const pr of await client.listPrs())try{
+  const decision=await reconcileOne(client,config,pr.number,state,tasks) || {kind:'human'}
+  console.log(JSON.stringify({pr:pr.number,decision}));summary(pr.number,decision)
+ }catch{
+  failed=true;console.error(`PR #${pr.number}: evaluation failed; gate remains pending`)
+  summary(pr.number,{kind:'blocked',reason:'Evaluation failed. Check this run and docs/dependabot-controller-setup.md. No automatic replay of consumed tasks.'})
+ }
  output(env,{tasks,has_tasks:tasks.length>0})
  if(failed)throw Error('One or more PR evaluations failed; their gates remain pending')
 }

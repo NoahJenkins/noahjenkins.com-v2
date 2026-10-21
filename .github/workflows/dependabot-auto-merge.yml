@@ -10,6 +10,7 @@ on:
   status:
   schedule:
     - cron: '*/10 * * * *'
+    - cron: '17 12 * * *' # One daily setup diagnostic; no ten-minute warning spam.
   workflow_dispatch:
 
 # Trusted checkouts are immutable workflow source; candidate code runs only in a secret-free container.
@@ -19,6 +20,7 @@ permissions:
   issues: read
   checks: read
   actions: read
+  deployments: read
 
 concurrency:
   group: dependabot-controller-${{ github.repository }}
@@ -35,13 +37,16 @@ env:
 jobs:
   setup-required:
     name: Dependabot setup required
-    if: github.event_name == 'workflow_dispatch' && vars.DEPENDABOT_CONTROLLER_APP_ID == ''
+    if: >-
+      (vars.DEPENDABOT_CONTROLLER_APP_ID == '' || vars.DEPENDABOT_STATE_ISSUE_NUMBER == '' || vars.DEPENDABOT_AUTOMATION_ENABLED != 'true' || vars.DEPENDABOT_AGENT_ENABLED != 'true') &&
+      (github.event_name == 'workflow_dispatch' || github.event.schedule == '17 12 * * *' ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.user.id == 49699333 && (github.event.action == 'opened' || github.event.action == 'reopened')))
     runs-on: ubuntu-latest
     steps:
       - name: Explain inactive automation
         shell: bash
         run: |
-          echo '::warning::Dependabot automation is inactive: dedicated controller App configuration is missing.'
+          echo '::warning::Dependabot automation is inactive: controller App, state issue, or enable flags are missing.'
           cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
           ## Dependabot automation is inactive
 
@@ -50,6 +55,11 @@ jobs:
           Passing CI alone does not enable auto-merge. The current policy keeps
           blocked PRs open for review; it does not auto-close major updates.
 
+          Check repository variables DEPENDABOT_CONTROLLER_APP_ID,
+          DEPENDABOT_STATE_ISSUE_NUMBER, DEPENDABOT_AUTOMATION_ENABLED and
+          DEPENDABOT_AGENT_ENABLED. Flags require the exact value true.
+          Keep flags off until App protection, both environment credentials,
+          production status access, and provider billing controls are verified.
           Follow docs/dependabot-controller-setup.md before activation.
           SUMMARY
 
@@ -73,6 +83,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Check controller credential setup
+        shell: bash
+        env:
+          CONTROLLER_KEY: ${{ secrets.DEPENDABOT_CONTROLLER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CONTROLLER_KEY" ]; then
+            echo '::error::Missing DEPENDABOT_CONTROLLER_PRIVATE_KEY in dependabot-controller. Follow docs/dependabot-controller-setup.md; keep activation flags off.'
+            echo 'Controller private key is missing. Follow docs/dependabot-controller-setup.md; keep activation flags off.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Create scoped controller App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -85,8 +105,9 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-issues: write
-          permission-actions: read
+          permission-actions: write
           permission-administration: read
+          permission-deployments: read
       - name: Reconcile current heads
         id: reconcile
         run: node trusted/.github/scripts/dependabot-controller-run.cjs controller
@@ -117,6 +138,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Check controller credential setup
+        shell: bash
+        env:
+          CONTROLLER_KEY: ${{ secrets.DEPENDABOT_CONTROLLER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CONTROLLER_KEY" ]; then
+            echo '::error::Missing DEPENDABOT_CONTROLLER_PRIVATE_KEY in dependabot-controller. Follow docs/dependabot-controller-setup.md; keep activation flags off.'
+            echo 'Controller private key is missing. Follow docs/dependabot-controller-setup.md; keep activation flags off.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Create scoped controller App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -131,6 +162,7 @@ jobs:
           permission-issues: write
           permission-actions: read
           permission-administration: read
+          permission-deployments: read
       - name: Persist claims before launch
         id: claim
         run: node trusted/.github/scripts/dependabot-controller-run.cjs claim
@@ -166,6 +198,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Check provider credential setup
+        shell: bash
+        env:
+          PROVIDER_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+        run: |
+          if [ -z "$PROVIDER_KEY" ]; then
+            echo '::error::Missing OPENCODE_GO_API_KEY in dependabot-dispatch. Follow docs/dependabot-controller-setup.md. The task reservation remains consumed.'
+            echo 'Provider key is missing. Follow docs/dependabot-controller-setup.md. The task reservation remains consumed; do not replay it.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Prepare complete bounded input without provider credentials
         run: node trusted/.github/scripts/dependabot-controller-run.cjs prepare
         env:
@@ -258,6 +300,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Check controller credential setup
+        shell: bash
+        env:
+          CONTROLLER_KEY: ${{ secrets.DEPENDABOT_CONTROLLER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CONTROLLER_KEY" ]; then
+            echo '::error::Missing DEPENDABOT_CONTROLLER_PRIVATE_KEY in dependabot-controller. Follow docs/dependabot-controller-setup.md; keep activation flags off.'
+            echo 'Controller private key is missing. Follow docs/dependabot-controller-setup.md; keep activation flags off.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Create scoped controller App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -268,10 +320,12 @@ jobs:
           repositories: ${{ github.event.repository.name }}
           permission-checks: write
           permission-contents: write
+          permission-workflows: write
           permission-pull-requests: write
           permission-issues: write
           permission-actions: read
           permission-administration: read
+          permission-deployments: read
       - name: Verify provenance and publish once
         run: node trusted/.github/scripts/dependabot-controller-run.cjs publish
         env:
@@ -298,6 +352,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Check controller credential setup
+        shell: bash
+        env:
+          CONTROLLER_KEY: ${{ secrets.DEPENDABOT_CONTROLLER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CONTROLLER_KEY" ]; then
+            echo '::error::Missing DEPENDABOT_CONTROLLER_PRIVATE_KEY in dependabot-controller. Follow docs/dependabot-controller-setup.md; keep activation flags off.'
+            echo 'Controller private key is missing. Follow docs/dependabot-controller-setup.md; keep activation flags off.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - name: Create scoped controller App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -310,8 +374,9 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-issues: write
-          permission-actions: read
+          permission-actions: write
           permission-administration: read
+          permission-deployments: read
       - name: Reconcile without reserving more work in this run
         run: node trusted/.github/scripts/dependabot-controller-run.cjs controller
         env:

@@ -253,3 +253,10 @@ Vercel preview and production deployments are handled by the Git integration out
   - scoped secrets
   - branch/tag deployment strategy
 - Consider extending security coverage beyond dependency audit with additional SAST coverage where GitHub default setup is insufficient.
+
+
+### Production recovery interlock (2026-10-20)
+
+The Dependabot controller reads the latest GitHub `Production` deployment and latest status from the trusted Vercel bot. Current main must have a successful deployment before bot work and again before releasing its App-owned merge gate. An unavailable, failed, pending, stale, or foreign result cancels merge intent and blocks the gate. Default-branch Vercel status/CI events and the existing ten-minute scan reevaluate the same source of truth. Human recovery remains available, and rollback is manual.
+
+Missing variable setup is visible on one daily diagnostic, manual runs, and bot-open/reopen events. Credential checks stay inside their existing environments. Per-PR workflow summaries expose exhausted budgets and stale tasks without issue/comment creation. The setup guide lists the added Deployments read permission and activation contract; models, budgets, publication, review, and CI gates are unchanged.

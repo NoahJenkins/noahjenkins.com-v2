@@ -2,7 +2,7 @@
 const http = require('node:http')
 const { randomBytes, timingSafeEqual } = require('node:crypto')
 const { Readable } = require('node:stream')
-const ENDPOINT = 'https://opencode.ai/inference/go/v1/chat/completions'
+const ENDPOINT = 'https://opencode.ai/inference/go/openai/v1/chat/completions'
 async function createGoProxy({apiKey,model,maxCalls,timeoutMs,session,fetcher=fetch,token=randomBytes(32).toString('hex'),host='127.0.0.1',port=0}) {
   if (!apiKey || !['kimi-k2.7-code','glm-5.3'].includes(model) || !Number.isSafeInteger(maxCalls) || maxCalls < 1 || maxCalls > 24 || !/^ses_[a-zA-Z0-9_-]+$/.test(session)) throw new Error('Invalid broker configuration')
   let nativeSession = null; let count = 0; const expires = Date.now()+timeoutMs
