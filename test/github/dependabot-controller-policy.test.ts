@@ -72,7 +72,7 @@ describe('repair scope', () => {
     expect(evaluateScope([change('pnpm-workspace.yaml', 'packages: []\n', 'packages: []\nonlyBuiltDependencies: [evil]\n')]).allowed).toBe(false)
   })
   test('permits only pinned upstream Action version changes', () => {
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n    with:\n      node-version: '24'\n  - run: pnpm test\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n        with:\n          node-version: '24'\n      - run: pnpm test\n`
     expect(evaluateScope([change('.github/workflows/ci.yml', before, before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7'))]).allowed).toBe(true)
     expect(evaluateScope([change('.github/workflows/ci.yml', before, before.replace('pnpm test', 'echo success'))]).allowed).toBe(false)
     expect(evaluateScope([change('.github/workflows/ci.yml', before, before.replace('actions/setup-node', 'attacker/setup-node'))]).allowed).toBe(false)
@@ -82,13 +82,13 @@ describe('repair scope', () => {
     expect(evaluateScope([change('.github/workflows/ci.yml', before, `${before}    # v7\n    run: echo success\n`)]).allowed).toBe(false)
   })
   test('allows only Action pins in the privileged controller workflow', () => {
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n    with:\n      node-version: '24'\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n        with:\n          node-version: '24'\n`
     expect(evaluateScope([change('.github/workflows/dependabot-auto-merge.yml', before, before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7'))]).allowed).toBe(true)
     expect(evaluateScope([change('.github/workflows/dependabot-auto-merge.yml', before, before.replace("'24'", "'25'"))]).allowed).toBe(false)
     expect(evaluateScope([change('.github/workflows/dependabot-auto-merge.yml', before, before.replace('with:', 'env:'))]).allowed).toBe(false)
   })
   test('never normalizes uses text inside a multiline command', () => {
-    const before = `steps:\n  - run: |\n      uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+    const before = `jobs:\n  test:\n    steps:\n      - run: |\n          uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     expect(evaluateScope([change('.github/workflows/ci.yml', before, before.replace('c'.repeat(40), 'd'.repeat(40)))]).allowed).toBe(false)
   })
   test('allows source repair and new tests but protects existing tests', () => {

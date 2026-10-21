@@ -38,7 +38,7 @@ describe('GitHub provider boundary', () => {
   test('requires an official Action tag pointing to the proposed pin', async () => {
     const fetcher = async () => ({ ok: true, status: 200, json: async () => ({ object: { type: 'commit', sha: 'c'.repeat(40) } }) })
     const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'app-token', fetcher)
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     await expect(client.verifyActionPins([{ before, after: before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7') }])).rejects.toThrow('official')
   })
   test('an existing native squash queue can recover after an interrupted evaluation', async () => {
@@ -86,7 +86,7 @@ describe('GitHub provider boundary', () => {
   test('dereferences an annotated official Action tag', async () => {
     const fetcher = async (url: string) => ({ ok: true, status: 200, json: async () => ({ object: url.includes('/git/tags/') ? { type: 'commit', sha: 'd'.repeat(40) } : { type: 'tag', sha: 'e'.repeat(40) } }) })
     const client = createClient({ repo: 'o/r', appId: 99 }, 'read-token', 'app-token', fetcher)
-    const before = `steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+    const before = `jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
     await expect(client.verifyActionPins([{ before, after: before.replace('c'.repeat(40), 'd'.repeat(40)).replace('# v4', '# v7') }])).resolves.toBeUndefined()
   })
 })
@@ -110,7 +110,7 @@ test('durable claims require the App bot and compare-before-update',async()=>{
 })
 test('snapshot records the complete head inventory and unchanged dependency context',async()=>{
  const {task}=require('./opencode-fixtures');const t={...task,kind:'repair'}
- const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
  const files:any={'.github/workflows/ci.yml':after,'package.json':'{}','pnpm-workspace.yaml':'packages: []','pnpm-lock.yaml':'lock','.nvmrc':'24','test/existing.test.ts':'protected'}
  const pr={node_id:t.prId,number:t.pr,changed_files:1,head:{sha:t.head},base:{sha:t.base}}
  const fetcher=async(url:string)=>{

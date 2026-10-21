@@ -8,22 +8,9 @@ const VERCEL_PREFIX = 'https://vercel.com/noahs-projects-e38437a2/noahjenkins-co
 const range = /^(?:[~^]|>=?)?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/
 const nodeVersion = /^(?:2[4-9]|[3-9]\d)(?:\.\d+\.\d+|\.x)?$/
 
+const { workflowActionReferences } = require('./dependabot-opencode-contract.cjs')
 function actionPins(text) {
-  const pins = []; let stepsIndent = null; let scalarIndent = null
-  const lines = text.split('\n')
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index]; const indent = line.match(/^[ ]*/)[0].length
-    if (scalarIndent !== null && (!line.trim() || indent > scalarIndent)) continue
-    scalarIndent = null
-    if (/^[ ]*(?:- )?[^#]+:[ \t]*[|>][+-]?[0-9]?[ \t]*(?:#.*)?$/.test(line)) scalarIndent = indent
-    if (/^[ ]*steps:[ \t]*$/.test(line)) { stepsIndent = indent; continue }
-    if (stepsIndent !== null && line.trim() && indent <= stepsIndent) stepsIndent = null
-    const isStep = stepsIndent !== null && ((indent === stepsIndent + 2 && line.trimStart().startsWith('- uses:')) || (indent === stepsIndent + 4 && line.trimStart().startsWith('uses:')))
-    if (!isStep) continue
-    const match = line.match(/^([ ]*-?[ \t]*uses:[ \t]*)([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+)@([0-9a-f]{40})[ \t]+#[ \t]*(v\d+(?:\.\d+){0,2})[ \t]*\r?$/)
-    if (match) pins.push({ index, prefix: match[1], action: match[2], sha: match[3], tag: match[4] })
-  }
-  return pins
+  return workflowActionReferences(text).filter(pin=>pin.sha && pin.tag)
 }
 
 function normalizeWorkflow(text, allowNode = true) {

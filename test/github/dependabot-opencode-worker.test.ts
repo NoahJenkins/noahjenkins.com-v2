@@ -95,7 +95,7 @@ test('validator rejects symlink ancestors created during candidate execution',as
 })
 test('action-only repair omits an unchanged generated lockfile',async()=>{
  const r=root();const fs=require('node:fs');fs.writeFileSync(join(r,'pnpm-lock.yaml'),'unchanged')
- const before=`steps:\n  - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
+ const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`
  const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
  const a:any=artifact('repair');a.result.files=[{path:'.github/workflows/ci.yml',content:after}]
  const s={task:a.task,changedFiles:['.github/workflows/ci.yml'],baseFiles:{'.github/workflows/ci.yml':before},headFiles:{'.github/workflows/ci.yml':before},contextFiles:{'package.json':'{}','pnpm-lock.yaml':'unchanged'},existingPaths:['.github/workflows/ci.yml','package.json','pnpm-lock.yaml']}
