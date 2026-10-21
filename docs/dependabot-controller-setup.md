@@ -163,3 +163,5 @@ Snapshot fallback for an already-published conflict repair requires one authenti
 Node-version normalization uses the same parser-identified setup inputs as target retention. Environment keys, nested data, script text, and inputs to unrelated actions remain protected workflow content.
 
 The shared Node-input parser records major wildcard selectors such as `22.x` and `24.x`, including quoted values and flow mappings. Scope validation still applies each repository's existing Node-version policy. Retention rejects fallback that discards a requested wildcard target; UniFi continues to require manual review for Node-version edits.
+
+Inline YAML comments on supported Node inputs remain part of protected workflow content. Plain and quoted selectors are parsed with matching quotes; scope normalization masks only the version value. Comment changes remain blocked, and retention still rejects target rollback. UniFi continues to block Node-version edits.
