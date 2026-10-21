@@ -9,9 +9,9 @@ function protectionAllowsMerge(protection, appId) {
   return protection.required_status_checks?.strict === true && checks.some((check) => check.context === GATE && check.app_id === appId) && REQUIRED_CHECKS.every((name) => checks.some((check) => check.context === name)) && protection.required_pull_request_reviews?.required_approving_review_count >= 1 && protection.required_pull_request_reviews.dismiss_stale_reviews === true
 }
 
-async function assertFresh(client, pr, mainSha) {
+async function assertFresh(client, pr, mainSha, expectedPrBase = mainSha) {
   const current = await client.getPr(pr.number)
-  if (current.head.sha !== pr.head.sha || current.base.sha !== mainSha || current.base.ref !== 'main' || current.state !== 'open' || current.draft || current.node_id !== pr.node_id || await client.getMain() !== mainSha) throw new Error('PR head or base changed; leave the merge gate pending')
+  if (current.head.sha !== pr.head.sha || current.base.sha !== expectedPrBase || current.base.ref !== 'main' || current.state !== 'open' || current.draft || current.node_id !== pr.node_id || await client.getMain() !== mainSha) throw new Error('PR head or base changed; leave the merge gate pending')
   return current
 }
 
@@ -70,22 +70,23 @@ async function reconcileOne(client, config, number, state, tasks, evaluate = eva
   }
   await cancelQueue()
   if (['refresh', 'retry'].includes(decision.kind)) {
+    const expectedPrBase = decision.kind === 'refresh' && initialSnapshot.containsMain === false && pr.mergeable === true && pr.mergeable_state === 'behind' ? pr.base.sha : main
     if (!defaultBranchEvent(config.eventName) || config.workSourceVerified !== true || config.runAttempt !== 1 || config.workflowSha !== main || config.ref !== 'refs/heads/main') return stop('waiting', 'Wait for a verified current-main recovery run.')
     if (!state.ledger) {
       try { Object.assign(state, await client.getLedger()) }
       catch { return stop('blocked', 'The recovery ledger is unavailable or invalid. Operator action is required.') }
     }
-    await assertFresh(client, pr, main)
+    await assertFresh(client, pr, main, expectedPrBase)
     const next = reserve(state.ledger, { pr: number, prId: pr.node_id, head: pr.head.sha, base: main, kind: decision.kind, ...(decision.kind === 'retry' ? { ciRunId: initialSnapshot.ci?.id, ciRunAttempt: initialSnapshot.ci?.run_attempt } : {}) }, config.now)
     if (!next.reservation) return stop('blocked', next.reason)
     await client.saveLedger(next.ledger, state)
     state.ledger = next.ledger
-    await assertFresh(client, pr, main)
+    await assertFresh(client, pr, main, expectedPrBase)
     if (decision.kind === 'refresh') await client.updateBranch(pr)
     else {
       const current = await client.snapshot(pr, main)
       if (evaluate(current).kind !== 'retry' || current.ci?.id !== next.reservation.ciRunId || current.ci?.run_attempt !== next.reservation.ciRunAttempt) return stop('waiting', 'CI changed after retry reservation. The attempt remains consumed.')
-      await assertFresh(client, pr, main)
+      await assertFresh(client, pr, main, expectedPrBase)
       await client.retryCi(current.ci.id)
     }
     return stop('waiting', `Requested ${decision.kind}. Await current-head CI and independent review; the recovery attempt is consumed.`)
