@@ -161,3 +161,5 @@ Target retention includes standalone `.nvmrc` and `.node-version` files where re
 Snapshot fallback for an already-published conflict repair requires one authenticated App publication receipt bound to the current PR head and main SHA. It rechecks retained targets against that repair's original parent before allowing main-side policy adoption or branch refresh. Missing, duplicate, stale, or unusable provenance blocks automation and requires manual resolution; it cannot infer original intent from the repaired head alone.
 
 Node-version normalization uses the same parser-identified setup inputs as target retention. Environment keys, nested data, script text, and inputs to unrelated actions remain protected workflow content.
+
+The shared Node-input parser records major wildcard selectors such as `22.x` and `24.x`, including quoted values and flow mappings. Scope validation still applies each repository's existing Node-version policy. Retention rejects fallback that discards a requested wildcard target; UniFi continues to require manual review for Node-version edits.
