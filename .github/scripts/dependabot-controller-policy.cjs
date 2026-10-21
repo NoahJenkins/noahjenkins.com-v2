@@ -101,6 +101,9 @@ function evaluateCandidate(input) {
   const { pr, repositoryId, mainSha, ci, jobs = [], checks = [] } = input
   if (!eligiblePr(pr, repositoryId)) return result('blocked', 'Only open, same-repository Dependabot PRs targeting main are eligible.')
   if (!input.scope.allowed) return result('blocked', input.scope.reason)
+  // GitHub can retain the PR's old base SHA after main advances.
+  // Only a proven, mergeable stale branch may recover before exact-base checks.
+  if (input.containsMain === false && pr.mergeable === true && pr.mergeable_state === 'behind') return result('refresh', 'Refresh the branch against current main.')
   if (pr.base.sha !== mainSha) return result('waiting', 'Main changed during evaluation.')
   if (pr.mergeable_state === 'dirty') return result('repair', 'The current head has a merge conflict.')
   if (!input.containsMain) return result('refresh', 'Refresh the branch against current main.')
