@@ -202,6 +202,8 @@ test('snapshot scopes the PR delta at its merge base before bounded refresh', as
  assert.equal(evaluateCandidate(state).kind,'refresh');
  assert.ok(reads.includes(ancestor));assert.ok(!reads.includes(main));
  headText=mainText.replace('16.0.0','16.0.1');
+ const repaired=await client.snapshot(pr,main);assert.equal(repaired.scope.allowed,true);assert.equal(evaluateCandidate(repaired).kind,'refresh');
+ headText+='\n# untrusted new policy';
  assert.equal((await client.snapshot(pr,main)).scope.allowed,false);
  headText=updated;comparison={status:'ahead',merge_base_commit:{sha:main}};
  assert.equal((await client.snapshot(pr,main)).scope.allowed,false);

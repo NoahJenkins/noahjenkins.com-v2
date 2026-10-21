@@ -48,7 +48,7 @@ async function publishResult(client,config,task,artifactId,origin) {
  same(envelope.checks,{inputDigest:worker.digest,outputDigest:a.digest,success:true})
  if(task.kind==='review')same(worker,a)
  else {
-  const changes=scopeChanges(a.result.files,snapshot)
+  const changes=scopeChanges(a.result.files,snapshot,evaluateScope)
   const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
   await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
  }

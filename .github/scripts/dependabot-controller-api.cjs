@@ -2,7 +2,7 @@
 const { GATE, DEPENDABOT_ID, evaluateScope, actionPins } = require('./dependabot-controller-policy.cjs')
 const { readLedger, encodeLedger } = require('./dependabot-controller-ledger.cjs')
 
-const { validateReviewEvidence, validateFiles, text, digest, REVIEW, same } = require('./dependabot-opencode-contract.cjs')
+const { adoptMainBaseline, validateReviewEvidence, validateFiles, text, digest, REVIEW, same } = require('./dependabot-opencode-contract.cjs')
 const { parseArtifactZip, verifyRun, verifyJobs, MAX_ZIP } = require('./dependabot-opencode-publish.cjs')
 const { createHash } = require('node:crypto')
 const CLAIM = '<!-- dependabot-opencode-claim:v1 -->'
@@ -92,6 +92,12 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       for (const file of files) {
         const needText = ['package.json', 'pnpm-workspace.yaml', '.nvmrc', '.node-version', '.github/workflows/ci.yml', '.github/workflows/dependency-review.yml', '.github/workflows/dependabot-auto-merge.yml'].includes(file.filename)
         changes.push({ ...file, before: needText && file.status === 'modified' ? await content(file.filename, scopeBase) : '', after: needText && !['removed', 'renamed'].includes(file.status) ? await content(file.filename, pr.head.sha) : '' })
+      }
+      // A published conflict repair can already contain authenticated main-side
+      // policy edits while ancestry still needs the bounded branch refresh.
+      if(scopeBase!==main)for(let i=0;i<changes.length;i++) {
+        const change=changes[i]
+        if(change.status==='modified' && change.before && !evaluateScope([change]).allowed)changes[i]=adoptMainBaseline(change,await content(change.filename,main),evaluateScope)
       }
       const scope = evaluateScope(changes)
       if (scope.allowed) await client.verifyActionPins(changes.filter((file) => file.filename.startsWith('.github/workflows/')))
@@ -222,6 +228,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       // against its common ancestor, matching GitHub's pull-file list.
       const baseFiles={};const headFiles={};const changes=[]
       for(const f of files){if(['removed','renamed'].includes(f.status))throw Error('Unsupported changed file');baseFiles[f.filename]=f.status==='added'?'':await content(f.filename,task.base);headFiles[f.filename]=await content(f.filename,task.head);changes.push({...f,before:f.status==='added'?'':scopeBase===task.base?baseFiles[f.filename]:await content(f.filename,scopeBase),after:headFiles[f.filename]})}
+      for(let i=0;i<changes.length;i++)changes[i]=adoptMainBaseline(changes[i],baseFiles[changes[i].filename],evaluateScope)
       const scope=evaluateScope(changes);if(!scope.allowed)throw Error(scope.reason)
       await client.verifyActionPins(changes.filter(f=>f.filename.startsWith('.github/workflows/')))
       const contextFiles={};const tree=await request('GET',`${root}/git/trees/${task.head}?recursive=1`)
