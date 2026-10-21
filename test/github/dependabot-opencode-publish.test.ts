@@ -74,7 +74,7 @@ test('publisher independently blocks overwriting a test omitted from content con
 })
 test('action-only repair publishes without an unchanged lockfile',async()=>{
  const f=boundary('repair')
- const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('c'.repeat(40),'d'.repeat(40)).replace('# v4','# v7')
+ const before=`jobs:\n  test:\n    steps:\n      - uses: actions/setup-node@${'c'.repeat(40)} # v4\n`;const after=before.replace('uses: actions/setup-node@','uses: "actions/setup-node@').replace(' # v4','" # v4')
  const snapshot={task:f.t,changedFiles:['.github/workflows/ci.yml'],baseFiles:{'.github/workflows/ci.yml':before},headFiles:{'.github/workflows/ci.yml':before},contextFiles:{'package.json':'{}','pnpm-lock.yaml':'unchanged'},existingPaths:['.github/workflows/ci.yml','package.json','pnpm-lock.yaml']}
  const raw:any=artifact('repair');raw.agent.inputDigest=digest(snapshot);raw.agent.configDigest=f.a.agent.configDigest;raw.result.files=[{path:'.github/workflows/ci.yml',content:after}]
  const a=sealArtifact(raw);(f.client as any).prepareSnapshot=async()=>snapshot;f.client.getWorkerArtifact=async()=>a;f.client.getArtifact=async()=>({artifact:a,checks:{inputDigest:a.digest,outputDigest:a.digest,success:true}})
