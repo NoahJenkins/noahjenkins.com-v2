@@ -109,3 +109,14 @@ test('worker receives the immutable inventory and refuses incomplete inventory b
  expect(JSON.parse(readFileSync(join(prepared.dataRoot,'input.json'),'utf8')).existingPaths).toEqual(snapshot().existingPaths)
  expect(()=>prepareWorkspace({...snapshot(),existingPaths:undefined},root(),'review')).toThrow('inventory')
 })
+
+test('runtime refuses to start without its offline search binary', async () => {
+ const {launchIsolated}=require('../../.github/scripts/dependabot-opencode-worker.cjs')
+ await expect(launchIsolated(task,{},agentConfig('review','http://broker:8080/v1','fixture'),{apiKey:'fixture',binaryPath:'/verified/opencode'})).rejects.toThrow('Verified ripgrep binary is missing')
+})
+test('runtime errors expose only allowlisted category and HTTP status', () => {
+ const {agentError}=require('../../.github/scripts/dependabot-opencode-worker.cjs')
+ const error=agentError({name:'APIError',data:{statusCode:429,message:'secret-token',responseBody:'private prompt',responseHeaders:{authorization:'secret'}}})
+ expect(error.message).toBe('Agent error (APIError; HTTP 429)')
+ expect(agentError({name:'private prompt',data:{statusCode:'secret'}}).message).toBe('Agent error (unknown)')
+})
