@@ -27,8 +27,11 @@ async function main() {
   }
   if (process.argv[2] === 'timeout') { setInterval(()=>{},1000); return }
   const n = process.argv[2] === 'steps' ? 17 : 1
-  for(let i=0;i<n;i++) console.log(JSON.stringify({type:'step_start',sessionID:'ses_fixture'}))
-  if(process.argv[2] === 'error') console.log(JSON.stringify({type:'error',error:'blocked'}))
-  else console.log(JSON.stringify({type:'text',sessionID:'ses_fixture',part:{text:JSON.stringify({verdict:'approve',findings:[],coveredFiles:['package.json','pnpm-lock.yaml'],assessment:{security:{status:'pass',rationale:'Fixture'},compatibility:{status:'pass',rationale:'Fixture'}}})}}))
+  for(let i=0;i<n;i++) console.log(JSON.stringify({type:'model.call_start',data:{model:'gpt-6-luna'}}))
+  if(process.argv[2] === 'error') console.log(JSON.stringify({type:'session.error',data:{error:{name:'APIError'}}}))
+  else {
+   console.log(JSON.stringify({type:'assistant.message',data:{model:'gpt-6-luna',content:JSON.stringify({verdict:'approve',findings:[],coveredFiles:['package.json','pnpm-lock.yaml'],assessment:{security:{status:'pass',rationale:'Fixture'},compatibility:{status:'pass',rationale:'Fixture'}}})}}))
+   console.log(JSON.stringify({type:'result',exitCode:0,sessionId:'12345678-1234-1234-1234-123456789abc'}))
+  }
 }
 main().catch(()=>{console.error('Fixture failed');process.exitCode=1})

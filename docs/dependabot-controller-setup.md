@@ -1,6 +1,6 @@
 # Dependabot Controller Setup
 
-[ADR 0011](./adr/0011-use-opencode-go-for-dependabot-workers.md) replaces Copilot dispatch with OpenCode Go workers. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps. Missing App ID, state issue, or enable flags produce a setup warning and summary on manual runs, a daily 12:17 UTC diagnostic, and Dependabot opened/reopened events. The ten-minute recovery scan and high-volume status/CI events do not allocate a separate warning runner. Environment credential checks fail with the setup path and never print values. No setup diagnostic creates issues, comments, or paid requests.
+The repair and review worker uses GitHub Copilot CLI under [the current runtime and cost policy](copilot-dependency-repair.md). Historical OpenCode ADRs describe the previous provider. The controller remains inactive. Implementation, credential setup, hosted validation, and live activation are separate completion steps. Missing App ID, state issue, or enable flags produce a setup warning and summary on manual runs, a daily 12:17 UTC diagnostic, and Dependabot opened/reopened events. The ten-minute recovery scan and high-volume status/CI events do not allocate a separate warning runner. Environment credential checks fail with the setup path and never print values. No setup diagnostic creates issues, comments, or paid requests.
 
 ## Configuration and credential boundaries
 
@@ -12,9 +12,9 @@
 | `DEPENDABOT_AUTOMATION_ENABLED` | Repository Actions variable | Controller flag; only exact `true` enables it |
 | `DEPENDABOT_AGENT_ENABLED` | Repository Actions variable | Worker flag; only exact `true` enables it |
 | `DEPENDABOT_CONTROLLER_PRIVATE_KEY` | `dependabot-controller` environment secret only | Dedicated App private key |
-| `OPENCODE_GO_API_KEY` | `dependabot-dispatch` environment secret only | Go key supplied only to the trusted broker |
+| `COPILOT_GITHUB_TOKEN` | `dependabot-dispatch` environment secret only | Copilot Requests-only token supplied to the trusted CLI |
 
-`DEPENDABOT_CONTROLLER_APP_SLUG` is obtained from App-token action output and passed between trusted jobs; it is not an additional secret. Runtime read/installation tokens are job-local. Copilot PAT, dispatcher user ID, and reviewer ID are no longer used.
+`DEPENDABOT_CONTROLLER_APP_SLUG` is obtained from App-token action output and passed between trusted jobs; it is not an additional secret. Runtime read/installation tokens are job-local. The Copilot token grants model access only; no dispatcher user ID or reviewer ID is used.
 
 Both environments require selected deployment policies with exactly one Branch `main` rule, no Tag or PR-ref rules, and `can_admins_bypass: false`. Prior API read-back verified these policies and zero secrets for `dependabot-controller` (ID `24225904096`) and `dependabot-dispatch` (ID `24225905373`). Reverify before storing credentials. Leave `copilot`, `Preview`, and `Production` unchanged. Do not duplicate keys as repository, organization, Dependabot, or Agents secrets.
 
@@ -28,13 +28,9 @@ With both enable flags off, publish `Dependabot Merge Gate` before making it req
 
 Human PRs receive gate success unless their commit is shared with an open Dependabot PR. Multiple bot PRs sharing one commit require manual resolution. Check state belongs to commits, not individual PRs.
 
-## Go access and billing
+## Copilot access and billing
 
-Pin OpenCode `1.19.0`, provider `opencode-go`, repair model `kimi-k2.7-code`, and review model `glm-5.3`. No provider/model fallback is configured. The Linux baseline runtime download must match SHA-256 `6334d70db3990721ea454357e9cf2573c8685524ad7769af9d52cbffb7008438`.
-
-The Go key is unresolved. Fresh names-only checks found no Go key in homelab `prd`, `prd_admin`, or `prd_dns-pi` under ArkBuilderLabs. Local OpenCode credential metadata exists, but does not prove that a key is valid or authorized for this runner. Use secure local input to transfer only the verified Go key; do not send a broad Doppler token to Actions or print credentials.
-
-Before activation, verify Go **Use balance** is off, model access is valid, and explicit provider/Actions budgets are configured. These settings are currently unknown. Request quotas are not currency limits. No paid request or credential change was performed for this documentation update.
+Follow [Copilot dependency repair](copilot-dependency-repair.md). Keep paid overages disabled, pin the model, and verify the real token/model path before enabling workers.
 
 ## Worker flow and limits
 
@@ -42,9 +38,9 @@ The workflow is controller → claim → worker matrix → fresh validation job 
 
 App-authored ledger reservations allow two repairs/eight reviews per UTC day across the repository and two lifetime repairs per PR. New heads do not reset lifetime limits. Claim once before launch; expired, ambiguous, and failed operations remain charged. Launch only within 15 minutes on the reservation's UTC date, never from a rerun or duplicate head reservation. A stalled task requires operator action after 30 minutes; exhausted/stalled decisions appear in the existing merge gate and workflow summary, with no new issue or comment; a ledger over 60,000 bytes fails closed without automatic pruning.
 
-The isolated broker holds the real Go key. The OpenCode container receives only a local broker URL and ephemeral token, with no real Go/GitHub/App/Doppler credentials. Its internal network reaches the broker only. The broker permits one fixed Go chat endpoint and model, rejects redirects, counts retries before upstream requests, and caps repair/review at 24/16 generation calls. Request and response streams are bounded at 20 MiB; per-request time is at most 120 seconds. No keys or raw bodies are logged.
+The trusted Copilot CLI has model access, while its only model-visible tool can read bounded curated data. See [the runtime policy](copilot-dependency-repair.md). The separate validator and authenticated publisher retain all original gates.
 
-Worker wall limits are 20 minutes for repair and ten for review; event steps are capped at 24/16 as a second boundary. Fresh HOME/XDG directories and trusted prompts/configuration disable project config, default plugins, external skills, Claude integration, model fetching, formatters, LSP, snapshots, sharing, auto-update, and automatic compaction. Read/glob/grep/list are allowed; edits are repair-only. Shell, subagents, MCP, web tools, skills, and external directories are denied. Candidate instructions/config/tool directories are omitted at every depth.
+Worker wall limits are 20 minutes for repair and ten for review; observed model calls are capped at 24/16. Copilot runs with a fresh temporary home, disabled custom instructions, auto-update, remote export and built-in MCP servers. Only the trusted curated data tool is model-visible. Both repair and review are read-only sessions; repairs return proposed file contents for separate validation. See the runtime policy for the precise credential and spending boundary.
 
 Validation runs in a separate fresh job. The candidate container receives curated candidate data, no credentials, host home, persistent Git authentication, or container socket. It uses the pinned Node 24 Linux amd64 image and pnpm `10.17.1`. Fixed commands generate the lockfile with scripts disabled, install frozen dependencies with scripts disabled, then run audit, TypeScript, Jest coverage, and build. Validation is bounded at 20 minutes; publisher at five. Full hosted CI still validates the resulting head, including Playwright.
 
@@ -182,8 +178,7 @@ ledger or authorize a merge without current-head validation and independent revi
 
 GitHub can report an older PR base SHA while the target branch has advanced. When the authenticated comparison proves that main is absent from the PR and GitHub marks the PR mergeable and behind, the controller can use its bounded branch-refresh budget. It checks that the observed PR head/base and current main remain unchanged before the write. This exception permits only branch refresh; merge, review, repair dispatch, and CI retry retain exact-current-base requirements.
 
-### Offline search runtime
+### Restricted Copilot runtime
 
-The isolated worker has no direct internet access. The trusted preparation step downloads ripgrep 15.1.0, verifies its pinned archive SHA-256, and mounts only its executable read-only. A credential-free, network-disabled preflight checks the executable before the Go broker starts. A fake-provider smoke test then verifies the pinned OpenCode runtime can execute its real search tool inside the isolated worker, without Go usage. This lets OpenCode use `grep` and `glob` without attempting an in-session download. Runtime errors report only an allowlisted category and HTTP status; provider bodies, headers, prompts, and credentials are not logged.
-
-A failed worker leaves its reservation consumed. Keep automation paused until the runtime passes verification; do not replay the claim or erase the attempt history.
+The credential-free offline smoke verifies the real CLI and curated search tool.
+See [Copilot dependency repair](copilot-dependency-repair.md) for current limits and activation requirements. A failed session keeps its reservation consumed.

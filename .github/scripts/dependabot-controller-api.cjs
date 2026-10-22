@@ -147,7 +147,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
       const reviews = await list(`${root}/pulls/${pr.number}/reviews`)
       const own = reviews.filter((review) => review.user?.id === config.appBotId && review.commit_id === pr.head.sha).sort((a, b) => b.id - a.id)[0]
       if (own?.state === 'APPROVED') return
-      await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Authenticated current-head OpenCode review, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
+      await request('POST', `${root}/pulls/${pr.number}/reviews`, { commit_id: pr.head.sha, event: 'APPROVE', body: 'Authenticated current-head Copilot review, trusted CI, Vercel and protected scope verified. Native merge remains controlled by the dedicated App gate.' })
     },
     retryCi: (id) => {
       if (!Number.isSafeInteger(id) || id <= 0) throw Error('Invalid retry workflow run')
@@ -208,7 +208,7 @@ function createClient(config, readToken, writeToken, fetcher = fetch) {
     getWorkerArtifact: async(task,runId)=>client.getArtifact(await client.findArtifact(runId,`worker-${task.nonce}`),{runId,name:`worker-${task.nonce}`,head:task.base}),
     async commitFiles(pr,files) {
       validateFiles(files)
-      const input={branch:{repositoryNameWithOwner:config.repo,branchName:pr.head.ref},expectedHeadOid:pr.head.sha,message:{headline:'fix: repair Dependabot validation with OpenCode'},fileChanges:{additions:files.map(f=>({path:f.path,contents:Buffer.from(f.content).toString('base64')}))}}
+      const input={branch:{repositoryNameWithOwner:config.repo,branchName:pr.head.ref},expectedHeadOid:pr.head.sha,message:{headline:'fix: repair Dependabot validation with Copilot'},fileChanges:{additions:files.map(f=>({path:f.path,contents:Buffer.from(f.content).toString('base64')}))}}
       const result=await request('POST','/graphql',{query:'mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }',variables:{input}})
       const id=result.data?.createCommitOnBranch?.commit?.oid;if(!/^[0-9a-f]{40}$/.test(id))throw Error('Atomic commit result is missing');return {id}
     },

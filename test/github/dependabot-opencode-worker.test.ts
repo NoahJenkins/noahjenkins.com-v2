@@ -22,16 +22,15 @@ test('ignores_candidate_agent_configuration', () => {
 })
 test('denies_secret_time_execution_tools', () => {
  const c=agentConfig('review','http://broker:8080/v1','temporary')
- expect(c.agent.review.permission).toMatchObject({'*':'deny',bash:'deny',task:'deny',edit:'deny',external_directory:{'*':'deny','/home/agent/data/opencode/tool-output/*':'deny'}})
- expect(c).toMatchObject({formatter:false,lsp:false,snapshot:false,share:'disabled',autoupdate:false,compaction:{auto:false}})
- expect(agentConfig('repair','http://broker:8080/v1','temporary').agent.repair.permission.edit).toBe('allow')
+ expect(c).toMatchObject({provider:'github-copilot',model:'gpt-6-luna',tools:['curated-read_data'],maxAiCredits:30})
+ expect(agentConfig('repair').tools).toEqual(['curated-read_data'])
 })
 test('enforces_agent_step_and_time_bounds', async () => {
  const input={snapshot:snapshot(),origin,root:root()}
  await expect(runAgent(task,input,{launcher:launcher('steps')})).rejects.toThrow('step')
  await expect(runAgent(task,input,{launcher:launcher('timeout'),timeoutMs:30})).rejects.toThrow('timeout')
  await expect(runAgent(task,input,{launcher:launcher('error')})).rejects.toThrow()
- expect((await runAgent(task,input,{launcher:launcher('ok')})).agent).toMatchObject({provider:'opencode-go',model:'glm-5.3'})
+ expect((await runAgent(task,input,{launcher:launcher('ok')})).agent).toMatchObject({provider:'github-copilot',model:'gpt-6-luna'})
 })
 test.each([24,16])('proxy_caps_hostile_generation_retries at %i', limit => {
  const result=JSON.parse(execFileSync(process.execPath,['test/fixtures/opencode-fake-provider.cjs','proxy',String(limit)],{encoding:'utf8'}))
@@ -110,9 +109,9 @@ test('worker receives the immutable inventory and refuses incomplete inventory b
  expect(()=>prepareWorkspace({...snapshot(),existingPaths:undefined},root(),'review')).toThrow('inventory')
 })
 
-test('runtime refuses to start without its offline search binary', async () => {
+test('runtime refuses to start without its Copilot credential', async () => {
  const {launchIsolated}=require('../../.github/scripts/dependabot-opencode-worker.cjs')
- await expect(launchIsolated(task,{},agentConfig('review','http://broker:8080/v1','fixture'),{apiKey:'fixture',binaryPath:'/verified/opencode'})).rejects.toThrow('Verified ripgrep binary is missing')
+ await expect(launchIsolated(task,{},agentConfig('review','http://broker:8080/v1','fixture'),{binaryPath:'/verified/copilot'})).rejects.toThrow('Copilot credential or verified binary is missing')
 })
 test('runtime errors expose only allowlisted category and HTTP status', () => {
  const {agentError}=require('../../.github/scripts/dependabot-opencode-worker.cjs')
