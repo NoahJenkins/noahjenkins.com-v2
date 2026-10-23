@@ -170,15 +170,15 @@ This check is currently informational only and is not yet part of the protected-
   - Do not assign a routine reviewer or assignee.
   - Use ecosystem and automation labels to identify the pull request type.
 
-### 6) Dependabot Controller and OpenCode Go Workers
+### 6) Dependabot Controller and Copilot Workers
 
-[ADR 0011](../adr/0011-use-opencode-go-for-dependabot-workers.md) supersedes ADR 0010's Copilot dispatcher/reviewer. Controller acceptance, quotas, protected scope, App authority, and main-only environments remain. The [setup guide](../dependabot-controller-setup.md) separates implementation from activation.
+The current worker contract is defined in the [Copilot runtime guide](../copilot-dependency-repair.md). ADRs 0010 and 0011 record earlier dispatcher and provider designs. Controller acceptance, quotas, protected scope, App authority, and main-only environments remain. The [setup guide](../dependabot-controller-setup.md) separates implementation from activation.
 
 The trusted workflow reconciles same-repository Dependabot PRs on PR/CI/status events and a ten-minute schedule. A passing human-triggered CI run is eligible. Exact-head/current-base CI provenance, all five required jobs, trusted Vercel deployment status, protected scope, and authentic independent review evidence are required. Human/shared-commit and duplicate bot-head safeguards remain.
 
-Flow: controller → App claim → isolated Go worker matrix → fresh secret-free validator → trusted publisher → reconciliation. Trusted jobs checkout immutable workflow source matching the reserved base and run only from main; launch is original attempt 1. The controller App owns `Dependabot Merge Gate`, the ledger, task claims, repair commits, and `Dependabot Independent Review`. Branch protection must bind the gate to this App and require strict up-to-date CI, one approval, and stale-review dismissal.
+Flow: controller → App claim → isolated Copilot worker matrix → fresh secret-free validator → trusted publisher → reconciliation. Trusted jobs checkout immutable workflow source matching the reserved base and run only from main; launch is original attempt 1. The controller App owns `Dependabot Merge Gate`, the ledger, task claims, repair commits, and `Dependabot Independent Review`. Branch protection must bind the gate to this App and require strict up-to-date CI, one approval, and stale-review dismissal.
 
-The broker alone holds the real Go key; the containerized agent uses an ephemeral local proxy token. Pinned OpenCode 1.19.0 uses Kimi repair and GLM review sessions with denied execution/extensions and capped calls/time. Fixed validation runs separately without secrets. The publisher executes no artifact, verifies immutable run/job/claim/digest evidence and scope, atomically commits repairs with expected head, or publishes App-owned review proof bound to head/base. The controller queues native auto-merge while its gate is pending and revalidates before formal App approval and gate success.
+The trusted Copilot CLI alone receives a Copilot Requests-only fine-grained token. Repair and independent review use the fixed cost-efficient model and bounded credit, call, time, and input limits in the runtime guide. The model can read only the curated snapshot through `curated-read_data`; it has no shell, repository write, or network tools. Fixed validation runs separately without secrets. The publisher executes no artifact, verifies immutable run/job/claim/digest evidence and scope, atomically commits repairs with expected head, or publishes App-owned review proof bound to head/base. The controller queues native auto-merge while its gate is pending and revalidates before formal App approval and gate success.
 
 The central ledger limits the repository to two repairs/eight reviews per UTC day and two lifetime repairs per PR. Expired or uncertain reservations remain charged; reruns cannot dispatch. Invalid provenance, stale base/head, incomplete review, quota exhaustion, or missing credentials blocks acceptance. Missing external App/gate/provider/budget configuration keeps flags off.
 
@@ -198,7 +198,7 @@ Vercel preview and production deployments are handled by the Git integration out
 ### Secrets (names only)
 - **None explicitly required by `ci.yml`**
 - `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY`
-- `dependabot-dispatch` environment only: `OPENCODE_GO_API_KEY`
+- `dependabot-dispatch` environment only: `COPILOT_GITHUB_TOKEN` (Copilot Requests account permission only)
 
 ### Environment variables (names only)
 - `STORE_PATH` (set in each job for pnpm cache path)

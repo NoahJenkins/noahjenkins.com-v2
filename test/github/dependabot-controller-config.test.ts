@@ -26,7 +26,7 @@ test('workflow keeps candidate execution outside credential jobs',()=>{
  for(const [name,job] of Object.entries(workflow.jobs) as any) {
   for(const step of job.steps) {
    if(step.uses?.startsWith('actions/checkout@') && step.name!=='Checkout candidate data without persistent credentials')expect(step.with.ref).toBe('${{ github.workflow_sha }}')
-   if(step.env?.OPENCODE_GO_API_KEY)expect(name).toBe('worker')
+   if(step.env?.COPILOT_GITHUB_TOKEN)expect(name).toBe('worker')
    if(step.with?.['private-key'])expect(['controller','claim','publish','reconcile']).toContain(name)
   }
  }
