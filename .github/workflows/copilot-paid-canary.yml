@@ -1,0 +1,64 @@
+name: Controlled Copilot repair trial
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copilot-paid-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    if: github.repository == 'NoahJenkins/noahjenkins.com-v2' && github.ref == 'refs/heads/main' && github.workflow_sha == github.sha && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: dependabot-dispatch
+    steps:
+      - name: Check out trusted main workflow source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        timeout-minutes: 3
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install verified pinned Copilot runtime
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/copilot-bin"
+          curl --fail --location --proto '=https' --max-time 90 --silent --show-error https://github.com/github/copilot-cli/releases/download/v1.0.103/copilot-linux-x64.tar.gz -o "$RUNNER_TEMP/copilot-bin/runtime.tar.gz"
+          echo '9aeb4430e9ac9523546db07b227c7aba179a4710a55f9ac29ad143b0f9e1b325  '"$RUNNER_TEMP/copilot-bin/runtime.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/copilot-bin/runtime.tar.gz" -C "$RUNNER_TEMP/copilot-bin"
+      - name: Verify real curated tool offline without credentials
+        timeout-minutes: 2
+        run: node .github/scripts/copilot-smoke.cjs
+        env:
+          COPILOT_BINARY: ${{ runner.temp }}/copilot-bin/copilot
+      - name: Prepare pinned isolation image
+        timeout-minutes: 2
+        run: docker pull node:24-bookworm-slim@sha256:51b1100cc2a83d370c6a60952e3f2989c8a43159d0e38586e090f3b3326efefd
+      - name: Run one isolated paid repair trial
+        timeout-minutes: 3
+        run: node .github/scripts/copilot-paid-canary.cjs
+        env:
+          COPILOT_BINARY: ${{ runner.temp }}/copilot-bin/copilot
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          CANARY_OUTPUT_DIR: ${{ runner.temp }}/copilot-canary
+      - name: Retain only sanitized trial and usage evidence
+        if: always()
+        timeout-minutes: 1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: copilot-paid-canary-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/copilot-canary/canary.json
+            ${{ runner.temp }}/copilot-canary/usage.json
+          if-no-files-found: ignore
+          retention-days: 7

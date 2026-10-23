@@ -67,6 +67,25 @@ activation, verify the secret, model entitlement, paid-overage setting and a
 controlled exact-head repair/review canary. Enable one repository first. Existing
 paused flags and consumed reservations must not be reset to manufacture a pass.
 
+### Manual paid runtime trial
+
+`Controlled Copilot repair trial` is a manual, main-only workflow in this public
+repository. Dispatch it once after explicit spending approval. Rerunning a job
+cannot start a second paid session. It uses the same verified CLI, fixed GPT-6
+Luna model, curated read-only tool and Copilot-only credential as the repair
+worker. The model has a two-minute deadline and the existing 30-credit soft
+limit; an in-flight response can exceed that soft limit. Paid overages must
+remain disabled in account billing.
+
+The trial repairs a small synthetic dependency adapter. A separate, credential-free,
+network-disabled container checks its behavior. Only sanitized usage counters and
+a `synthetic-copilot-canary` result are retained. It has no publisher, App token,
+schedule or real PR reservation. It cannot approve or modify a real PR. A passing
+trial proves model/token/tool/runtime operation; it does not replace a successful
+real repair, independent review or current-head CI. Keep production agent flags
+off until those separate activation checks pass. Failed or missing usage is not
+proof of zero spend, and a failure must not be replayed automatically.
+
 ## Input admission
 
 Both repair and review validate the complete generated data directory, including
