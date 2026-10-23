@@ -73,12 +73,18 @@ describe('CI setup budget and browser-cache policy', () => {
     }
   })
 
-  test('browser cache uses exact OS, architecture, and lockfile identity', () => {
+  test('browser cache uses the exact installed version without unrelated lockfile invalidation', () => {
     const steps = workflow.jobs['playwright-tests'].steps
     const cache = steps.find((step: any) => step.id === 'playwright-cache')
     expect(cache.with.path).toBe('~/.cache/ms-playwright')
-    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}")
+    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}")
     expect(cache.with['restore-keys']).toBeUndefined()
+    const version = steps.find((step: any) => step.id === 'playwright-version')
+    expect(version.run).toContain("require('@playwright/test/package.json').version")
+    expect(version['timeout-minutes']).toBe(1)
+    expect(steps.indexOf(version)).toBeGreaterThan(steps.findIndex((step: any) => step.run?.includes('pnpm install ')))
+    expect(steps.indexOf(version)).toBeLessThan(steps.indexOf(cache))
+    expect(cache.with.key).not.toContain('hashFiles')
     const system = steps.find((step: any) => step.run === 'pnpm exec playwright install-deps')
     expect(system.if).toBeUndefined()
     const browsers = steps.find((step: any) => step.run === 'pnpm exec playwright install')

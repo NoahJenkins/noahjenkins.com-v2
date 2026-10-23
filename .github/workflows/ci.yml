@@ -149,6 +149,13 @@ jobs:
         timeout-minutes: 5
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Get installed Playwright version
+        timeout-minutes: 1
+        id: playwright-version
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
       # Browser binaries are cached separately from Linux system libraries.
       - name: Cache Playwright browsers
         timeout-minutes: 2
@@ -156,7 +163,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright system dependencies
         timeout-minutes: 5

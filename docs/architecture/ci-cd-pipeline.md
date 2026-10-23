@@ -51,7 +51,7 @@ no infrastructure or runner access policy.
 - Security audit, Jest, and TypeScript jobs stop after 10 minutes. Build and Playwright jobs stop after 15 minutes. Dependency Review stops after 5 minutes.
 - Each package, browser, or Linux-library install stops after 5 minutes; Node/pnpm setup after 3 minutes; explicit cache operations after 2 minutes. Setup failures fail the job. Do not retry timed-out setup automatically or raise its limit to obtain a green result.
 - The pnpm content-addressed store is cached; `node_modules` is not cached. Frozen installs with `--prefer-offline` validate the lockfile, reuse downloaded packages, and run required lifecycle scripts.
-- Browser binaries use an exact OS, architecture, and `pnpm-lock.yaml` cache key, with no broad restore keys. A cache hit skips browser downloads. Linux system libraries are not cached and still install on both hits and misses under their own deadline.
+- Browser binaries use an exact OS, architecture, and installed `@playwright/test` version cache key, with no broad restore keys. The version is read after the frozen install, so unrelated lockfile changes do not invalidate compatible browsers. A cache hit skips browser downloads. Linux system libraries are not cached and still install on both hits and misses under their own deadline.
 - Existing concurrency cancellation, required check names, platform routing, and test coverage remain unchanged. Failure artifacts remain available.
 
 ## Pipeline Stages
@@ -81,7 +81,7 @@ Steps:
 4. Set `STORE_PATH`
 5. Setup pnpm cache
 6. Install dependencies from the pnpm store with a frozen lockfile
-7. Restore exact OS/architecture/lockfile browser cache; always run `pnpm exec playwright install-deps`, then run `pnpm exec playwright install` only on a browser-cache miss
+7. Restore exact OS/architecture/installed-Playwright-version browser cache; always run `pnpm exec playwright install-deps`, then run `pnpm exec playwright install` only on a browser-cache miss
 8. Run tests: `pnpm test:ui`
 9. Always upload artifacts (`actions/upload-artifact@v4`):
    - `playwright-report/` as `playwright-report`
