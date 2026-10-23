@@ -46,6 +46,14 @@ The original draft design and branch `ci/portfolio-dell-routing` remain retained
 for a separately reviewed migration. This change registers no runner and alters
 no infrastructure or runner access policy.
 
+## Install Limits and Caches
+
+- Security audit, Jest, and TypeScript jobs stop after 10 minutes. Build and Playwright jobs stop after 15 minutes. Dependency Review stops after 5 minutes.
+- Each package, browser, or Linux-library install stops after 5 minutes; Node/pnpm setup after 3 minutes; explicit cache operations after 2 minutes. Setup failures fail the job. Do not retry timed-out setup automatically or raise its limit to obtain a green result.
+- The pnpm content-addressed store is cached; `node_modules` is not cached. Frozen installs with `--prefer-offline` validate the lockfile, reuse downloaded packages, and run required lifecycle scripts.
+- Browser binaries use an exact OS, architecture, and installed `@playwright/test` version cache key, with no broad restore keys. The version is read after the frozen install, so unrelated lockfile changes do not invalidate compatible browsers. A cache hit skips browser downloads. Linux system libraries are not cached and still install on both hits and misses under their own deadline.
+- Existing concurrency cancellation, required check names, platform routing, and test coverage remain unchanged. Failure artifacts remain available.
+
 ## Pipeline Stages
 
 ### 1) Test Stage
@@ -59,7 +67,7 @@ Steps:
 3. Setup pnpm (`pnpm/action-setup`)
 4. Resolve pnpm store path into env var `STORE_PATH`
 5. Restore/save pnpm cache (`actions/cache@v4`) keyed by `pnpm-lock.yaml`
-6. Install dependencies (`pnpm install --frozen-lockfile`, fallback to `--no-frozen-lockfile`)
+6. Install dependencies (`pnpm install --frozen-lockfile --prefer-offline` from the cached pnpm store)
 7. Run tests: `pnpm test`
 8. Upload coverage to Codecov (`codecov/codecov-action@v4`) when `coverage/lcov.info` exists, always-attempted, non-blocking (`continue-on-error: true`)
 
@@ -72,8 +80,8 @@ Steps:
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
-6. Install dependencies (same frozen-lockfile fallback behavior)
-7. Install Playwright browsers/deps: `pnpm exec playwright install --with-deps`
+6. Install dependencies from the pnpm store with a frozen lockfile
+7. Restore exact OS/architecture/installed-Playwright-version browser cache; always run `pnpm exec playwright install-deps`, then run `pnpm exec playwright install` only on a browser-cache miss
 8. Run tests: `pnpm test:ui`
 9. Always upload artifacts (`actions/upload-artifact@v4`):
    - `playwright-report/` as `playwright-report`
@@ -91,7 +99,7 @@ Steps:
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
-6. Install dependencies (frozen-lockfile with fallback)
+6. Install dependencies from the pnpm store with a frozen lockfile
 7. Run audit gate: `pnpm audit --audit-level=high`
 
 #### Job: `typecheck` (TypeScript Check)
@@ -103,12 +111,12 @@ Steps:
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
-6. Install dependencies (frozen-lockfile with fallback)
+6. Install dependencies from the pnpm store with a frozen lockfile
 7. Run typecheck: `pnpm exec tsc --noEmit`
 
 Security/quality controls present in workflow:
 - Principle of least privilege via read-only GitHub token permissions
-- Deterministic dependency install attempt with lockfile enforcement first
+- Deterministic frozen-lockfile installs; failure stops validation without a fallback install
 - Concurrency cancellation reduces stale validations
 
 ### 3) Build Stage
@@ -122,7 +130,7 @@ Steps:
 3. Setup pnpm
 4. Set `STORE_PATH`
 5. Setup pnpm cache
-6. Install dependencies (frozen-lockfile with fallback)
+6. Install dependencies from the pnpm store with a frozen lockfile
 7. Build app: `pnpm build`
 8. Verify output directory `.next` exists; fail job if missing
 

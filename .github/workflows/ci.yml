@@ -25,25 +25,29 @@ jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup Node.js
+        timeout-minutes: 3
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
       - name: Install pnpm
+        timeout-minutes: 3
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
+        timeout-minutes: 2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -52,11 +56,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: |
-          if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
-            pnpm install --no-frozen-lockfile
-          fi
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run security audit (high+)
         run: pnpm audit --audit-level=high
@@ -64,25 +65,29 @@ jobs:
   jest-tests:
     name: Jest Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
       - name: Setup Node.js
+        timeout-minutes: 3
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           
       - name: Install pnpm
+        timeout-minutes: 3
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
+        timeout-minutes: 2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -91,11 +96,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: |
-          if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
-            pnpm install --no-frozen-lockfile
-          fi
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run Jest tests
         run: pnpm test
@@ -113,25 +115,29 @@ jobs:
   playwright-tests:
     name: Playwright Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
       - name: Setup Node.js
+        timeout-minutes: 3
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           
       - name: Install pnpm
+        timeout-minutes: 3
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
+        timeout-minutes: 2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -140,14 +146,33 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Get installed Playwright version
+        timeout-minutes: 1
+        id: playwright-version
         run: |
-          if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
-            pnpm install --no-frozen-lockfile
-          fi
+          version=$(node -p "require('@playwright/test/package.json').version")
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      # Browser binaries are cached separately from Linux system libraries.
+      - name: Cache Playwright browsers
+        timeout-minutes: 2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright system dependencies
+        timeout-minutes: 5
+        run: pnpm exec playwright install-deps
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps
+        timeout-minutes: 5
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install
         
       - name: Run Playwright tests
         run: pnpm test:ui
@@ -174,25 +199,29 @@ jobs:
   typecheck:
     name: TypeScript Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
       - name: Setup Node.js
+        timeout-minutes: 3
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           
       - name: Install pnpm
+        timeout-minutes: 3
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
+        timeout-minutes: 2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -201,11 +230,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: |
-          if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
-            pnpm install --no-frozen-lockfile
-          fi
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run TypeScript type checking
         run: pnpm exec tsc --noEmit
@@ -214,25 +240,29 @@ jobs:
   build:
     name: Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         
       - name: Setup Node.js
+        timeout-minutes: 3
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           
       - name: Install pnpm
+        timeout-minutes: 3
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
 
       - name: Setup pnpm cache
+        timeout-minutes: 2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -241,11 +271,8 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: |
-          if ! pnpm install --frozen-lockfile; then
-            echo "Frozen lockfile failed, falling back to no-frozen-lockfile install..."
-            pnpm install --no-frozen-lockfile
-          fi
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Build application
         run: pnpm build
