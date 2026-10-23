@@ -79,3 +79,12 @@ test('missing usage cannot be reported as a successful or zero-cost trial', () =
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'canary.json'), 'utf8')).passed, false)
   assert.equal(fs.existsSync(path.join(root, 'usage.json')), false)
 }))
+
+test('functional proof requires completed outputs and rejects early exits and constant answers', () => {
+  const { verifyCandidateOutput } = require('../../.github/scripts/copilot-paid-canary.cjs')
+  const inputs = ['', 'sample', 'unpredictable-value', 'café']
+  assert.throws(() => verifyCandidateOutput('', inputs))
+  assert.throws(() => verifyCandidateOutput(JSON.stringify(inputs.map(() => 'ready:sample')), inputs))
+  assert.throws(() => verifyCandidateOutput('extra\n' + JSON.stringify(inputs.map(v => 'ready:' + v)), inputs))
+  assert.doesNotThrow(() => verifyCandidateOutput(JSON.stringify(inputs.map(v => 'ready:' + v)), inputs))
+})

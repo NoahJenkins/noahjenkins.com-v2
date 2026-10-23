@@ -17,16 +17,25 @@ function fixture() {
     diagnostics: ['paid-canary-read-proof', 'Synthetic dependency fixture: canary-lib 1.0.1 exposes decode(value), returning ready: followed by value. parse no longer exists. Adapter currently fails TypeError: client.parse is not a function. Repair lib/adapter.cjs only; preserve the package update. A secret-free check calls the adapter with sample and expects ready:sample. No real PR or dependency install is involved.'] }
 }
 
+function verifyCandidateOutput(output, inputs) {
+  const actual = JSON.parse(output)
+  const expected = inputs.map(value => 'ready:' + value)
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) throw Error('Canary functional output mismatch')
+}
+
 async function validateCandidate(files, root) {
   const directory = path.join(root, 'validation'), moduleDir = path.join(directory, 'node_modules', 'canary-lib')
   fs.mkdirSync(moduleDir, { recursive: true, mode: 0o755 })
   fs.writeFileSync(path.join(directory, 'adapter.cjs'), files[0].content, { mode: 0o644 })
   fs.writeFileSync(path.join(moduleDir, 'index.js'), "exports.decode = value => 'ready:' + value;\n", { mode: 0o644 })
   const name = 'copilot-canary-validation-' + randomUUID()
+  const inputs = ['', 'sample', randomUUID(), randomUUID(), 'café ☃']
   const docker = args => execFileSync('docker', args, { env: { PATH: process.env.PATH }, stdio: ['ignore', 'pipe', 'pipe'], timeout: 15000 })
   try {
-    docker(['run', '--rm', '--name', name, '--platform', 'linux/amd64', '--network', 'none', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--read-only', '--user', '1000:1000', '--memory=128m', '--cpus=1', '--pids-limit=32',
-      '--mount', `type=bind,source=${directory},target=/canary,readonly`, runtime.IMAGE, 'node', '-e', "require('node:assert/strict').equal(require('/canary/adapter.cjs')('sample'),'ready:sample')"])
+    const output = docker(['run', '--rm', '--name', name, '--platform', 'linux/amd64', '--network', 'none', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--read-only', '--user', '1000:1000', '--memory=128m', '--cpus=1', '--pids-limit=32',
+      '--mount', `type=bind,source=${directory},target=/canary,readonly`, runtime.IMAGE, 'node', '-e', "const inputs = JSON.parse(process.argv[1]); const adapter = require('/canary/adapter.cjs'); process.stdout.write(JSON.stringify(inputs.map(value => adapter(value))))", JSON.stringify(inputs)])
+    // Compare outside the candidate process: an early exit must not count as proof.
+    verifyCandidateOutput(output.toString('utf8'), inputs)
   } catch { throw Error('Canary functional check failed') }
   finally { try { docker(['rm', '-f', name]) } catch {} }
 }
@@ -72,7 +81,7 @@ async function runCanary({ root, binaryPath, apiKey, launch = runtime.launchIsol
   }
 }
 
-module.exports = { runCanary, validateCandidate, fixture }
+module.exports = { runCanary, validateCandidate, verifyCandidateOutput, fixture }
 if (require.main === module) {
   const root = process.env.CANARY_OUTPUT_DIR
   if (!root || !path.isAbsolute(root) || !process.env.COPILOT_GITHUB_TOKEN || !process.env.COPILOT_BINARY) {
