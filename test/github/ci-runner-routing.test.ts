@@ -42,3 +42,46 @@ describe('public repository CI runner policy', () => {
     }
   })
 })
+
+
+describe('CI setup budget and browser-cache policy', () => {
+  const limits: Record<string, number> = {
+    'security-audit': 10, 'jest-tests': 10, 'playwright-tests': 15, typecheck: 10, build: 15,
+  }
+
+  test.each(Object.entries(limits))('%s has a bounded job and setup steps', (name, limit) => {
+    const job = workflow.jobs[name]
+    expect(Number.isInteger(job['timeout-minutes'])).toBe(true)
+    expect(job['timeout-minutes']).toBeGreaterThan(0)
+    expect(job['timeout-minutes']).toBeLessThanOrEqual(limit)
+    for (const step of job.steps) {
+      const action = step.uses || ''
+      const command = step.run || ''
+      let cap: number | undefined
+      if (command.includes('pnpm install ') || command.includes('playwright install')) cap = 5
+      else if (/^(pnpm\/action-setup|actions\/setup-node)@/.test(action)) cap = 3
+      else if (action.startsWith('actions/cache@')) cap = 2
+      if (cap !== undefined) {
+        expect(Number.isInteger(step['timeout-minutes'])).toBe(true)
+        expect(step['timeout-minutes']).toBeGreaterThan(0)
+        expect(step['timeout-minutes']).toBeLessThanOrEqual(cap)
+        expect(step['continue-on-error']).not.toBe(true)
+      }
+      if (command.includes('pnpm install ')) {
+        expect(command).toBe('pnpm install --frozen-lockfile --prefer-offline')
+      }
+    }
+  })
+
+  test('browser cache uses exact OS, architecture, and lockfile identity', () => {
+    const steps = workflow.jobs['playwright-tests'].steps
+    const cache = steps.find((step: any) => step.id === 'playwright-cache')
+    expect(cache.with.path).toBe('~/.cache/ms-playwright')
+    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}")
+    expect(cache.with['restore-keys']).toBeUndefined()
+    const system = steps.find((step: any) => step.run === 'pnpm exec playwright install-deps')
+    expect(system.if).toBeUndefined()
+    const browsers = steps.find((step: any) => step.run === 'pnpm exec playwright install')
+    expect(browsers.if).toBe("steps.playwright-cache.outputs.cache-hit != 'true'")
+  })
+})
