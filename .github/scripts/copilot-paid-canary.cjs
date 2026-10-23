@@ -24,16 +24,16 @@ function verifyCandidateOutput(output, inputs) {
 }
 
 async function validateCandidate(files, root) {
-  const directory = path.join(root, 'validation'), moduleDir = path.join(directory, 'node_modules', 'canary-lib')
-  fs.mkdirSync(moduleDir, { recursive: true, mode: 0o755 })
+  const directory = path.join(root, 'validation')
+  fs.mkdirSync(directory, { recursive: true, mode: 0o755 })
   fs.writeFileSync(path.join(directory, 'adapter.cjs'), files[0].content, { mode: 0o644 })
-  fs.writeFileSync(path.join(moduleDir, 'index.js'), "exports.decode = value => 'ready:' + value;\n", { mode: 0o644 })
+  fs.writeFileSync(path.join(directory, 'validator.cjs'), fs.readFileSync(path.join(__dirname, 'copilot-canary-validator.cjs')), { mode: 0o644 })
   const name = 'copilot-canary-validation-' + randomUUID()
   const inputs = ['', 'sample', randomUUID(), randomUUID(), 'café ☃']
-  const docker = args => execFileSync('docker', args, { env: { PATH: process.env.PATH }, stdio: ['ignore', 'pipe', 'pipe'], timeout: 15000 })
+  const docker = (args, input) => execFileSync('docker', args, { env: { PATH: process.env.PATH }, input, stdio: ['pipe', 'pipe', 'pipe'], timeout: 15000 })
   try {
-    const output = docker(['run', '--rm', '--name', name, '--platform', 'linux/amd64', '--network', 'none', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--read-only', '--user', '1000:1000', '--memory=128m', '--cpus=1', '--pids-limit=32',
-      '--mount', `type=bind,source=${directory},target=/canary,readonly`, runtime.IMAGE, 'node', '-e', "const inputs = JSON.parse(process.argv[1]); const adapter = require('/canary/adapter.cjs'); process.stdout.write(JSON.stringify(inputs.map(value => adapter(value))))", JSON.stringify(inputs)])
+    const output = docker(['run', '--rm', '-i', '--name', name, '--platform', 'linux/amd64', '--network', 'none', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--read-only', '--user', '1000:1000', '--memory=128m', '--cpus=1', '--pids-limit=32',
+      '--mount', `type=bind,source=${directory},target=/canary,readonly`, runtime.IMAGE, 'node', '/canary/validator.cjs'], JSON.stringify(inputs))
     // Compare outside the candidate process: an early exit must not count as proof.
     verifyCandidateOutput(output.toString('utf8'), inputs)
   } catch { throw Error('Canary functional check failed') }

@@ -78,7 +78,12 @@ limit; an in-flight response can exceed that soft limit. Paid overages must
 remain disabled in account billing.
 
 The trial repairs a small synthetic dependency adapter. A separate, credential-free,
-network-disabled container checks its behavior. Only sanitized usage counters and
+network-disabled container checks its behavior. Within that container, a restricted
+JavaScript context exposes only the synthetic library. The trusted harness checks
+for a callable export before reading challenges, supplies one string at a time,
+and serializes primitive results outside the candidate context. The outer runner
+compares all results; early exits cannot provide the success protocol. This context
+is a fixture restriction; Docker remains the security boundary. Only sanitized usage counters and
 a `synthetic-copilot-canary` result are retained. It has no publisher, App token,
 schedule or real PR reservation. It cannot approve or modify a real PR. A passing
 trial proves model/token/tool/runtime operation; it does not replace a successful
