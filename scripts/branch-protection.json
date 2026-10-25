@@ -2,7 +2,7 @@
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "Security Audit",
+      "Dependency Review",
       "Jest Tests",
       "Playwright Tests",
       "TypeScript Check",

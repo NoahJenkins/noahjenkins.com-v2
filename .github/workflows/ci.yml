@@ -22,46 +22,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Setup Node.js
-        timeout-minutes: 3
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-
-      - name: Install pnpm
-        timeout-minutes: 3
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
-
-      - name: Setup pnpm cache
-        timeout-minutes: 2
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        timeout-minutes: 5
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Run security audit (high+)
-        run: pnpm audit --audit-level=high
-
   jest-tests:
     name: Jest Tests
     runs-on: ubuntu-latest

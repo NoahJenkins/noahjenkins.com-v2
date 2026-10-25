@@ -1,0 +1,120 @@
+name: Dependency audit
+
+# Full-tree pnpm audit stays off the pull request path. An advisory already on
+# main must not block unrelated updates. Dependency Review is the pull request
+# gate; this job reports the tree on a schedule.
+on:
+  schedule:
+    # Monday 15:30 UTC (morning in America/Chicago).
+    - cron: '30 15 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  pnpm-audit:
+    name: Scheduled pnpm audit
+    # workflow_dispatch runs the selected ref. Another branch must not open,
+    # comment on, or close the shared main-branch findings issue.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        timeout-minutes: 3
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        timeout-minutes: 3
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Setup pnpm cache
+        timeout-minutes: 2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Run high-severity audit
+        id: audit
+        shell: bash
+        run: |
+          set +e
+          pnpm audit --audit-level=high > "$RUNNER_TEMP/pnpm-audit.txt" 2>&1
+          code=$?
+          set -e
+          echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/pnpm-audit.txt"
+
+      - name: Publish audit issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUDIT_EXIT: ${{ steps.audit.outputs.exit_code }}
+          AUDIT_LOG: ${{ runner.temp }}/pnpm-audit.txt
+        run: |
+          set -euo pipefail
+          title='High-severity pnpm audit findings'
+          repo="${GITHUB_REPOSITORY:?}"
+          sha="${GITHUB_SHA:?}"
+          log="${AUDIT_LOG:?}"
+          exit_code="${AUDIT_EXIT:?}"
+          if [ ! -f "$log" ]; then
+            printf '%s\n' 'pnpm audit produced no log.' > "$log"
+          fi
+          query="repo:${repo} is:issue is:open in:title \"${title}\""
+          existing=$(gh api --method GET search/issues -f "q=${query}" --jq ".items[] | select(.title==\"${title}\") | .number")
+          excerpt=$(head -c 20000 "$log" | tr '`' "'")
+          marker='<!-- dependency-audit:high -->'
+          if [ "$exit_code" = "0" ]; then
+            if [ -n "$existing" ]; then
+              while IFS= read -r number; do
+                [ -n "$number" ] || continue
+                gh issue close "$number" --comment "$(printf '%s\n%s\n' "$marker" "pnpm audit --audit-level=high is clean on main at ${sha}.")"
+              done <<< "$existing"
+            fi
+            exit 0
+          fi
+          body_file=$(mktemp)
+          {
+            printf '%s\n\n' "$marker"
+            printf 'pnpm audit --audit-level=high failed on main at `%s` (exit %s).\n\n' "$sha" "$exit_code"
+            printf '%s\n\n' 'This scheduled check does not block pull requests. The Dependency Review check fails only when a pull request introduces a new high or critical vulnerability.'
+            printf '%s\n' '```text'
+            printf '%s\n' "$excerpt"
+            printf '%s\n' '```'
+          } > "$body_file"
+          if [ -n "$existing" ]; then
+            while IFS= read -r number; do
+              [ -n "$number" ] || continue
+              gh issue comment "$number" --body-file "$body_file"
+            done <<< "$existing"
+          else
+            gh issue create --title "$title" --body-file "$body_file"
+          fi
+
+      - name: Fail when high-severity advisories remain
+        if: steps.audit.outputs.exit_code != '0'
+        run: exit 1
