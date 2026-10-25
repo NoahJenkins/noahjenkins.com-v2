@@ -182,6 +182,7 @@ describe('scheduled dependency audit', () => {
     expect(workflow.on.workflow_dispatch).toBeNull()
     expect(workflow.permissions).toEqual({ contents: 'read', issues: 'write' })
     expect(workflow.jobs['pnpm-audit']['runs-on']).toBe('ubuntu-latest')
+    expect(workflow.jobs['pnpm-audit'].if).toBe("github.ref == 'refs/heads/main'")
     expect(workflow.jobs['pnpm-audit'].name).toBe('Scheduled pnpm audit')
     const audit = workflow.jobs['pnpm-audit'].steps.find((item: any) => item.name === 'Run high-severity audit')
     expect(audit.run).toContain('pnpm audit --audit-level=high')

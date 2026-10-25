@@ -7,8 +7,16 @@ const workflow = yaml.load(fs.readFileSync(path.join(__dirname, '../../.github/w
 const requiredChecks = require('../../scripts/branch-protection.json').required_status_checks.contexts
 
 describe('public repository CI runner policy', () => {
+  function jobsNamed(name: string) {
+    const files = ['ci.yml', 'dependency-review.yml']
+    return files.flatMap((file) => {
+      const doc = yaml.load(fs.readFileSync(path.join(__dirname, '../../.github/workflows', file), 'utf8'))
+      return Object.values(doc.jobs)
+    }).filter((job: any) => job.name === name) as any[]
+  }
+
   test.each(requiredChecks)('%s runs directly on hosted infrastructure', (name: string) => {
-    const jobs = Object.values(workflow.jobs).filter((job: any) => job.name === name) as any[]
+    const jobs = jobsNamed(name)
     expect(jobs).toHaveLength(1)
     expect(jobs[0]['runs-on']).toBe('ubuntu-latest')
     expect(jobs[0].needs).toBeUndefined()
@@ -16,7 +24,9 @@ describe('public repository CI runner policy', () => {
   })
 
   test('all CI jobs stay hosted without PR-controlled runner selection', () => {
-    expect(Object.values(workflow.jobs).map((job: any) => job.name).sort()).toEqual([...requiredChecks].sort())
+    const names = Object.values(workflow.jobs).map((job: any) => job.name)
+    expect([...requiredChecks].sort()).toEqual([...names, 'Dependency Review'].sort())
+    expect(requiredChecks).not.toContain('Security Audit')
     for (const job of Object.values(workflow.jobs) as any[]) {
       expect(job['runs-on']).toBe('ubuntu-latest')
     }

@@ -20,6 +20,9 @@ concurrency:
 jobs:
   pnpm-audit:
     name: Scheduled pnpm audit
+    # workflow_dispatch runs the selected ref. Another branch must not open,
+    # comment on, or close the shared main-branch findings issue.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
