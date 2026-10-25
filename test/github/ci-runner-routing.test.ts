@@ -35,7 +35,7 @@ describe('public repository CI runner policy', () => {
     }
   })
 
-  test.each(['dependency-review.yml', 'dependabot-auto-merge.yml'])('%s retains hosted execution for every job', (file: string) => {
+  test.each(['dependency-review.yml', 'dependabot-auto-merge.yml', 'dependency-audit.yml'])('%s retains hosted execution for every job', (file: string) => {
     const hosted = yaml.load(fs.readFileSync(path.join(__dirname, '../../.github/workflows', file), 'utf8'))
     for (const job of Object.values(hosted.jobs) as any[]) {
       expect(job['runs-on']).toBe('ubuntu-latest')
@@ -46,7 +46,7 @@ describe('public repository CI runner policy', () => {
 
 describe('CI setup budget and browser-cache policy', () => {
   const limits: Record<string, number> = {
-    'security-audit': 10, 'jest-tests': 10, 'playwright-tests': 15, typecheck: 10, build: 15,
+    'jest-tests': 10, 'playwright-tests': 15, typecheck: 10, build: 15,
   }
 
   test.each(Object.entries(limits))('%s has a bounded job and setup steps', (name, limit) => {
