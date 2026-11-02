@@ -46,6 +46,10 @@ This index organizes exploratory and planning notes under `docs/context/` and li
 - [2026-10-13 Dependabot Automation Gap Investigation](./2026-10-13-dependabot-automation-gap-investigation.md)
 - [2026-10-13 OpenCode Go Dependabot Workers](./2026-10-13-opencode-go-dependabot-workers.md)
 
+## 2026-11
+
+- [2026-11-02 Prune Dependency Overrides](./2026-11-02-prune-dependency-overrides.md)
+
 ## Linked ADRs
 
 - [ADR 0001: Adopt Structured Documentation Framework](../adr/0001-adopt-documentation-structure.md)

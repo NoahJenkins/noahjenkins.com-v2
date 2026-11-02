@@ -35,6 +35,7 @@ Last Updated: 2026-11-02
 - [x] Remediate GitHub CodeQL stored XSS alerts in blog links, JSON-LD serialization, and RSS feed generation
 - [x] Enable Dependabot security updates, add Dependency Review workflow, and enforce SHA-pinned GitHub Actions refs
 - [x] Remediate open Dependabot alert for transitive `brace-expansion` via `pnpm.overrides`
+- [x] Remove ten workspace overrides that no longer protect against an open advisory — 2026-11-02 ([context](./context/2026-11-02-prune-dependency-overrides.md))
 - [x] Add a weekly `pnpm audit --fix` pull request workflow for transitive advisories that Dependabot security updates cannot resolve — 2026-11-02
 
 - [x] Investigate three Vercel Dependabot preview failures and confirm the discontinued Node.js 20 cause — 2026-10-13 ([context](./context/2026-10-13-vercel-dependabot-preview-failures.md))
