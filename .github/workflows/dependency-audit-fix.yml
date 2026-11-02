@@ -1,0 +1,112 @@
+name: Dependency audit fix
+
+# Weekly and manual only. Dependabot security updates cannot move a transitive
+# dependency past the range its parent allows. `pnpm audit --fix` adds a ranged
+# override for that case, and this workflow opens the pull request. The required
+# checks gate the merge; this workflow never merges on red CI.
+on:
+  schedule:
+    # Monday 16:00 UTC, after the Monday Dependabot window and Dependency audit.
+    - cron: '0 16 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-fix
+  cancel-in-progress: false
+
+jobs:
+  audit-fix:
+    name: Open audit-fix pull request
+    # workflow_dispatch runs the selected ref. Only main may open the shared branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: dependabot-controller
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        timeout-minutes: 3
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        timeout-minutes: 3
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Add audit overrides when advisories are fixable
+        id: audit
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          pnpm audit --fix
+          node .github/scripts/normalize-workspace-overrides.cjs pnpm-workspace.yaml
+          if git diff --quiet -- pnpm-workspace.yaml package.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new audit overrides."
+            exit 0
+          fi
+          pnpm install --lockfile-only --ignore-scripts
+          unexpected=$(git status --porcelain --untracked-files=all | awk '{print $NF}' | grep -v -E '^(pnpm-workspace.yaml|pnpm-lock.yaml|package.json)$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "pnpm audit --fix changed unexpected files:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # No GITHUB_TOKEN fallback: a pull request from that token starts no
+      # pull_request workflows, so Dependency Review could never pass.
+      - name: Create controller app token
+        id: app-token
+        if: steps.audit.outputs.changed == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.DEPENDABOT_CONTROLLER_APP_ID }}
+          private-key: ${{ secrets.DEPENDABOT_CONTROLLER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open pull request
+        id: cpr
+        if: steps.audit.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: dependency-audit-fix
+          commit-message: 'fix(deps): apply pnpm audit overrides'
+          title: 'fix(deps): apply pnpm audit overrides'
+          labels: dependencies
+          add-paths: |
+            pnpm-workspace.yaml
+            pnpm-lock.yaml
+            package.json
+          body: |
+            Applies `pnpm audit --fix` overrides and the lockfile update from that resolution.
+
+            Dependabot security updates stop when a parent package pins a vulnerable range. These overrides move the transitive dependency to the first patched release.
+
+            Auto-merge is enabled and waits for the required checks. This workflow does not merge on red CI.
+
+      - name: Enable squash auto-merge
+        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          set -euo pipefail
+          enabled=$(gh pr view "$PR_URL" --json autoMergeRequest --jq 'if .autoMergeRequest == null then "false" else "true" end')
+          if [ "$enabled" = "true" ]; then
+            echo "Auto-merge already enabled"
+            exit 0
+          fi
+          gh pr merge --auto --squash "$PR_URL"
