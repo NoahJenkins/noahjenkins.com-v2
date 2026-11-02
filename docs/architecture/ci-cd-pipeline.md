@@ -159,6 +159,21 @@ This repository includes a dedicated workflow (`.github/workflows/dependency-rev
 
 This check is currently informational only and is not yet part of the protected-branch required status check list.
 
+### 4b) Dependency Audit Fix Workflow
+
+`.github/workflows/dependency-audit-fix.yml` (**Dependency audit fix**) opens a pull request when `pnpm audit --fix` can resolve an advisory that Dependabot security updates cannot. This occurs when a parent package pins a vulnerable range of a transitive dependency.
+
+- **Trigger**
+  - `schedule` (Monday 16:00 UTC) and `workflow_dispatch`, on `main` only
+- **Actions**
+  - Runs `pnpm audit --fix`, which adds a ranged override to `pnpm-workspace.yaml`
+  - Runs `.github/scripts/normalize-workspace-overrides.cjs` so every override is double-quoted. The controller workspace policy accepts a key with spaces only in quotes.
+  - Updates `pnpm-lock.yaml` and fails if any other file changed
+  - Opens or updates the `dependency-audit-fix` branch and pull request with the controller App token, then enables squash auto-merge
+- **Authority**
+  - Runs in the `dependabot-controller` environment on `ubuntu-latest`. The job `GITHUB_TOKEN` is read-only.
+  - Has no `GITHUB_TOKEN` fallback. A pull request from that token starts no `pull_request` workflows, so Dependency Review could not pass.
+
 ### 5) Dependabot Update Creation
 
 `.github/dependabot.yml` separates routine version updates from security updates for both supported ecosystems.
@@ -205,7 +220,7 @@ Vercel preview and production deployments are handled by the Git integration out
 
 ### Secrets (names only)
 - **None explicitly required by `ci.yml`**
-- `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY`
+- `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY` (also used by Dependency audit fix)
 - `dependabot-dispatch` environment only: `COPILOT_GITHUB_TOKEN` (Copilot Requests account permission only)
 
 ### Environment variables (names only)
