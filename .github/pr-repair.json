@@ -54,20 +54,18 @@
     "timeoutMinutes": 25
   },
   "inference": {
-    "transport": "copilot-cli",
-    "model": "gpt-6-luna",
-    "copilot": {
-      "version": "1.0.103",
-      "sha256": "9aeb4430e9ac9523546db07b227c7aba179a4710a55f9ac29ad143b0f9e1b325",
-      "image": "node:24-bookworm-slim@sha256:51b1100cc2a83d370c6a60952e3f2989c8a43159d0e38586e090f3b3326efefd"
+    "transport": "openai-compatible",
+    "endpoint": "https://ai-gateway.vercel.sh/v1",
+    "model": {
+      "repair": "openai/gpt-6-luna",
+      "review": "deepseek/deepseek-v4-flash"
     },
     "budget": {
       "maxCalls": {
         "repair": 24,
         "review": 16
       },
-      "maxOutputTokens": 64000,
-      "maxAiCredits": 30
+      "maxOutputTokens": 64000
     }
   },
   "review": {

@@ -2,7 +2,7 @@ name: PR repair
 
 # Thin caller for the shared controller NoahJenkins/.github/pr-repair (pinned
 # below). Policy: .github/pr-repair.json on main. It reuses the controller App
-# (dependabot-controller environment) and the Copilot token
+# (dependabot-controller environment) and AI_GATEWAY_API_KEY
 # (dependabot-dispatch environment); each job receives only its own credential.
 # It acts only when PR_REPAIR_ENABLED=true. Original Dependabot PRs keep
 # merging through dependabot-auto-merge.yml; pr-repair repairs failing ones and
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+      - uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: selftest
 
@@ -50,7 +50,7 @@ jobs:
     steps:
       - id: check
         env:
-          KEY: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
         run: if [ -n "$KEY" ]; then echo ready=true; else echo ready=false; fi >> "$GITHUB_OUTPUT"
 
   plan:
@@ -81,7 +81,7 @@ jobs:
         run: echo "::warning title=pr-repair::inactive; set the DEPENDABOT_CONTROLLER_APP_ID variable and DEPENDABOT_CONTROLLER_PRIVATE_KEY secret (see pr-repair/README.md)"
       - id: engine
         if: vars.DEPENDABOT_CONTROLLER_APP_ID != ''
-        uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+        uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: plan
           token: ${{ steps.app.outputs.token }}
@@ -106,7 +106,7 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'sync'
-        uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+        uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: prepare
           token: ${{ github.token }}
@@ -126,11 +126,11 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'sync'
-        uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+        uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: infer
           task: ${{ toJSON(matrix.task) }}
-          api-key: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
 
   validate:
     needs: [plan, infer]
@@ -146,7 +146,7 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'review'
-        uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+        uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: validate
           token: ${{ github.token }}
@@ -177,7 +177,7 @@ jobs:
           permission-issues: write
           permission-pull-requests: write
           permission-workflows: write
-      - uses: NoahJenkins/.github/pr-repair@d8a021b52a335846a5fcbf3342cc32fc2e6f9fde # pr-repair
+      - uses: NoahJenkins/.github/pr-repair@e2441f4bee7dff3a76d46018604ef44e1abac644 # pr-repair
         with:
           mode: publish
           token: ${{ steps.app.outputs.token }}

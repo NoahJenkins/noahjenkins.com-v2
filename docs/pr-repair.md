@@ -26,11 +26,11 @@ Every Dependabot PR shows one state on its `pr-repair` check and on the
 
 ## Credentials
 
-Plan and publish use the `noah-portfolio-dependabot` App (`DEPENDABOT_CONTROLLER_APP_ID`, private key in the `dependabot-controller` environment). Inference uses only `COPILOT_GITHUB_TOKEN` from the `dependabot-dispatch` environment. Prepare and validate use a read-only `GITHUB_TOKEN`. No secret reaches candidate code.
+Plan and publish use the `noah-portfolio-dependabot` App (`DEPENDABOT_CONTROLLER_APP_ID`, private key in the `dependabot-controller` environment). Inference uses only `AI_GATEWAY_API_KEY` from the `dependabot-dispatch` environment. Prepare and validate use a read-only `GITHUB_TOKEN`. No secret reaches candidate code.
 
 ## Model
 
-GitHub Copilot CLI 1.0.103 with `gpt-6-luna`, the choice this repository's controller already used. There is no fallback model or provider. A missing token pauses repair and reserves nothing.
+Vercel AI Gateway: `openai/gpt-6-luna` repairs and `deepseek/deepseek-v4-flash` reviews, so a different model family checks every repair. There is no fallback model or provider. A missing `AI_GATEWAY_API_KEY` pauses paid work and reserves nothing.
 
 ## Activation
 
