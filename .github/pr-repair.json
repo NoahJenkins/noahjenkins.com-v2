@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "ci": {
+    "requiredChecks": [
+      "Jest Tests",
+      "Playwright Tests",
+      "TypeScript Check",
+      "Build Check",
+      "Dependency Review"
+    ]
+  },
+  "eligibility": {
+    "updates": {
+      "npm_and_yarn": "non-major",
+      "github_actions": "all"
+    },
+    "securityMajors": true
+  },
+  "repair": {
+    "editable": [
+      "app/**",
+      "components/**",
+      "lib/**",
+      "package.json"
+    ],
+    "context": [
+      "app/**",
+      "components/**",
+      "lib/**"
+    ],
+    "limits": {
+      "repairPerPr": 2,
+      "reviewPerPr": 4,
+      "syncPerHead": 1,
+      "dailyModelTasks": 6
+    }
+  },
+  "runtimes": [],
+  "validation": {
+    "image": "node:24-bookworm-slim@sha256:51b1100cc2a83d370c6a60952e3f2989c8a43159d0e38586e090f3b3326efefd",
+    "setup": "npm install --global --ignore-scripts pnpm@10.17.1",
+    "lockfile": {
+      "path": "pnpm-lock.yaml",
+      "command": "pnpm install --lockfile-only --ignore-scripts --ignore-pnpmfile"
+    },
+    "install": "pnpm install --frozen-lockfile --ignore-scripts",
+    "commands": [
+      "pnpm exec tsc --noEmit",
+      "pnpm test -- --passWithNoTests"
+    ],
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    },
+    "timeoutMinutes": 25
+  },
+  "inference": {
+    "transport": "openai-compatible",
+    "endpoint": "https://ai-gateway.vercel.sh/v1",
+    "model": {
+      "repair": "openai/gpt-6-luna",
+      "review": "deepseek/deepseek-v4-flash"
+    },
+    "budget": {
+      "maxCalls": {
+        "repair": 24,
+        "review": 16
+      },
+      "maxOutputTokens": 64000
+    }
+  },
+  "review": {
+    "requireCodex": false,
+    "agentLogins": []
+  },
+  "merge": {
+    "originals": false,
+    "approve": "none",
+    "production": {
+      "kind": "deployments",
+      "environment": "Production",
+      "creatorId": 35613825
+    }
+  }
+}
