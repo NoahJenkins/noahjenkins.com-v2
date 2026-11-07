@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+      - uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: selftest
 
@@ -81,7 +81,7 @@ jobs:
         run: echo "::warning title=pr-repair::inactive; set the DEPENDABOT_CONTROLLER_APP_ID variable and DEPENDABOT_CONTROLLER_PRIVATE_KEY secret (see pr-repair/README.md)"
       - id: engine
         if: vars.DEPENDABOT_CONTROLLER_APP_ID != ''
-        uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+        uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: plan
           token: ${{ steps.app.outputs.token }}
@@ -106,7 +106,7 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'sync'
-        uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+        uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: prepare
           token: ${{ github.token }}
@@ -126,7 +126,7 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'sync'
-        uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+        uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: infer
           task: ${{ toJSON(matrix.task) }}
@@ -146,7 +146,7 @@ jobs:
         task: ${{ fromJSON(needs.plan.outputs.tasks) }}
     steps:
       - if: matrix.task.kind != 'review'
-        uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+        uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: validate
           token: ${{ github.token }}
@@ -177,7 +177,7 @@ jobs:
           permission-issues: write
           permission-pull-requests: write
           permission-workflows: write
-      - uses: NoahJenkins/.github/pr-repair@628de247ede74fe72282b197face761360491745 # pr-repair
+      - uses: NoahJenkins/.github/pr-repair@cf4eb927d2bfffc74a19621cf2a5f6c2e92392cc # pr-repair
         with:
           mode: publish
           token: ${{ steps.app.outputs.token }}
