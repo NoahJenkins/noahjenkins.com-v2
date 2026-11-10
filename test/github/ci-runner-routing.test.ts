@@ -5,6 +5,9 @@ const path = require('node:path')
 const yaml = require('js-yaml')
 const workflow = yaml.load(fs.readFileSync(path.join(__dirname, '../../.github/workflows/ci.yml'), 'utf8'))
 const requiredChecks = require('../../scripts/branch-protection.json').required_status_checks.contexts
+// Playwright's WebKit build cannot load on ubuntu-latest (26.04), so that job
+// stays on the hosted 24.04 image. Every other job uses ubuntu-latest.
+const hostedLabel = (job: any) => job.name === 'Playwright Tests' ? 'ubuntu-24.04' : 'ubuntu-latest'
 
 describe('public repository CI runner policy', () => {
   function jobsNamed(name: string) {
@@ -18,7 +21,7 @@ describe('public repository CI runner policy', () => {
   test.each(requiredChecks)('%s runs directly on hosted infrastructure', (name: string) => {
     const jobs = jobsNamed(name)
     expect(jobs).toHaveLength(1)
-    expect(jobs[0]['runs-on']).toBe('ubuntu-latest')
+    expect(jobs[0]['runs-on']).toBe(hostedLabel(jobs[0]))
     expect(jobs[0].needs).toBeUndefined()
     expect(jobs[0].if).toBeUndefined()
   })
@@ -28,7 +31,7 @@ describe('public repository CI runner policy', () => {
     expect([...requiredChecks].sort()).toEqual([...names, 'Dependency Review'].sort())
     expect(requiredChecks).not.toContain('Security Audit')
     for (const job of Object.values(workflow.jobs) as any[]) {
-      expect(job['runs-on']).toBe('ubuntu-latest')
+      expect(job['runs-on']).toBe(hostedLabel(job))
     }
     expect(JSON.stringify(workflow)).not.toMatch(/OPTIPLEX_CI_ENABLED|optiplex-ci|runner-routing/)
   })
@@ -41,7 +44,7 @@ describe('public repository CI runner policy', () => {
   test('main pushes also remain hosted until external trust controls exist', () => {
     expect(workflow.on.push.branches).toEqual(['main'])
     for (const job of Object.values(workflow.jobs) as any[]) {
-      expect(job['runs-on']).toBe('ubuntu-latest')
+      expect(job['runs-on']).toBe(hostedLabel(job))
     }
   })
 

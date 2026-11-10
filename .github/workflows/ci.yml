@@ -74,7 +74,9 @@ jobs:
 
   playwright-tests:
     name: Playwright Tests
-    runs-on: ubuntu-latest
+    # ubuntu-latest is now 26.04, where Playwright's WebKit build cannot load
+    # (it links libicu 74). Move back once Playwright ships a 26.04 build.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     
     steps:
