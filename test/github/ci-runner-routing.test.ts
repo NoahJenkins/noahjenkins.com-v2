@@ -5,9 +5,6 @@ const path = require('node:path')
 const yaml = require('js-yaml')
 const workflow = yaml.load(fs.readFileSync(path.join(__dirname, '../../.github/workflows/ci.yml'), 'utf8'))
 const requiredChecks = require('../../scripts/branch-protection.json').required_status_checks.contexts
-// Playwright's WebKit build cannot load on ubuntu-latest (26.04), so that job
-// stays on the hosted 24.04 image. Every other job uses ubuntu-latest.
-const hostedLabel = (job: any) => job.name === 'Playwright Tests' ? 'ubuntu-24.04' : 'ubuntu-latest'
 
 describe('public repository CI runner policy', () => {
   function jobsNamed(name: string) {
@@ -21,7 +18,7 @@ describe('public repository CI runner policy', () => {
   test.each(requiredChecks)('%s runs directly on hosted infrastructure', (name: string) => {
     const jobs = jobsNamed(name)
     expect(jobs).toHaveLength(1)
-    expect(jobs[0]['runs-on']).toBe(hostedLabel(jobs[0]))
+    expect(jobs[0]['runs-on']).toBe('ubuntu-latest')
     expect(jobs[0].needs).toBeUndefined()
     expect(jobs[0].if).toBeUndefined()
   })
@@ -31,7 +28,7 @@ describe('public repository CI runner policy', () => {
     expect([...requiredChecks].sort()).toEqual([...names, 'Dependency Review'].sort())
     expect(requiredChecks).not.toContain('Security Audit')
     for (const job of Object.values(workflow.jobs) as any[]) {
-      expect(job['runs-on']).toBe(hostedLabel(job))
+      expect(job['runs-on']).toBe('ubuntu-latest')
     }
     expect(JSON.stringify(workflow)).not.toMatch(/OPTIPLEX_CI_ENABLED|optiplex-ci|runner-routing/)
   })
@@ -44,7 +41,7 @@ describe('public repository CI runner policy', () => {
   test('main pushes also remain hosted until external trust controls exist', () => {
     expect(workflow.on.push.branches).toEqual(['main'])
     for (const job of Object.values(workflow.jobs) as any[]) {
-      expect(job['runs-on']).toBe(hostedLabel(job))
+      expect(job['runs-on']).toBe('ubuntu-latest')
     }
   })
 
@@ -90,10 +87,13 @@ describe('CI setup budget and browser-cache policy', () => {
     const steps = workflow.jobs['playwright-tests'].steps
     const cache = steps.find((step: any) => step.id === 'playwright-cache')
     expect(cache.with.path).toBe('~/.cache/ms-playwright')
-    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright-version.outputs.version }}")
+    // Browser builds differ by OS release (ubuntu-latest moved 24.04 -> 26.04),
+    // so a cache saved on one release must not restore on another.
+    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.os }}-playwright-${{ steps.playwright-version.outputs.version }}")
     expect(cache.with['restore-keys']).toBeUndefined()
     const version = steps.find((step: any) => step.id === 'playwright-version')
     expect(version.run).toContain("require('@playwright/test/package.json').version")
+    expect(version.run).toContain('/etc/os-release')
     expect(version['timeout-minutes']).toBe(1)
     expect(steps.indexOf(version)).toBeGreaterThan(steps.findIndex((step: any) => step.run?.includes('pnpm install ')))
     expect(steps.indexOf(version)).toBeLessThan(steps.indexOf(cache))
