@@ -1,16 +1,11 @@
-"use client"
+import type { Metadata } from 'next'
+import ResumePage from './page-content'
 
-// Static generation - this page doesn't change often
-export const dynamic = 'force-static'
+export const metadata: Metadata = {
+  title: 'Terminal Resume',
+  description: 'An interactive terminal-style resume for Noah Jenkins. Type commands to explore skills, experience and projects.',
+}
 
-import { Terminal } from "./components/terminal"
-
-export default function ResumePage() {
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        <Terminal />
-      </div>
-    </div>
-  )
+export default function Page() {
+  return <ResumePage />
 }

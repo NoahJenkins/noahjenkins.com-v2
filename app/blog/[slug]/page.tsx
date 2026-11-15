@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { CustomMDX } from '@/components/mdx'
 import { getBlogPosts } from '@/app/blog/utils'
@@ -68,14 +69,6 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
     return Math.ceil(words / wordsPerMinute)
   }
 
-  const headerStyle = post.metadata.image
-    ? {
-        backgroundImage: `url(${post.metadata.image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }
-    : undefined
-
   return (
     <div className="min-h-screen bg-black text-white">
       <script
@@ -91,7 +84,7 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
             description: post.metadata.summary,
             image: post.metadata.image
               ? `${baseUrl}${post.metadata.image}`
-              : `/og?title=${encodeURIComponent(post.metadata.title)}`,
+              : `${baseUrl}/og?title=${encodeURIComponent(post.metadata.title)}`,
             url: `${baseUrl}/blog/${encodePathSegment(post.slug)}`,
             author: {
               '@type': 'Person',
@@ -102,10 +95,17 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
       />
       
       {/* Header Section */}
-      <section
-        style={headerStyle}
-        className="py-16 px-4 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden"
-      >
+      <section className="py-16 px-4 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+        {post.metadata.image && (
+          <Image
+            src={post.metadata.image}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        )}
         {/* Dark overlay to improve text contrast over hero image */}
         <div className="absolute inset-0 bg-black/60" aria-hidden />
         <div className="absolute inset-0 opacity-10">

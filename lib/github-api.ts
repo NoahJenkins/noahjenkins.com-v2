@@ -17,6 +17,13 @@ export interface GitHubStats {
   languages: { [key: string]: number }
 }
 
+function githubHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { 'User-Agent': 'NextJS-App', ...extra }
+  // Optional: raises the rate limit on shared server IPs.
+  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
+  return headers
+}
+
 function resolveReadmeImageUrls(content: string, username: string, branch: string = 'main'): string {
   const rawBase = `https://raw.githubusercontent.com/${username}/${username}/${branch}/`
 
@@ -38,10 +45,7 @@ export async function getGitHubReadme(username: string = 'noahjenkins') {
     const response = await fetch(
       `https://api.github.com/repos/${username}/${username}/readme`,
       {
-        headers: {
-          'Accept': 'application/vnd.github.v3.raw',
-          'User-Agent': 'NextJS-App'
-        },
+        headers: githubHeaders({ Accept: 'application/vnd.github.v3.raw' }),
         next: { revalidate: 3600 } // Cache for 1 hour
       }
     );
@@ -87,11 +91,12 @@ In the meantime, feel free to explore my work and get in touch if you'd like to 
   }
 }
 
-export async function getGitHubStats(username: string = 'noahjenkins'): Promise<GitHubStats> {
+/** Returns null when the GitHub API is unavailable, so callers hide the block rather than show invented numbers. */
+export async function getGitHubStats(username: string = 'noahjenkins'): Promise<GitHubStats | null> {
   try {
     // Get user info
     const userResponse = await fetch(`https://api.github.com/users/${username}`, {
-      headers: { 'User-Agent': 'NextJS-App' },
+      headers: githubHeaders(),
       next: { revalidate: 3600 }
     })
     
@@ -103,7 +108,7 @@ export async function getGitHubStats(username: string = 'noahjenkins'): Promise<
     
     // Get repositories
     const reposResponse = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`, {
-      headers: { 'User-Agent': 'NextJS-App' },
+      headers: githubHeaders(),
       next: { revalidate: 3600 }
     })
     
@@ -134,68 +139,6 @@ export async function getGitHubStats(username: string = 'noahjenkins'): Promise<
     }
   } catch (error) {
     console.error('Failed to fetch GitHub stats:', error)
-    // Return mock data as fallback
-    return {
-      publicRepos: 25,
-      followers: 150,
-      following: 75,
-      totalStars: 234,
-      totalForks: 89,
-      languages: {
-        'JavaScript': 12,
-        'TypeScript': 8,
-        'Python': 5,
-        'Go': 3,
-        'Shell': 2
-      }
-    }
-  }
-}
-
-export async function getFeaturedRepos(username: string = 'noahjenkins'): Promise<GitHubRepo[]> {
-  try {
-    const response = await fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6`, {
-      headers: { 'User-Agent': 'NextJS-App' },
-      next: { revalidate: 3600 }
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch repositories')
-    }
-    
-    const repos: GitHubRepo[] = await response.json()
-    return repos.filter(repo => !repo.name.includes(username)) // Exclude profile repo
-  } catch (error) {
-    console.error('Failed to fetch featured repos:', error)
-    // Return mock data as fallback
-    return [
-      {
-        name: 'clouddeploy',
-        description: 'Kubernetes deployment platform with GitOps workflow',
-        html_url: 'https://github.com/noahjenkins/clouddeploy',
-        stargazers_count: 89,
-        forks_count: 23,
-        language: 'Go',
-        updated_at: '2024-01-15T10:30:00Z'
-      },
-      {
-        name: 'audiostream',
-        description: 'Real-time audio processing with WebRTC and voice effects',
-        html_url: 'https://github.com/noahjenkins/audiostream',
-        stargazers_count: 156,
-        forks_count: 34,
-        language: 'JavaScript',
-        updated_at: '2024-01-10T14:20:00Z'
-      },
-      {
-        name: 'inframonitor',
-        description: 'Custom monitoring solution for hybrid cloud environments',
-        html_url: 'https://github.com/noahjenkins/inframonitor',
-        stargazers_count: 67,
-        forks_count: 19,
-        language: 'Python',
-        updated_at: '2024-01-08T09:15:00Z'
-      }
-    ]
+    return null
   }
 }

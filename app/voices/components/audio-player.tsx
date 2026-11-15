@@ -30,9 +30,13 @@ export function AudioPlayer({
   const [volume, setVolume] = useState(0.7)
   const [playbackRate, setPlaybackRate] = useState(1)
   const wavesurferRef = useRef<WaveSurfer | null>(null)
+  const loadedRef = useRef(false)
+
+  const handleWaveformInit = (wavesurfer: WaveSurfer) => {
+    wavesurferRef.current = wavesurfer
+  }
 
   const handleWaveformReady = (wavesurfer: WaveSurfer) => {
-    wavesurferRef.current = wavesurfer
     setTotalDuration(wavesurfer.getDuration())
     wavesurfer.setVolume(volume)
 
@@ -48,46 +52,43 @@ export function AudioPlayer({
   }
 
   const handlePlay = () => {
-    console.log('Audio player received play event')
     setIsPlaying(true)
   }
 
   const handlePause = () => {
-    console.log('Audio player received pause event')
     setIsPlaying(false)
   }
 
   const togglePlayPause = async () => {
-    if (wavesurferRef.current) {
-      console.log('Toggle play/pause, currently playing:', isPlaying)
-      console.log('Wavesurfer instance:', wavesurferRef.current)
-      try {
-        if (isPlaying) {
-          wavesurferRef.current.pause()
-        } else {
-          console.log('Starting playback...')
-          // Use await for play() to handle promise properly
-          await wavesurferRef.current.play()
-        }
-      } catch (error) {
-        console.error('Error playing audio:', error)
-        // Reset loading state if play fails
-        setIsPlaying(false)
+    const wavesurfer = wavesurferRef.current
+    if (!wavesurfer) return
+    try {
+      if (isPlaying) {
+        wavesurfer.pause()
+        return
       }
-    } else {
-      console.log('Wavesurfer not ready')
+      // The audio file is only downloaded on the first play.
+      if (!loadedRef.current) {
+        loadedRef.current = true
+        await wavesurfer.load(audioUrl)
+      }
+      await wavesurfer.play()
+    } catch (error) {
+      console.error('Error playing audio:', error)
+      loadedRef.current = false
+      setIsPlaying(false)
     }
   }
 
   const skipBackward = () => {
-    if (wavesurferRef.current) {
+    if (wavesurferRef.current && totalDuration) {
       const currentTime = wavesurferRef.current.getCurrentTime()
       wavesurferRef.current.seekTo(Math.max(0, currentTime - 10) / totalDuration)
     }
   }
 
   const skipForward = () => {
-    if (wavesurferRef.current) {
+    if (wavesurferRef.current && totalDuration) {
       const currentTime = wavesurferRef.current.getCurrentTime()
       wavesurferRef.current.seekTo(Math.min(totalDuration, currentTime + 10) / totalDuration)
     }
@@ -159,6 +160,7 @@ export function AudioPlayer({
       <div className="mb-4">
         <Waveform
           audioUrl={audioUrl}
+          onInit={handleWaveformInit}
           onReady={handleWaveformReady}
           onPlay={handlePlay}
           onPause={handlePause}
