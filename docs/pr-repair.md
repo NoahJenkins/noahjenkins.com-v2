@@ -7,7 +7,7 @@ pull requests cannot change it for themselves.
 
 ## What it does here
 
-- Triggers: failed `CI` runs on `dependabot/**` branches, a daily sweep, manual dispatch, and a self-test when its own files change. Anything else is skipped before any job starts.
+- Triggers: failed `CI` runs on `dependabot/**` branches, finished `CI` runs on its own `pr-repair/**` replacement branches, a daily sweep, manual dispatch, and a self-test when its own files change. Anything else is skipped before any job starts.
 - Scope: npm patch and minor updates (majors only with a security fix) and GitHub Actions updates.
 - A failing eligible update gets a bounded repair (default 2 per update, 6
   model tasks a day). Candidate checks run in credential-free containers

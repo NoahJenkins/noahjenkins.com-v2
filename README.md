@@ -489,7 +489,6 @@ This project implements a comprehensive continuous integration and deployment pi
 1. **Jest Tests** (Node.js 18)
    - Installs dependencies with pnpm and proper caching
    - Runs unit and integration tests
-   - Uploads coverage reports to Codecov
    - Tests utility functions, API integration, command processor, CSS generation
 
 2. **Playwright Tests** (Node.js 18)  
@@ -578,7 +577,7 @@ This project implements a comprehensive continuous integration and deployment pi
 ### Monitoring & Alerts
 
 - **Test Results:** Available in GitHub Actions tab with detailed logs
-- **Coverage Reports:** Integrated with Codecov for coverage tracking
+- **Coverage Reports:** Printed in the Jest Tests job log (`jest --coverage`)
 - **Build Status:** Visible in pull requests and commit history
 - **Deployment Status:** Real-time updates in Vercel dashboard
 - **Performance Metrics:** Vercel Analytics for user experience monitoring

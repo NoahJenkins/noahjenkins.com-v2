@@ -8,14 +8,16 @@ name: PR repair
 # merging through dependabot-auto-merge.yml; pr-repair repairs failing ones and
 # merges only its own validated replacements. See docs/pr-repair.md.
 #
-# Runs only for failed CI on dependabot/** branches, plus the daily sweep.
+# Runs for failed CI on dependabot/** branches, for finished CI on its own
+# pr-repair/** replacement branches (green CI moves a replacement to review
+# and merge, red CI back to repair), plus the daily sweep.
 # The credential preflight stays a separate job because AI_GATEWAY_API_KEY
 # lives in the dependabot-dispatch environment and a job has one environment.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: ['dependabot/**']
+    branches: ['dependabot/**', 'pr-repair/**']
   schedule:
     # One daily sweep for anything a missed event left behind.
     - cron: "41 9 * * *"
@@ -50,7 +52,9 @@ jobs:
     if: >-
       github.event_name != 'pull_request'
       && github.ref_name == github.event.repository.default_branch
-      && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure')
+      && (github.event_name != 'workflow_run'
+          || github.event.workflow_run.conclusion == 'failure'
+          || (startsWith(github.event.workflow_run.head_branch, 'pr-repair/') && github.event.workflow_run.conclusion == 'success'))
     environment: dependabot-dispatch
     runs-on: ubuntu-latest
     timeout-minutes: 2

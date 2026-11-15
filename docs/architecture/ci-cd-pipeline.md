@@ -183,7 +183,7 @@ This check is currently informational only and is not yet part of the protected-
 
 `.github/workflows/dependabot-auto-merge.yml` reads Dependabot metadata (no checkout) and enables native squash auto-merge for patch, minor, GitHub Actions, and security updates. Other updates get the `needs-review` label. GitHub merges once the required checks pass.
 
-`.github/workflows/pr-repair.yml` is a thin caller of the shared `NoahJenkins/.github/pr-repair` action. It runs only for failed CI on `dependabot/**` branches, plus one daily sweep, and does nothing unless `PR_REPAIR_ENABLED=true`. See [pr-repair](../pr-repair.md). The earlier controller, OpenCode, and Copilot worker scripts were removed; ADRs 0010 and 0011 are superseded.
+`.github/workflows/pr-repair.yml` is a thin caller of the shared `NoahJenkins/.github/pr-repair` action. It runs for failed CI on `dependabot/**` branches and finished CI on its `pr-repair/**` replacements, plus one daily sweep, and does nothing unless `PR_REPAIR_ENABLED=true`. See [pr-repair](../pr-repair.md). The earlier controller, OpenCode, and Copilot worker scripts were removed; ADRs 0010 and 0011 are superseded.
 
 ## Repository Security Settings
 

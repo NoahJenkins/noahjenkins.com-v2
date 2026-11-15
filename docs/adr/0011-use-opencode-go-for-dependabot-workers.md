@@ -47,7 +47,7 @@ Store the Go key only in the existing main-only `dependabot-dispatch` environmen
 
 - [OpenCode Go Dependabot design](../plans/2026-10-13-opencode-go-dependabot-design.md)
 - [ADR 0010](./0010-adopt-dependabot-controller-and-bounded-repair.md)
-- [Controller setup guide](../dependabot-controller-setup.md)
+- Controller setup guide (removed with the controller; see [pr-repair](../pr-repair.md))
 
 ## Implemented broker boundary
 
