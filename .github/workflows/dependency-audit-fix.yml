@@ -6,7 +6,7 @@ name: Dependency audit fix
 # checks gate the merge; this workflow never merges on red CI.
 on:
   schedule:
-    # Monday 16:00 UTC, after the Monday Dependabot window and Dependency audit.
+    # Monday 16:00 UTC, after the Monday Dependabot window.
     - cron: '0 16 * * 1'
   workflow_dispatch:
 
@@ -47,7 +47,6 @@ jobs:
         run: |
           set -euo pipefail
           pnpm audit --fix
-          node .github/scripts/normalize-workspace-overrides.cjs pnpm-workspace.yaml
           if git diff --quiet -- pnpm-workspace.yaml package.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No new audit overrides."

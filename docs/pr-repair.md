@@ -7,6 +7,7 @@ pull requests cannot change it for themselves.
 
 ## What it does here
 
+- Triggers: failed `CI` runs on `dependabot/**` branches, a daily sweep, manual dispatch, and a self-test when its own files change. Anything else is skipped before any job starts.
 - Scope: npm patch and minor updates (majors only with a security fix) and GitHub Actions updates.
 - A failing eligible update gets a bounded repair (default 2 per update, 6
   model tasks a day). Candidate checks run in credential-free containers
@@ -36,6 +37,6 @@ Vercel AI Gateway: `openai/gpt-6-luna` repairs and `deepseek/deepseek-v4-flash` 
 
 1. Merge this workflow and policy. Until step 2 it only reports status.
 2. Set the repository variable `PR_REPAIR_ENABLED=true`.
-3. The unused `DEPENDABOT_AUTOMATION_ENABLED`/`DEPENDABOT_AGENT_ENABLED` variables do not affect pr-repair; the old controller scripts are not wired to any workflow.
+3. The unused `DEPENDABOT_AUTOMATION_ENABLED`/`DEPENDABOT_AGENT_ENABLED` variables do not affect pr-repair; the old controller scripts were deleted.
 
 Rollback: delete `PR_REPAIR_ENABLED`.

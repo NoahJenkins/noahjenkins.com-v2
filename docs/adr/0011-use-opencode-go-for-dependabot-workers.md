@@ -1,6 +1,6 @@
 # ADR 0011: Use OpenCode Go for Dependabot Workers
 
-**Status:** accepted; external activation pending
+**Status:** superseded by [pr-repair](../pr-repair.md); the controller and worker scripts were removed
 
 **Date:** 2026-10-13
 

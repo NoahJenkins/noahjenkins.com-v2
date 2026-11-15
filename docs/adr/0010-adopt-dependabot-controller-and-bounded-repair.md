@@ -1,6 +1,6 @@
 # ADR 0010: Adopt a Dependabot Controller and Bounded Repair
 
-**Status:** accepted; external activation pending
+**Status:** superseded by [pr-repair](../pr-repair.md); the controller and worker scripts were removed
 
 **Date:** 2026-10-13
 

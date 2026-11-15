@@ -7,9 +7,6 @@ const { spawnSync } = require('node:child_process')
 const yaml = require('js-yaml')
 
 const workflowPath = path.join(__dirname, '../../.github/workflows/dependabot-auto-merge.yml')
-const auditPath = path.join(__dirname, '../../.github/workflows/dependency-audit.yml')
-const reviewPath = path.join(__dirname, '../../.github/workflows/dependency-review.yml')
-const ciPath = path.join(__dirname, '../../.github/workflows/ci.yml')
 const dependabotPath = path.join(__dirname, '../../.github/dependabot.yml')
 
 function load(file: string) {
@@ -68,9 +65,9 @@ describe('Dependabot auto-merge workflow', () => {
     expect(job['runs-on']).toBe('ubuntu-latest')
     expect(job['timeout-minutes']).toBe(5)
     expect(JSON.stringify(workflow)).not.toMatch(/actions\/checkout@|gh pr review|pull_request_target/)
+    // Action versions are deliberately not asserted: Dependabot bumps them.
     const metadata = job.steps.find((item: any) => item.id === 'meta')
-    expect(metadata.uses).toBe('dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98')
-    expect(fs.readFileSync(workflowPath, 'utf8')).toContain('dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0')
+    expect(metadata.uses).toMatch(/^dependabot\/fetch-metadata@[0-9a-f]{40}$/)
     expect(metadata.with?.['alert-lookup']).toBeUndefined()
   })
 
@@ -169,82 +166,5 @@ describe('Dependabot auto-merge workflow', () => {
     })
     expect(result.status).toBe(1)
     expect(result.stdout).toContain('::error::Unable to enable squash auto-merge.')
-  })
-})
-
-describe('scheduled dependency audit', () => {
-  const workflow = load(auditPath)
-  const step = workflow.jobs['pnpm-audit'].steps.find((item: any) => item.name === 'Publish audit issue')
-
-  test('does not run on pull requests and only reports through issues', () => {
-    expect(workflow.on.pull_request).toBeUndefined()
-    expect(workflow.on.schedule).toEqual([{ cron: '30 15 * * 1' }])
-    expect(workflow.on.workflow_dispatch).toBeNull()
-    expect(workflow.permissions).toEqual({ contents: 'read', issues: 'write' })
-    expect(workflow.jobs['pnpm-audit']['runs-on']).toBe('ubuntu-latest')
-    expect(workflow.jobs['pnpm-audit'].if).toBe("github.ref == 'refs/heads/main'")
-    expect(workflow.jobs['pnpm-audit'].name).toBe('Scheduled pnpm audit')
-    const audit = workflow.jobs['pnpm-audit'].steps.find((item: any) => item.name === 'Run high-severity audit')
-    expect(audit.run).toContain('pnpm audit --audit-level=high')
-    expect(workflow.jobs['pnpm-audit'].steps.some((item: any) => item.run === 'exit 1' && item.if === "steps.audit.outputs.exit_code != '0'")).toBe(true)
-    expect(load(ciPath).jobs['security-audit']).toBeUndefined()
-    expect(JSON.stringify(load(ciPath))).not.toContain('pnpm audit')
-  })
-
-  function runReport(exitCode: string, existing = '') {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dependency-audit-'))
-    const { bin, log } = writeFakeGh(directory)
-    const auditLog = path.join(directory, 'audit.txt')
-    fs.writeFileSync(auditLog, 'brace-expansion high advisory\n')
-    const result = spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
-      encoding: 'utf8',
-      env: {
-        PATH: `${bin}:${process.env.PATH}`,
-        GH_LOG: log,
-        GITHUB_REPOSITORY: 'example/repo',
-        GITHUB_SHA: 'a'.repeat(40),
-        AUDIT_EXIT: exitCode,
-        AUDIT_LOG: auditLog,
-        GH_EXISTING_ISSUE: existing,
-      },
-    })
-    const calls = fs.readFileSync(log, 'utf8')
-    fs.rmSync(directory, { recursive: true, force: true })
-    return { result, calls }
-  }
-
-  test('opens an issue when the audit fails and none is open', () => {
-    const { result, calls } = runReport('1')
-    expect(result.status).toBe(0)
-    expect(calls).toContain('issue create --title High-severity pnpm audit findings')
-    expect(calls).not.toContain('issue close')
-  })
-
-  test('comments on the open issue instead of opening another', () => {
-    const { result, calls } = runReport('1', '42')
-    expect(result.status).toBe(0)
-    expect(calls).toContain('issue comment 42')
-    expect(calls).not.toContain('issue create')
-  })
-
-  test('closes the tracking issue when the audit is clean', () => {
-    const { result, calls } = runReport('0', '42')
-    expect(result.status).toBe(0)
-    expect(calls).toContain('issue close 42')
-    expect(calls).toContain('dependency-audit:high')
-    expect(calls).not.toContain('issue create')
-  })
-})
-
-describe('Dependency Review check', () => {
-  test('fails only through the diff-based high-severity action', () => {
-    const workflow = load(reviewPath)
-    expect(workflow.jobs['dependency-review'].name).toBe('Dependency Review')
-    const review = workflow.jobs['dependency-review'].steps.find((item: any) => item.uses?.startsWith('actions/dependency-review-action@'))
-    expect(review.uses).toBe('actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48')
-    expect(fs.readFileSync(reviewPath, 'utf8')).toContain('actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0')
-    expect(review.with['fail-on-severity']).toBe('high')
-    expect(review.with['warn-only']).toBeUndefined()
-    expect(workflow.on.pull_request.branches).toEqual(['main'])
   })
 })

@@ -14,7 +14,6 @@ on:
 # Restrict permissions to minimum required for security
 permissions:
   contents: read
-  actions: read
 
 # Cancel in-progress workflows on new push
 concurrency:
@@ -61,16 +60,6 @@ jobs:
 
       - name: Run Jest tests
         run: pnpm test
-        
-      - name: Upload Jest coverage reports
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        if: always() && hashFiles('coverage/lcov.info') != ''
-        with:
-          files: ./coverage/lcov.info
-          flags: jest
-          name: jest-coverage
-          fail_ci_if_error: false
-        continue-on-error: true
 
   playwright-tests:
     name: Playwright Tests
