@@ -76,11 +76,6 @@ export default function RootLayout({
         GeistMono.variable
       )}
     >
-      <head>
-        <link rel="preconnect" href="https://api.github.com" />
-        <link rel="preconnect" href="https://vercel.live" />
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-      </head>
       <body className="antialiased min-h-screen w-full m-0 p-0 bg-black">
         <div className="min-h-screen flex flex-col">
           <Navbar />

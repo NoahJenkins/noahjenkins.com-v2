@@ -5,6 +5,8 @@ import WaveSurfer from "wavesurfer.js"
 
 interface WaveformProps {
   audioUrl: string
+  /** Called as soon as the instance exists. No audio is fetched until the caller calls `load`. */
+  onInit?: (wavesurfer: WaveSurfer) => void
   onReady?: (wavesurfer: WaveSurfer) => void
   onPlay?: () => void
   onPause?: () => void
@@ -13,6 +15,7 @@ interface WaveformProps {
 
 export function Waveform({ 
   audioUrl, 
+  onInit,
   onReady, 
   onPlay, 
   onPause, 
@@ -20,7 +23,7 @@ export function Waveform({
 }: WaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<WaveSurfer | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -33,8 +36,14 @@ export function Waveform({
       try {
         if (!containerRef.current || !isMounted) return
 
+        // preload="none" and no src: nothing is downloaded until the first play
+        // calls wavesurfer.load(audioUrl).
+        const media = new Audio()
+        media.preload = 'none'
+
         wavesurfer = WaveSurfer.create({
           container: containerRef.current,
+          media,
           waveColor: '#fecb3e',
           progressColor: '#ffb43f',
           barWidth: 2,
@@ -52,11 +61,17 @@ export function Waveform({
         }
 
         wavesurferRef.current = wavesurfer
+        onInit?.(wavesurfer)
 
         // Event listeners
+        wavesurfer.on('load', () => {
+          if (isMounted) {
+            setIsLoading(true)
+            setHasError(false)
+          }
+        })
+
         wavesurfer.on('ready', () => {
-          console.log('Waveform ready for:', audioUrl)
-          console.log('Duration:', wavesurfer?.getDuration())
           if (isMounted) {
             setIsLoading(false)
             setHasError(false)
@@ -65,7 +80,6 @@ export function Waveform({
         })
 
         wavesurfer.on('play', () => {
-          console.log('Waveform play event triggered')
           if (isMounted) {
             onPlay?.()
           }
@@ -84,14 +98,6 @@ export function Waveform({
             setHasError(true)
           }
         })
-
-        // Load audio with delay to ensure container is ready
-        setTimeout(() => {
-          if (wavesurfer && isMounted) {
-            console.log('Loading audio from:', audioUrl)
-            wavesurfer.load(audioUrl)
-          }
-        }, 100)
 
       } catch (error) {
         console.error('Failed to initialize wavesurfer:', error)

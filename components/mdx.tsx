@@ -34,7 +34,7 @@ function Table({ data }: { data: { headers: string[], rows: string[][] } }) {
   )
 }
 
-function CustomLink(props: any) {
+function CustomLink({ node, ...props }: any) {
   let href = props.href
 
   if (href.startsWith('/')) {
@@ -71,7 +71,7 @@ function RoundedImage(props: any) {
   )
 }
 
-function Code({ children, ...props }: any) {
+function Code({ node, children, ...props }: any) {
   let codeHTML = highlight(children)
   // Sanitize to prevent XSS from any malicious content in code blocks
   let sanitizedHTML = sanitizeHtml(codeHTML, {
@@ -87,7 +87,7 @@ function Code({ children, ...props }: any) {
   )
 }
 
-function Pre({ children, ...props }: any) {
+function Pre({ node, children, ...props }: any) {
   return (
     <pre 
       className="bg-gray-900 border border-gray-800 rounded-lg p-4 overflow-x-auto my-6 text-sm"
@@ -144,7 +144,7 @@ function createHeading(level: number) {
 }
 
 // Add a custom blockquote component
-function CustomBlockquote({ children, ...props }: any) {
+function CustomBlockquote({ node, children, ...props }: any) {
   return (
     <blockquote 
       className="border-l-4 border-[#fecb3e] pl-4 my-6 bg-gray-900/30 py-4 rounded-r-lg italic text-gray-300"
@@ -156,7 +156,7 @@ function CustomBlockquote({ children, ...props }: any) {
 }
 
 // Add custom list components
-function CustomUL({ children, ...props }: any) {
+function CustomUL({ node, children, ...props }: any) {
   return (
     <ul className="list-disc list-inside my-4 space-y-2 text-gray-300" {...props}>
       {children}
@@ -164,7 +164,7 @@ function CustomUL({ children, ...props }: any) {
   )
 }
 
-function CustomOL({ children, ...props }: any) {
+function CustomOL({ node, children, ...props }: any) {
   return (
     <ol className="list-decimal list-inside my-4 space-y-2 text-gray-300" {...props}>
       {children}
@@ -172,11 +172,25 @@ function CustomOL({ children, ...props }: any) {
   )
 }
 
-function CustomLI({ children, ...props }: any) {
+function CustomLI({ node, children, ...props }: any) {
   return (
     <li className="text-gray-300 leading-relaxed" {...props}>
       {children}
     </li>
+  )
+}
+
+// react-markdown passes `node` (the hast node) to every component; it must not reach the DOM.
+function MarkdownImage({ node, alt, ...props }: any) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      alt={alt ?? ''}
+      loading="lazy"
+      decoding="async"
+      className="rounded-lg border border-gray-800 shadow-xl my-8 max-w-full h-auto"
+      {...props}
+    />
   )
 }
 
@@ -188,6 +202,7 @@ let components = {
   h5: createHeading(5),
   h6: createHeading(6),
   Image: RoundedImage,
+  img: MarkdownImage,
   a: CustomLink,
   code: Code,
   pre: Pre,
