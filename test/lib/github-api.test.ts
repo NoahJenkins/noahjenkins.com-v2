@@ -1,4 +1,4 @@
-import { getGitHubReadme, getGitHubStats, getFeaturedRepos, GitHubStats, GitHubRepo } from '../../lib/github-api'
+import { getGitHubReadme, getGitHubStats, GitHubStats, GitHubRepo } from '../../lib/github-api'
 
 // Mock fetch globally
 global.fetch = jest.fn()
@@ -127,21 +127,14 @@ describe('github-api', () => {
       })
     })
 
-    it('should handle user fetch failure', async () => {
+    it('should return null (not invented numbers) on user fetch failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false
       } as any)
 
       const result = await getGitHubStats('testuser')
 
-      expect(result).toEqual({
-        publicRepos: 25,
-        followers: 150,
-        following: 75,
-        totalStars: 234,
-        totalForks: 89,
-        languages: expect.any(Object)
-      })
+      expect(result).toBeNull()
     })
 
     it('should handle repos fetch failure', async () => {
@@ -156,8 +149,7 @@ describe('github-api', () => {
 
       const result = await getGitHubStats('testuser')
 
-      expect(result.publicRepos).toBe(25)
-      expect(result.followers).toBe(150)
+      expect(result).toBeNull()
     })
 
     it('should handle network errors', async () => {
@@ -165,76 +157,7 @@ describe('github-api', () => {
 
       const result = await getGitHubStats('testuser')
 
-      expect(result).toEqual({
-        publicRepos: 25,
-        followers: 150,
-        following: 75,
-        totalStars: 234,
-        totalForks: 89,
-        languages: expect.any(Object)
-      })
-    })
-  })
-
-  describe('getFeaturedRepos', () => {
-    const mockRepos: GitHubRepo[] = [
-      {
-        name: 'awesome-project',
-        description: 'An awesome project',
-        html_url: 'https://github.com/test/awesome-project',
-        stargazers_count: 100,
-        forks_count: 25,
-        language: 'JavaScript',
-        updated_at: '2024-01-01T00:00:00Z'
-      },
-      {
-        name: 'testuser',
-        description: 'Profile repo',
-        html_url: 'https://github.com/test/testuser',
-        stargazers_count: 5,
-        forks_count: 1,
-        language: 'Markdown',
-        updated_at: '2024-01-02T00:00:00Z'
-      }
-    ]
-
-    it('should fetch featured repos and exclude profile repo', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: jest.fn().mockResolvedValue(mockRepos)
-      } as any)
-
-      const result = await getFeaturedRepos('testuser')
-
-      expect(result).toHaveLength(1)
-      expect(result[0].name).toBe('awesome-project')
-      expect(result[0]).not.toEqual(expect.objectContaining({ name: 'testuser' }))
-    })
-
-    it('should handle fetch failure with mock data', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false
-      } as any)
-
-      const result = await getFeaturedRepos('testuser')
-
-      expect(result).toHaveLength(3)
-      expect(result[0].name).toBe('clouddeploy')
-      expect(result[1].name).toBe('audiostream')
-      expect(result[2].name).toBe('inframonitor')
-    })
-
-    it('should handle network errors with mock data', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      const result = await getFeaturedRepos('testuser')
-
-      expect(result).toHaveLength(3)
-      expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ name: 'clouddeploy' }),
-        expect.objectContaining({ name: 'audiostream' }),
-        expect.objectContaining({ name: 'inframonitor' })
-      ]))
+      expect(result).toBeNull()
     })
   })
 })
