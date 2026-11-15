@@ -10,7 +10,7 @@ This repository uses two GitHub Actions workflows for validation:
   - `push` to `main`
   - `pull_request` targeting `main`
 - **Execution model**
-  - Five independent jobs run on `ubuntu-latest` in **CI**: `security-audit`, `jest-tests`, `playwright-tests`, `typecheck`, `build`
+  - Four independent jobs run on `ubuntu-latest` in **CI**: `jest-tests`, `playwright-tests`, `typecheck`, `build`
   - Workflow-level concurrency cancels in-progress runs for the same ref:
     - `group: ${{ github.workflow }}-${{ github.ref }}`
     - `cancel-in-progress: true`
@@ -69,7 +69,6 @@ Steps:
 5. Restore/save pnpm cache (`actions/cache@v4`) keyed by `pnpm-lock.yaml`
 6. Install dependencies (`pnpm install --frozen-lockfile --prefer-offline` from the cached pnpm store)
 7. Run tests: `pnpm test`
-8. Upload coverage to Codecov (`codecov/codecov-action@v4`) when `coverage/lcov.info` exists, always-attempted, non-blocking (`continue-on-error: true`)
 
 #### Job: `playwright-tests` (Playwright Tests)
 Purpose: end-to-end UI validation and artifact retention.
@@ -89,18 +88,6 @@ Steps:
    - retention: 30 days
 
 ### 2) Quality/Security Stage
-
-#### Job: `security-audit` (Security Audit)
-Purpose: fail CI when high/critical dependency vulnerabilities are present.
-
-Steps:
-1. Checkout
-2. Setup Node.js 24
-3. Setup pnpm
-4. Set `STORE_PATH`
-5. Setup pnpm cache
-6. Install dependencies from the pnpm store with a frozen lockfile
-7. Run audit gate: `pnpm audit --audit-level=high`
 
 #### Job: `typecheck` (TypeScript Check)
 Purpose: static type validation.
@@ -142,7 +129,7 @@ Use Node.js `24.x` across `package.json` (`engines.node`), `.nvmrc`, `.node-vers
 
 Vercel stopped accepting new Node.js 20 builds and functions on October 1, 2026. Existing deployments can continue to serve traffic while new previews fail. [Vercel deprecation notice](https://vercel.com/changelog/node-js-20-is-being-deprecated)
 
-The runtime decision is recorded in [ADR 0009](../adr/0009-adopt-nodejs-24.md). Dependabot grouping remains as defined in ADR 0008. Controller acceptance and bounded repair are defined in ADR 0010.
+The runtime decision is recorded in [ADR 0009](../adr/0009-adopt-nodejs-24.md). Dependabot grouping remains as defined in ADR 0008. Dependabot repair is described in [pr-repair](../pr-repair.md); ADRs 0010 and 0011 are superseded.
 
 ### 4a) Dependency Review Workflow
 
@@ -167,7 +154,6 @@ This check is currently informational only and is not yet part of the protected-
   - `schedule` (Monday 16:00 UTC) and `workflow_dispatch`, on `main` only
 - **Actions**
   - Runs `pnpm audit --fix`, which adds a ranged override to `pnpm-workspace.yaml`
-  - Runs `.github/scripts/normalize-workspace-overrides.cjs` so every override is double-quoted. The controller workspace policy accepts a key with spaces only in quotes.
   - Updates `pnpm-lock.yaml` and fails if any other file changed
   - Opens or updates the `dependency-audit-fix` branch and pull request with the controller App token, then enables squash auto-merge
 - **Authority**
@@ -185,7 +171,7 @@ This check is currently informational only and is not yet part of the protected-
 - **GitHub Actions version updates**
   - Run weekly.
   - Put all eligible patch and minor updates in one catch-all routine group.
-  - Leave major updates outside that group; the controller requires authenticated independent review evidence before acceptance.
+  - Leave major updates outside that group.
 - **Security updates**
   - Use separate npm and GitHub Actions groups with `applies-to: security-updates`.
   - Remain event-driven by Dependabot security alerts instead of waiting for the weekly version-update schedule.
@@ -193,17 +179,11 @@ This check is currently informational only and is not yet part of the protected-
   - Do not assign a routine reviewer or assignee.
   - Use ecosystem and automation labels to identify the pull request type.
 
-### 6) Dependabot Controller and Copilot Workers
+### 6) Dependabot auto-merge and pr-repair
 
-The current worker contract is defined in the [Copilot runtime guide](../copilot-dependency-repair.md). ADRs 0010 and 0011 record earlier dispatcher and provider designs. Controller acceptance, quotas, protected scope, App authority, and main-only environments remain. The [setup guide](../dependabot-controller-setup.md) separates implementation from activation.
+`.github/workflows/dependabot-auto-merge.yml` reads Dependabot metadata (no checkout) and enables native squash auto-merge for patch, minor, GitHub Actions, and security updates. Other updates get the `needs-review` label. GitHub merges once the required checks pass.
 
-The trusted workflow reconciles same-repository Dependabot PRs on PR/CI/status events and a ten-minute schedule. A passing human-triggered CI run is eligible. Exact-head/current-base CI provenance, all five required jobs, trusted Vercel deployment status, protected scope, and authentic independent review evidence are required. Human/shared-commit and duplicate bot-head safeguards remain.
-
-Flow: controller → App claim → isolated Copilot worker matrix → fresh secret-free validator → trusted publisher → reconciliation. Trusted jobs checkout immutable workflow source matching the reserved base and run only from main; launch is original attempt 1. The controller App owns `Dependabot Merge Gate`, the ledger, task claims, repair commits, and `Dependabot Independent Review`. Branch protection must bind the gate to this App and require strict up-to-date CI, one approval, and stale-review dismissal.
-
-The trusted Copilot CLI alone receives a Copilot Requests-only fine-grained token. Repair and independent review use the fixed cost-efficient model and bounded credit, call, time, and input limits in the runtime guide. The model can read only the curated snapshot through `curated-read_data`; it has no shell, repository write, or network tools. Fixed validation runs separately without secrets. The publisher executes no artifact, verifies immutable run/job/claim/digest evidence and scope, atomically commits repairs with expected head, or publishes App-owned review proof bound to head/base. The controller queues native auto-merge while its gate is pending and revalidates before formal App approval and gate success.
-
-The central ledger limits the repository to two repairs/eight reviews per UTC day and two lifetime repairs per PR. Expired or uncertain reservations remain charged; reruns cannot dispatch. Invalid provenance, stale base/head, incomplete review, quota exhaustion, or missing credentials blocks acceptance. Missing external App/gate/provider/budget configuration keeps flags off.
+`.github/workflows/pr-repair.yml` is a thin caller of the shared `NoahJenkins/.github/pr-repair` action. It runs for failed CI on `dependabot/**` branches and finished CI on its `pr-repair/**` replacements, plus one daily sweep, and does nothing unless `PR_REPAIR_ENABLED=true`. See [pr-repair](../pr-repair.md). The earlier controller, OpenCode, and Copilot worker scripts were removed; ADRs 0010 and 0011 are superseded.
 
 ## Repository Security Settings
 
@@ -213,7 +193,7 @@ The central ledger limits the repository to two repairs/eight reviews per UTC da
 - **GitHub Actions SHA pinning required** is enabled at the repository level
 
 ## Deployment Environments
-Ordinary CI in `.github/workflows/ci.yml` has no credential environment. Controller, claim, publisher, and reconciliation jobs use `dependabot-controller`; isolated worker jobs use `dependabot-dispatch`. The validator uses no credential environment. GitHub must enforce their deployment restrictions before releasing credentials; the merge scope guard does not protect pre-merge workflow execution.
+Ordinary CI in `.github/workflows/ci.yml` has no credential environment. `pr-repair` and `Dependency audit fix` use `dependabot-controller` (App private key) and `dependabot-dispatch` (inference key).
 Vercel preview and production deployments are handled by the Git integration outside this workflow.
 
 ## Required Secrets / Environment Names
@@ -221,13 +201,12 @@ Vercel preview and production deployments are handled by the Git integration out
 ### Secrets (names only)
 - **None explicitly required by `ci.yml`**
 - `dependabot-controller` environment only: `DEPENDABOT_CONTROLLER_PRIVATE_KEY` (also used by Dependency audit fix)
-- `dependabot-dispatch` environment only: `COPILOT_GITHUB_TOKEN` (Copilot Requests account permission only)
+- `dependabot-dispatch` environment only: `AI_GATEWAY_API_KEY` (pr-repair inference)
 
 ### Environment variables (names only)
 - `STORE_PATH` (set in each job for pnpm cache path)
 - `GITHUB_ENV` (GitHub Actions runtime environment file used to persist `STORE_PATH`)
-- Controller configuration: `DEPENDABOT_CONTROLLER_APP_ID`, `DEPENDABOT_STATE_ISSUE_NUMBER`, `DEPENDABOT_AUTOMATION_ENABLED`, `DEPENDABOT_AGENT_ENABLED`, `DEPENDABOT_VERCEL_APP_ID`
-- Enable flags must be exactly `true`; unset or other values remain disabled
+- `DEPENDABOT_CONTROLLER_APP_ID`, `PR_REPAIR_ENABLED` (must be exactly `true` to enable pr-repair)
 
 ## Troubleshooting
 
@@ -255,14 +234,9 @@ Vercel preview and production deployments are handled by the Git integration out
   - Review `pnpm build` logs for prior failure
   - Confirm Next.js build output directory is expected to be `.next`
 
-### Coverage upload issues
-- Symptom: Codecov upload step warns/fails.
-- Current behavior: non-blocking (`continue-on-error: true`), CI still completes based on core checks.
-- Action: verify `coverage/lcov.info` generation in Jest run.
-
 ## Maintenance
 
-- Keep action versions current (`checkout`, `setup-node`, `cache`, `upload-artifact`, `codecov-action`, `pnpm/action-setup`).
+- Keep action versions current (`checkout`, `setup-node`, `cache`, `upload-artifact`, `pnpm/action-setup`).
 - Update pinned workflow SHAs when upstream action releases are adopted.
 - Reassess `pnpm install --no-frozen-lockfile` fallback policy if stricter reproducibility is required.
 - Periodically review:
@@ -270,16 +244,8 @@ Vercel preview and production deployments are handled by the Git integration out
   - artifact retention duration (currently 30 days)
   - workflow permissions for least privilege
 - Observe `Dependency Review` results before deciding whether to promote it to a required branch protection check.
-- Keep controller CI provenance, authentic independent-review evidence and Vercel identities, App-bound branch protection, ledger capacity, and daily/lifetime limits aligned with the implementation and setup guide.
 - If CD is needed, add explicit deploy job(s) with:
   - environment protection rules
   - scoped secrets
   - branch/tag deployment strategy
 - Consider extending security coverage beyond dependency audit with additional SAST coverage where GitHub default setup is insufficient.
-
-
-### Production recovery interlock (2026-10-20)
-
-The Dependabot controller reads the latest GitHub `Production` deployment and latest status from the trusted Vercel bot. Current main must have a successful deployment before bot work and again before releasing its App-owned merge gate. An unavailable, failed, pending, stale, or foreign result cancels merge intent and blocks the gate. Default-branch Vercel status/CI events and the existing ten-minute scan reevaluate the same source of truth. Human recovery remains available, and rollback is manual.
-
-Missing variable setup is visible on one daily diagnostic, manual runs, and bot-open/reopen events. Credential checks stay inside their existing environments. Per-PR workflow summaries expose exhausted budgets and stale tasks without issue/comment creation. The setup guide lists the added Deployments read permission and activation contract; models, budgets, publication, review, and CI gates are unchanged.

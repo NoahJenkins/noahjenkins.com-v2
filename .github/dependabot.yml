@@ -9,6 +9,8 @@ updates:
       time: "09:00"
       timezone: "America/Chicago"
     open-pull-requests-limit: 10
+    cooldown:
+      default-days: 3
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -38,6 +40,8 @@ updates:
       time: "09:30"
       timezone: "America/Chicago"
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 3
     commit-message:
       prefix: "ci"
       include: "scope"

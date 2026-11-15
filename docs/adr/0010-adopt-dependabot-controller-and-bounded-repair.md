@@ -1,6 +1,6 @@
 # ADR 0010: Adopt a Dependabot Controller and Bounded Repair
 
-**Status:** accepted; external activation pending
+**Status:** superseded by [pr-repair](../pr-repair.md); the controller and worker scripts were removed
 
 **Date:** 2026-10-13
 
@@ -48,7 +48,7 @@ Adopt option 3.
 ## Related documents
 
 - [Automation gap investigation](../context/2026-10-13-dependabot-automation-gap-investigation.md)
-- [Controller setup guide](../dependabot-controller-setup.md)
+- Controller setup guide (removed with the controller; see [pr-repair](../pr-repair.md))
 - [CI/CD pipeline](../architecture/ci-cd-pipeline.md)
 - [ADR 0008](./0008-reduce-dependabot-volume-and-harden-post-ci-automation.md)
 
