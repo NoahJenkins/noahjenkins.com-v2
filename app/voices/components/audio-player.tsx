@@ -67,10 +67,21 @@ export function AudioPlayer({
         wavesurfer.pause()
         return
       }
-      // The audio file is only downloaded on the first play.
+      // The audio file is only downloaded on the first play. Start playback
+      // inside the click: Safari (iOS especially) allows play() only during the
+      // user gesture, and with preload="none" it loads no metadata until play(),
+      // so awaiting load() first would hang until a second click. load() then
+      // fetches and decodes the same URL in the background to draw the waveform;
+      // it keeps the playing source because the absolute URL matches.
       if (!loadedRef.current) {
         loadedRef.current = true
-        await wavesurfer.load(audioUrl)
+        const src = new URL(audioUrl, window.location.href).href
+        const media = wavesurfer.getMediaElement()
+        if (media) media.src = src
+        const playing = wavesurfer.play()
+        wavesurfer.load(src).catch((error) => console.error('Error loading waveform:', error))
+        await playing
+        return
       }
       await wavesurfer.play()
     } catch (error) {
