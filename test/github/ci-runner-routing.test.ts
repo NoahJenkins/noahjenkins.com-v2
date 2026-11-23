@@ -83,24 +83,22 @@ describe('CI setup budget and browser-cache policy', () => {
     }
   })
 
-  test('browser cache uses the exact installed version without unrelated lockfile invalidation', () => {
-    const steps = workflow.jobs['playwright-tests'].steps
-    const cache = steps.find((step: any) => step.id === 'playwright-cache')
-    expect(cache.with.path).toBe('~/.cache/ms-playwright')
-    // Browser builds differ by OS release (ubuntu-latest moved 24.04 -> 26.04),
-    // so a cache saved on one release must not restore on another.
-    expect(cache.with.key).toBe("${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.os }}-playwright-${{ steps.playwright-version.outputs.version }}")
-    expect(cache.with['restore-keys']).toBeUndefined()
-    const version = steps.find((step: any) => step.id === 'playwright-version')
-    expect(version.run).toContain("require('@playwright/test/package.json').version")
-    expect(version.run).toContain('/etc/os-release')
-    expect(version['timeout-minutes']).toBe(1)
-    expect(steps.indexOf(version)).toBeGreaterThan(steps.findIndex((step: any) => step.run?.includes('pnpm install ')))
-    expect(steps.indexOf(version)).toBeLessThan(steps.indexOf(cache))
-    expect(cache.with.key).not.toContain('hashFiles')
-    const system = steps.find((step: any) => step.run === 'pnpm exec playwright install-deps')
-    expect(system.if).toBeUndefined()
-    const browsers = steps.find((step: any) => step.run === 'pnpm exec playwright install')
-    expect(browsers.if).toBe("steps.playwright-cache.outputs.cache-hit != 'true'")
+  test('playwright runs in the official image that matches the locked browser build', () => {
+    const lock = yaml.load(fs.readFileSync(path.join(__dirname, '../../pnpm-lock.yaml'), 'utf8'))
+    const version = lock.importers['.'].devDependencies['@playwright/test'].version
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/)
+    const job = workflow.jobs['playwright-tests']
+    // Firefox and WebKit system libraries on ubuntu 26.04 are the GStreamer
+    // and ffmpeg stack. The runner apt mirror stalls while fetching them, so
+    // the job uses the image that already contains that stack and the browsers.
+    expect(job.container.image).toBe(`mcr.microsoft.com/playwright:v${version}-noble`)
+    expect(job.container.options).toBe('--user 1001 --shm-size=2g')
+    const commands = job.steps.map((step: any) => step.run || '').join('\n')
+    expect(commands).not.toContain('playwright install')
+    expect(job.steps.some((step: any) => step.with?.path === '~/.cache/ms-playwright')).toBe(false)
+    const projects = fs.readFileSync(path.join(__dirname, '../../playwright.config.ts'), 'utf8')
+    for (const name of ['chromium', 'firefox', 'webkit', 'Mobile Chrome', 'Mobile Safari']) {
+      expect(projects).toContain(`name: '${name}'`)
+    }
   })
 })
