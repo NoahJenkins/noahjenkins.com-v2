@@ -65,6 +65,16 @@ jobs:
     name: Playwright Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # ubuntu-latest is 26.04. install-deps for Firefox and WebKit apt-installs
+    # about 185 packages (GStreamer and ffmpeg, ~140 MB) from the runner mirror,
+    # which stalls past the 5-minute setup limit. The official image already
+    # has those libraries and the matching browser builds, so this job does not
+    # apt-install or download them. The tag is the locked @playwright/test
+    # version; --user 1001 matches the hosted runner's workspace owner, and
+    # --shm-size keeps Chromium from crashing on Docker's 64 MB /dev/shm.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
+      options: --user 1001 --shm-size=2g
     
     steps:
       - name: Checkout code
@@ -98,35 +108,6 @@ jobs:
         timeout-minutes: 5
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Get installed Playwright version
-        timeout-minutes: 1
-        id: playwright-version
-        run: |
-          version=$(node -p "require('@playwright/test/package.json').version")
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-          . /etc/os-release
-          printf 'os=%s%s\n' "$ID" "$VERSION_ID" >> "$GITHUB_OUTPUT"
-
-      # Browser binaries are cached separately from Linux system libraries.
-      # Playwright downloads a different browser build per OS release, so the
-      # release is part of the key.
-      - name: Cache Playwright browsers
-        timeout-minutes: 2
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright system dependencies
-        timeout-minutes: 5
-        run: pnpm exec playwright install-deps
-
-      - name: Install Playwright browsers
-        timeout-minutes: 5
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install
-        
       - name: Run Playwright tests
         run: pnpm test:ui
         

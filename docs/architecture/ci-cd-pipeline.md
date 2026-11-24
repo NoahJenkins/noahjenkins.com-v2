@@ -51,7 +51,7 @@ no infrastructure or runner access policy.
 - Security audit, Jest, and TypeScript jobs stop after 10 minutes. Build and Playwright jobs stop after 15 minutes. Dependency Review stops after 5 minutes.
 - Each package, browser, or Linux-library install stops after 5 minutes; Node/pnpm setup after 3 minutes; explicit cache operations after 2 minutes. Setup failures fail the job. Do not retry timed-out setup automatically or raise its limit to obtain a green result.
 - The pnpm content-addressed store is cached; `node_modules` is not cached. Frozen installs with `--prefer-offline` validate the lockfile, reuse downloaded packages, and run required lifecycle scripts.
-- Browser binaries use an exact OS, architecture, and installed `@playwright/test` version cache key, with no broad restore keys. The version is read after the frozen install, so unrelated lockfile changes do not invalidate compatible browsers. A cache hit skips browser downloads. Linux system libraries are not cached and still install on both hits and misses under their own deadline.
+- Playwright runs on `ubuntu-latest` inside `mcr.microsoft.com/playwright:v<locked version>-noble` as uid 1001, with a 2 GB `/dev/shm`. The image already contains the system libraries and browser builds for that `@playwright/test` version, so the job does not apt-install them and does not download browsers. The image tag is the version locked in `pnpm-lock.yaml`; a Playwright bump updates the tag in the same change. Chromium, Firefox, WebKit, Mobile Chrome, and Mobile Safari all still run.
 - Existing concurrency cancellation, required check names, platform routing, and test coverage remain unchanged. Failure artifacts remain available.
 
 ## Pipeline Stages
@@ -80,9 +80,8 @@ Steps:
 4. Set `STORE_PATH`
 5. Setup pnpm cache
 6. Install dependencies from the pnpm store with a frozen lockfile
-7. Restore exact OS/architecture/installed-Playwright-version browser cache; always run `pnpm exec playwright install-deps`, then run `pnpm exec playwright install` only on a browser-cache miss
-8. Run tests: `pnpm test:ui`
-9. Always upload artifacts (`actions/upload-artifact@v4`):
+7. Run tests: `pnpm test:ui` (system libraries and browsers come from the job container)
+8. Always upload artifacts (`actions/upload-artifact@v4`):
    - `playwright-report/` as `playwright-report`
    - `test-results/` as `playwright-test-results`
    - retention: 30 days
@@ -226,7 +225,7 @@ Vercel preview and production deployments are handled by the Git integration out
 - Action:
   - Inspect uploaded `playwright-report` and `playwright-test-results` artifacts
   - Reproduce locally with `pnpm test:ui`
-  - Confirm browser dependencies install step succeeded
+  - Confirm the container image tag matches the `@playwright/test` version in `pnpm-lock.yaml`. A mismatch cannot find the browser executables. The job does not run `playwright install-deps`.
 
 ### Build verification failure (`.next` not found)
 - Symptom: `Build Check` fails at output verification.
